@@ -4,6 +4,19 @@
 #include <wren.h>
 #include <stdio.h>
 
+static void wren_write_fn(WrenVM* vm, char const* msg) {
+	printf("%s", msg);
+}
+
+static void wren_error_fn(WrenVM* vm, WrenErrorType type, char const* module, int line, char const* msg) {
+	if (type == WREN_ERROR_RUNTIME) {
+		LOG_ERROR("Wren runtime error: %s", msg)
+		return;
+	}
+
+	LOG_ERROR("Wren error in module '%s' at line %d: %s", module, line, msg)
+}
+
 int main(char* argv[], int argc) {
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
 	// read build configuration file
@@ -25,9 +38,28 @@ int main(char* argv[], int argc) {
 	if (fread(config, 1, bytes, fp))
 		;
 
-	printf("%s\n", config);
+	WrenConfiguration wren_config;
+	wrenInitConfiguration(&wren_config);
+
+	wren_config.writeFn = &wren_write_fn;
+	wren_config.errorFn = &wren_error_fn;
+
+	WrenVM* vm = wrenNewVM(&wren_config);
+
+	char const* module = "main";
+
+	WrenInterpretResult result = wrenInterpret(vm, module, config);
+
+	if (result == WREN_RESULT_SUCCESS) {
+		LOG_SUCCESS("Build configuration ran successfully")
+	}
+
+	// clean everything up (not super necessary, I'd put a little more effort in error handling if it was :P)
+
+	wrenFreeVM(vm);
 
 	free(config);
+	fclose(fp);
 
 	return EXIT_SUCCESS;
 }
