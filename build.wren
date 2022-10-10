@@ -1,7 +1,7 @@
 // XXX all the stuff here should be included automatically by bob, not in the configuration file
 
 class CC {
-	construct new {}
+	construct new() {}
 
 	debug { true } // TODO be able to choose between various build types when running the command, and CC.debug should default to that obviously
 	std { "c99" }
@@ -15,7 +15,7 @@ class File {
 }
 
 class Linker {
-	construct new {
+	construct new() {
 		_cc = CC.new()
 	}
 
@@ -46,7 +46,7 @@ src.each { |path|
 // linking
 
 var linker = Linker.new(cc)
-linker.link(srcList)
+linker.link(src)
 
 // packaging setup
 // TODO how do I know where artifacts end up?
