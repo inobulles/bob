@@ -87,7 +87,7 @@ static WrenForeignMethodFn wren_bind_foreign_method_fn(WrenVM* wm, char const* m
 	return unknown_foreign;
 }
 
-int main(char* argv[], int argc) {
+int main(int argc, char* argv[]) {
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
 	// read build configuration file
 	// TODO in the future, it'd be nice if this could detect various different scenarios and adapt intelligently, such as not finding a 'build.wren' file but instead finding a 'Makefile'
