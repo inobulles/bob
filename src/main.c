@@ -1,9 +1,16 @@
+#define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
+
+#if __linux__
+	#define _GNU_SOURCE
+#endif
+
 #include <umber.h>
 #define UMBER_COMPONENT "bob"
 
-#include <wren.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <wren.h>
 
 static void wren_write_fn(WrenVM* vm, char const* msg) {
 	printf("%s", msg);
@@ -22,6 +29,17 @@ static void unknown_foreign(WrenVM* vm) {
 	LOG_WARN("Calling unknown foreign function")
 }
 
+static uint64_t hash_str(char const* str) { // djb2 algorithm
+	uint64_t hash = 5381;
+	size_t len = strlen(str);
+
+	for (size_t i = 0; i < len; i++) {
+		hash = ((hash << 5) + hash) + str[i]; // hash * 33 + ptr[i]
+	}
+
+	return hash;
+}
+
 static void cc_compile(WrenVM* vm) {
 	int slot_len = wrenGetSlotCount(vm);
 
@@ -30,8 +48,32 @@ static void cc_compile(WrenVM* vm) {
 		return;
 	}
 
-	char const* path = wrenGetSlotString(vm, 1);
-	LOG_INFO("Compile '%s'", path)
+	char const* _path = wrenGetSlotString(vm, 1);
+	char* path = realpath(_path, NULL);
+
+	if (!path) {
+		LOG_WARN("'%s' does not exist", path)
+	}
+
+	uint64_t hash = hash_str(path);
+
+	char* obj_path;
+
+	if (asprintf(&obj_path, "bin/%lx.o", hash))
+		;
+
+	LOG_INFO("'%s' -> '%s'", _path, obj_path)
+
+	char* cmd;
+
+	if (asprintf(&cmd, "cc -c %s -o %s", path, obj_path))
+		;
+
+	system(cmd);
+
+	free(cmd);
+	free(obj_path);
+	free(path);
 }
 
 static WrenForeignMethodFn wren_bind_foreign_method_fn(WrenVM* wm, char const* module, char const* class, bool is_static, char const* signature) {
