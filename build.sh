@@ -10,7 +10,9 @@ mkdir -p bin
 
 cc_flags="
 	-std=c99 -O2 -Isrc/wren/include
+	-I/usr/local/include -L/usr/local/lib
 	-DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0
+	-Wno-unused-command-line-argument
 	-lm -lumber
 "
 
