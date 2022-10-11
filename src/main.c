@@ -108,6 +108,8 @@ int main(int argc, char* argv[]) {
 	if (fread(config, 1, bytes, fp))
 		;
 
+	config[bytes - 1] = 0;
+
 	WrenConfiguration wren_config;
 	wrenInitConfiguration(&wren_config);
 
