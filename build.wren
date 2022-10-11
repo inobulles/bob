@@ -1,10 +1,19 @@
 // XXX all the stuff here should be included automatically by bob, not in the configuration file
 
-class CC {
+foreign class CC {
 	construct new() {}
 
-	debug { true } // TODO be able to choose between various build types when running the command, and CC.debug should default to that obviously
-	std { "c99" }
+	// getters
+
+	foreign debug()
+	foreign std()
+
+	// setters
+
+	foreign debug=(x)
+	foreign std=(x)
+
+	// methods
 
 	foreign compile(path)
 }
