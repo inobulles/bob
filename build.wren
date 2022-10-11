@@ -39,9 +39,11 @@ class Package {
 var cc = CC.new()
 var src = File.list("src")
 
-src.each { |path|
+cc.compile("src/main.c")
+
+/* src.each { |path|
 	cc.compile(path)
-}
+} */
 
 // linking
 

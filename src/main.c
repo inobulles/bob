@@ -3,6 +3,7 @@
 
 #include <wren.h>
 #include <stdio.h>
+#include <string.h>
 
 static void wren_write_fn(WrenVM* vm, char const* msg) {
 	printf("%s", msg);
@@ -15,6 +16,33 @@ static void wren_error_fn(WrenVM* vm, WrenErrorType type, char const* module, in
 	}
 
 	LOG_ERROR("Wren error in module '%s' at line %d: %s", module, line, msg)
+}
+
+static void unknown_foreign(WrenVM* vm) {
+	LOG_WARN("Calling unknown foreign function")
+}
+
+static void cc_compile(WrenVM* vm) {
+	int slot_len = wrenGetSlotCount(vm);
+
+	if (slot_len < 1) {
+		LOG_WARN("'CC.compile' not passed enough arguments (%d)", slot_len - 1)
+		return;
+	}
+
+	char const* path = wrenGetSlotString(vm, 1);
+	LOG_INFO("Compile '%s'", path)
+}
+
+static WrenForeignMethodFn wren_bind_foreign_method_fn(WrenVM* wm, char const* module, char const* class, bool is_static, char const* signature) {
+	if (!strcmp(class, "CC")) {
+		if (!strcmp(signature, "compile(_)")) {
+			return cc_compile;
+		}
+	}
+
+	LOG_WARN("Unknown %sforeign method '%s' in module '%s', class '%s'", is_static ? "static " : "", signature, module, class)
+	return unknown_foreign;
 }
 
 int main(char* argv[], int argc) {
@@ -43,6 +71,7 @@ int main(char* argv[], int argc) {
 
 	wren_config.writeFn = &wren_write_fn;
 	wren_config.errorFn = &wren_error_fn;
+	wren_config.bindForeignMethodFn = &wren_bind_foreign_method_fn;
 
 	WrenVM* vm = wrenNewVM(&wren_config);
 
