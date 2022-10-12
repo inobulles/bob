@@ -19,8 +19,10 @@ foreign class CC {
 }
 
 class File {
-	foreign static list(path) // TODO does this recursively, should there be an easy way to filter out entries we don't like through Wren rather than through options? e.g. by having a special 'Path' object which contains extra information about the path such as its depth and whatnot? Or maybe letting the user split the path string how they want through Wren is better?
+	foreign static list(path, depth) // TODO does this recursively, should there be an easy way to filter out entries we don't like through Wren rather than through options? e.g. by having a special 'Path' object which contains extra information about the path such as its depth and whatnot? Or maybe letting the user split the path string how they want through Wren is better?
 	// foreign static list(path, depth) // TODO perhaps in the case of depth specifically we'd like to be able to specify it straight away, since otherwise we may be wasting a lot of resources for nothing?
+
+	static list(path) { list(path, 0) }
 }
 
 class Linker {
@@ -48,11 +50,9 @@ class Package {
 var cc = CC.new()
 var src = File.list("src")
 
-cc.compile("src/main.c")
-
-/* src.each { |path|
-	cc.compile(path)
-} */
+src
+	.where { |path| path.endsWith(".c") }
+	.each  { |path| cc.compile(path) }
 
 // linking
 
