@@ -12,7 +12,7 @@ static void file_list(WrenVM* vm) {
 
 	char const* path = wrenGetSlotString(vm, 1);
 	double _depth = wrenGetSlotDouble(vm, 2);
-	size_t depth = depth; // TODO
+	size_t depth = _depth;
 
 	// create return list
 
@@ -62,6 +62,10 @@ static void file_list(WrenVM* vm) {
 		case FTS_F:
 		case FTS_DEFAULT:
 		default:
+
+			if (depth > 0 && ent->fts_level > depth) {
+				continue;
+			}
 
 			wrenEnsureSlots(vm, 3 + path_count);
 			wrenSetSlotString(vm, 3 + path_count, path);
