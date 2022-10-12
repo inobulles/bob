@@ -17,47 +17,30 @@ static void cc_new(WrenVM* vm) {
 		return;
 	}
 
-	cc_t* cc = calloc(1, sizeof *cc);
+	cc_t* cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
+	bzero(cc, sizeof *cc);
 
 	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and CC.debug should default to that obviously
 	cc->std = strdup("c99");
-
-	// TODO does it really make sense to have this as a reference?
-	//      look at the documentation/example and think about why they do it like they do- should we really be copying them?
-
-	cc_t** cc_ref = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc_ref);
-	*cc_ref = cc;
 }
 
-static void cc_del(void* _cc_ref) {
-	if (!_cc_ref) {
-		return;
-	}
-
-	cc_t** cc_ref = _cc_ref;
-	cc_t* cc = *cc_ref;
+static void cc_del(void* _cc) {
+	cc_t* cc = _cc;
 
 	if (cc->std) {
 		free(cc->std);
 	}
-
-	free(cc);
-	*cc_ref = NULL;
 }
 
 // getters
 
 static void cc_get_debug(WrenVM* vm) {
-	cc_t** cc_ref = wrenGetSlotForeign(vm, 0);
-	cc_t* cc = *cc_ref;
-
+	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotBool(vm, 0, cc->debug);
 }
 
 static void cc_get_std(WrenVM* vm) {
-	cc_t** cc_ref = wrenGetSlotForeign(vm, 0);
-	cc_t* cc = *cc_ref;
-
+	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotString(vm, 0, cc->std);
 }
 
@@ -73,9 +56,7 @@ static void cc_set_debug(WrenVM* vm) {
 		return;
 	}
 
-	cc_t** cc_ref = wrenGetSlotForeign(vm, 0);
-	cc_t* cc = *cc_ref;
-
+	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	cc->debug = wrenGetSlotBool(vm, 1);
 }
 
@@ -87,24 +68,21 @@ static void cc_set_std(WrenVM* vm) {
 		return;
 	}
 
-	cc_t** cc_ref = wrenGetSlotForeign(vm, 0);
-	cc_t* cc = *cc_ref;
-
+	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	cc->std = strdup(wrenGetSlotString(vm, 1));
 }
 
 // methods
 
 static void cc_compile(WrenVM* vm) {
-	cc_t** cc_ref = wrenGetSlotForeign(vm, 0);
-	cc_t* cc = *cc_ref;
-
 	int argc = wrenGetSlotCount(vm) - 1;
 
 	if (argc != 1) {
 		LOG_WARN("'CC.compile' not passed right number of arguments (%d)", argc)
 		return;
 	}
+
+	cc_t* cc = wrenGetSlotForeign(vm, 0);
 
 	char const* _path = wrenGetSlotString(vm, 1);
 	char* path = realpath(_path, NULL);
