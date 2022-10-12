@@ -10,12 +10,7 @@ typedef struct {
 // constructor/destructor
 
 static void cc_new(WrenVM* vm) {
-	int argc = wrenGetSlotCount(vm) - 1;
-
-	if (argc != 0) {
-		LOG_WARN("'CC.new' not passed right number of arguments (%d)", argc)
-		return;
-	}
+	CHECK_ARGC("CC.new", 0)
 
 	cc_t* cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
 	bzero(cc, sizeof *cc);
@@ -35,11 +30,15 @@ static void cc_del(void* _cc) {
 // getters
 
 static void cc_get_debug(WrenVM* vm) {
+	CHECK_ARGC("CC.debug", 0)
+
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotBool(vm, 0, cc->debug);
 }
 
 static void cc_get_std(WrenVM* vm) {
+	CHECK_ARGC("CC.std", 0)
+
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotString(vm, 0, cc->std);
 }
@@ -47,26 +46,14 @@ static void cc_get_std(WrenVM* vm) {
 // setters
 
 static void cc_set_debug(WrenVM* vm) {
-	// TODO maybe make this a macro, as it's a little redundant as it is
-
-	int argc = wrenGetSlotCount(vm) - 1;
-
-	if (argc != 1) {
-		LOG_WARN("'CC.debug=' not passed right number of arguments (%d)", argc)
-		return;
-	}
+	CHECK_ARGC("CC.debug=", 1)
 
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	cc->debug = wrenGetSlotBool(vm, 1);
 }
 
 static void cc_set_std(WrenVM* vm) {
-	int argc = wrenGetSlotCount(vm) - 1;
-
-	if (argc != 1) {
-		LOG_WARN("'CC.std=' not passed right number of arguments (%d)", argc)
-		return;
-	}
+	CHECK_ARGC("CC.std=", 1)
 
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	cc->std = strdup(wrenGetSlotString(vm, 1));
@@ -75,12 +62,7 @@ static void cc_set_std(WrenVM* vm) {
 // methods
 
 static void cc_compile(WrenVM* vm) {
-	int argc = wrenGetSlotCount(vm) - 1;
-
-	if (argc != 1) {
-		LOG_WARN("'CC.compile' not passed right number of arguments (%d)", argc)
-		return;
-	}
+	CHECK_ARGC("CC.compile", 1)
 
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 

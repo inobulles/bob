@@ -2,9 +2,17 @@
 
 // useful macros
 
-#define BIND_FOREIGN_METHOD(static__, signature_, fn) \
-	if (static_ == (static__) && !strcmp(signature, (signature_))) { \
+#define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
+	if (static_ == (_static_) && !strcmp(signature, (_signature))) { \
 		return (fn); \
+	}
+
+#define CHECK_ARGC(fn_name, _argc) \
+	int argc = wrenGetSlotCount(vm) - 1; \
+	\
+	if (argc != (_argc)) { \
+		LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected %d)", argc, (_argc)) \
+		return; \
 	}
 
 // wren functions
