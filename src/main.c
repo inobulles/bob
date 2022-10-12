@@ -64,6 +64,9 @@ static void cc_compile(WrenVM* vm) {
 
 	LOG_INFO("'%s' -> '%s'", _path, obj_path)
 
+	// TODO break here if object is more recent than source
+	//      what happens if options change in the meantime though?
+
 	char* cmd;
 
 	if (asprintf(&cmd, "cc -c %s -o %s", path, obj_path))
