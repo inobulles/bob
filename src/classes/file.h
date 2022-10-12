@@ -8,7 +8,7 @@
 // methods
 
 static void file_list(WrenVM* vm) {
-	CHECK_ARGC("File.list", 2)
+	CHECK_ARGC("File.list", 2, 2)
 
 	char const* path = wrenGetSlotString(vm, 1);
 	double _depth = wrenGetSlotDouble(vm, 2);

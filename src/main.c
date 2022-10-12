@@ -16,6 +16,7 @@
 
 #include "classes/cc.h"
 #include "classes/file.h"
+#include "classes/linker.h"
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* module, char const* class, bool static_, char const* signature) {
 	WrenForeignMethodFn fn = unknown_foreign;
@@ -28,6 +29,10 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* modu
 
 	else if (!strcmp(class, "File")) {
 		fn = file_bind_foreign_method(static_, signature);
+	}
+
+	else if (!strcmp(class, "Linker")) {
+		fn = linker_bind_foreign_method(static_, signature);
 	}
 
 	// unknown

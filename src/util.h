@@ -7,11 +7,11 @@
 		return (fn); \
 	}
 
-#define CHECK_ARGC(fn_name, _argc) \
+#define CHECK_ARGC(fn_name, argc_little, argc_big) \
 	int argc = wrenGetSlotCount(vm) - 1; \
 	\
-	if (argc != (_argc)) { \
-		LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected %d)", argc, (_argc)) \
+	if (argc < (argc_little) || argc > (argc_big)) { \
+		LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
 		return; \
 	}
 

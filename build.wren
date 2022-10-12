@@ -25,14 +25,9 @@ class File {
 	static list(path) { list(path, 0) }
 }
 
-class Linker {
-	construct new() {
-		_cc = CC.new()
-	}
-
-	construct new(cc) {
-		_cc = cc
-	}
+foreign class Linker {
+	construct new() {}
+	construct new(cc) {}
 
 	foreign link(pathList)
 }
