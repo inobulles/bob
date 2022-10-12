@@ -12,89 +12,53 @@
 #include <string.h>
 #include <wren.h>
 
-static void wren_write_fn(WrenVM* vm, char const* msg) {
-	printf("%s", msg);
-}
+#include "util.h"
 
-static void wren_error_fn(WrenVM* vm, WrenErrorType type, char const* module, int line, char const* msg) {
-	if (type == WREN_ERROR_RUNTIME) {
-		LOG_ERROR("Wren runtime error: %s", msg)
-		return;
-	}
+#include "classes/cc.h"
+#include "classes/file.h"
 
-	LOG_ERROR("Wren error in module '%s' at line %d: %s", module, line, msg)
-}
+static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* module, char const* class, bool static_, char const* signature) {
+	WrenForeignMethodFn fn = unknown_foreign;
 
-static void unknown_foreign(WrenVM* vm) {
-	LOG_WARN("Calling unknown foreign function")
-}
+	// classes
 
-static uint64_t hash_str(char const* str) { // djb2 algorithm
-	uint64_t hash = 5381;
-	size_t len = strlen(str);
-
-	for (size_t i = 0; i < len; i++) {
-		hash = ((hash << 5) + hash) + str[i]; // hash * 33 + ptr[i]
-	}
-
-	return hash;
-}
-
-static void cc_compile(WrenVM* vm) {
-	int slot_len = wrenGetSlotCount(vm);
-
-	if (slot_len < 1) {
-		LOG_WARN("'CC.compile' not passed enough arguments (%d)", slot_len - 1)
-		return;
-	}
-
-	char const* _path = wrenGetSlotString(vm, 1);
-	char* path = realpath(_path, NULL);
-
-	if (!path) {
-		LOG_WARN("'%s' does not exist", path)
-	}
-
-	uint64_t hash = hash_str(path);
-
-	char* obj_path;
-
-	if (asprintf(&obj_path, "bin/%lx.o", hash))
-		;
-
-	LOG_INFO("'%s' -> '%s'", _path, obj_path)
-
-	// TODO break here if object is more recent than source
-	//      what happens if options change in the meantime though?
-
-	char* cmd;
-
-	if (asprintf(&cmd, "cc -c %s -o %s", path, obj_path))
-		;
-
-	system(cmd);
-
-	free(cmd);
-	free(obj_path);
-	free(path);
-}
-
-static WrenForeignMethodFn wren_bind_foreign_method_fn(WrenVM* wm, char const* module, char const* class, bool is_static, char const* signature) {
 	if (!strcmp(class, "CC")) {
-		if (!strcmp(signature, "compile(_)")) {
-			return cc_compile;
-		}
+		fn = cc_bind_foreign_method(static_, signature);
 	}
 
-	LOG_WARN("Unknown %sforeign method '%s' in module '%s', class '%s'", is_static ? "static " : "", signature, module, class)
-	return unknown_foreign;
+	else if (!strcmp(class, "File")) {
+		fn = file_bind_foreign_method(static_, signature);
+	}
+
+	// unknown
+
+	if (fn == unknown_foreign) {
+		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", signature, module, class)
+	}
+
+	return fn;
 }
 
-int main(char* argv[], int argc) {
+static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* module, char const* class) {
+	WrenForeignClassMethods meth = { NULL };
+
+	if (!strcmp(class, "CC")) {
+		meth.allocate = cc_new;
+		meth.finalize = cc_del;
+	}
+
+	else {
+		LOG_WARN("Unknown foreign class '%s' in module '%s'", class, module)
+	}
+
+	return meth;
+}
+
+int main(int argc, char* argv[]) {
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
 	// read build configuration file
 	// TODO in the future, it'd be nice if this could detect various different scenarios and adapt intelligently, such as not finding a 'build.wren' file but instead finding a 'Makefile'
-	
+
 	FILE* fp = fopen("build.wren", "r");
 
 	if (!fp) {
@@ -111,12 +75,16 @@ int main(char* argv[], int argc) {
 	if (fread(config, 1, bytes, fp))
 		;
 
+	config[bytes - 1] = 0;
+
 	WrenConfiguration wren_config;
 	wrenInitConfiguration(&wren_config);
 
 	wren_config.writeFn = &wren_write_fn;
 	wren_config.errorFn = &wren_error_fn;
-	wren_config.bindForeignMethodFn = &wren_bind_foreign_method_fn;
+
+	wren_config.bindForeignMethodFn = &wren_bind_foreign_method;
+	wren_config.bindForeignClassFn  = &wren_bind_foreign_class;
 
 	WrenVM* vm = wrenNewVM(&wren_config);
 
