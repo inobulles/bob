@@ -52,6 +52,11 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* m
 		meth.finalize = cc_del;
 	}
 
+	else if (!strcmp(class, "Linker")) {
+		meth.allocate = linker_new;
+		meth.finalize = linker_del;
+	}
+
 	else {
 		LOG_WARN("Unknown foreign class '%s' in module '%s'", class, module)
 	}

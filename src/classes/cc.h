@@ -7,6 +7,13 @@ typedef struct {
 	char* std;
 } cc_t;
 
+// helpers
+
+static void cc_init(cc_t* cc) {
+	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and CC.debug should default to that obviously
+	cc->std = strdup("c99");
+}
+
 // constructor/destructor
 
 static void cc_new(WrenVM* vm) {
@@ -15,8 +22,7 @@ static void cc_new(WrenVM* vm) {
 	cc_t* cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
 	bzero(cc, sizeof *cc);
 
-	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and CC.debug should default to that obviously
-	cc->std = strdup("c99");
+	cc_init(cc);
 }
 
 static void cc_del(void* _cc) {
