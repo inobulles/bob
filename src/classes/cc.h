@@ -40,8 +40,6 @@ static void cc_new(WrenVM* vm) {
 	CHECK_ARGC("CC.new", 0, 0)
 
 	cc_t* cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
-	bzero(cc, sizeof *cc);
-
 	cc_init(cc);
 }
 

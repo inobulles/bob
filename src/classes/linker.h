@@ -17,8 +17,6 @@ static void linker_new(WrenVM* vm) {
 	CHECK_ARGC("Linker.new", 0, 1)
 
 	linker_t* const linker = wrenSetSlotNewForeign(vm, 0, 0, sizeof *linker);
-	bzero(linker, sizeof *linker); // XXX does 'wrenSetSlotNewForeign' automatically zero things out (guaranteed)?
-
 	linker->cc = calloc(1, sizeof *linker->cc);
 
 	if (argc == 1) {
