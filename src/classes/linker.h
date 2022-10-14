@@ -8,6 +8,7 @@
 
 typedef struct {
 	cc_t* cc;
+	char* path;
 } linker_t;
 
 // constructor/desctructor
@@ -28,10 +29,16 @@ static void linker_new(WrenVM* vm) {
 	else {
 		cc_init(linker->cc);
 	}
+
+	linker->path = strdup(linker->cc->path);
 }
 
 static void linker_del(void* _linker) {
-	__attribute__((unused)) linker_t* const linker = _linker;
+	linker_t* const linker = _linker;
+
+	if (linker->path) {
+		free(linker->path);
+	}
 }
 
 // methods
@@ -50,8 +57,7 @@ void linker_link(WrenVM* vm) {
 	size_t exec_args_len = 1 + path_list_len + 4 + 1 /* NULL sentinel */;
 	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
 
-	char const* const cc_path = "/usr/bin/cc"; // XXX this ought to be set in the CC class (doesn't have to be statically, maybe we want to use multiple different compilers in a single projects)
-	exec_args[0] = strdup(cc_path);
+	exec_args[0] = strdup(linker->path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
@@ -124,9 +130,40 @@ void linker_link(WrenVM* vm) {
 	free(exec_args);
 }
 
+// getters
+
+static void linker_get_path(WrenVM* vm) {
+	CHECK_ARGC("Linker.path", 0, 0)
+
+	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotString(vm, 0, linker->path);
+}
+
+// setters
+
+static void linker_set_path(WrenVM* vm) {
+	CHECK_ARGC("Linker.path=", 1, 1)
+
+	linker_t* linker = wrenGetSlotForeign(vm, 0);
+
+	if (linker->path) {
+		free(linker->path);
+	}
+
+	linker->path = strdup(wrenGetSlotString(vm, 1));
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signature) {
+	// getters
+
+	BIND_FOREIGN_METHOD(false, "path()", linker_get_path)
+
+	// setters
+
+	BIND_FOREIGN_METHOD(false, "path=(_)", linker_set_path)
+
 	// methods
 	
 	BIND_FOREIGN_METHOD(false, "link(_,_)", linker_link)

@@ -30,6 +30,16 @@ foreign class Linker {
 	construct new() {}
 	construct new(cc) {}
 
+	// getters
+
+	foreign path()
+
+	// setters
+
+	foreign path=(x)
+
+	// methods
+
 	foreign link(path_list, out)
 }
 
@@ -55,7 +65,7 @@ src.each { |path| cc.compile(path) }
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, "bin/bob")
+linker.link(src.toList, "bin/bobby")
 
 // packaging setup
 // TODO how do I know where artifacts end up?
