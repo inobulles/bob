@@ -2,12 +2,18 @@
 
 #include "../util.h"
 
+#include <errno.h>
+#include <unistd.h>
+
 typedef struct {
 	bool debug;
 	char* std;
 
 	char** opts;
 	size_t opts_len;
+
+	pid_t* compilation_processes;
+	size_t compilation_processes_len;
 } cc_t;
 
 // helpers
@@ -18,6 +24,9 @@ static void cc_init(cc_t* cc) {
 
 	cc->opts = NULL;
 	cc->opts_len = 0;
+
+	cc->compilation_processes = NULL;
+	cc->compilation_processes_len = 0;
 }
 
 static inline void cc_internal_add_opt(cc_t* const cc, char const* const opt) {
@@ -44,7 +53,13 @@ static void cc_del(void* _cc) {
 	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
-		free(cc->opts[i]);
+		char* const opt = cc->opts[i];
+
+		if (!opt) {
+			continue;
+		}
+
+		free(opt);
 	}
 
 	if (cc->opts) {
@@ -120,14 +135,46 @@ static void cc_compile(WrenVM* vm) {
 	//      what happens if options change in the meantime though?
 	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
 
-	char* cmd;
+	// construct exec args
 
-	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
-		;
+	size_t exec_args_len = 6 + cc->opts_len + 1 /* NULL sentinel */;
+	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
 
-	system(cmd); // TODO don't just 'system' lol - fork, exec, and wait for process... or not, lets rather wait like right before linking
+	char* const cc_path = "/usr/bin/cc"; // XXX same comment as in 'Linker'
+	exec_args[0] = cc_path;
 
-	free(cmd);
+	exec_args[1] = cc->debug ? "-g" : "";
+
+	exec_args[2] = "-c";
+	exec_args[3] = path;
+
+	exec_args[4] = "-o";
+	exec_args[5] = obj_path;
+
+	// copy options into exec args
+
+	for (size_t i = 0; i < cc->opts_len; i++) {
+		exec_args[6 + i] = cc->opts[i];
+	}
+
+	// finally, actually compile
+
+	pid_t pid = fork();
+
+	if (!pid) {
+		if (execv(exec_args[0], exec_args) < 0) {
+			LOG_FATAL("execve(\"%s\"): %s", exec_args[0], strerror(errno))
+		}
+
+		_exit(EXIT_FAILURE);
+	}
+
+	// TODO add to list of pids
+
+	// clean up
+	// we don't need to free the contents of 'exec_args'!
+
+	free(exec_args);
 	free(obj_path);
 	free(path);
 }
