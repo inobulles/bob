@@ -50,7 +50,7 @@ src.each { |path| cc.compile(path) }
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, "bin/bob")
+linker.link(src.toList, "bin/bobby")
 
 // packaging setup
 // TODO how do I know where artifacts end up?

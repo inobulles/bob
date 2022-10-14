@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/wait.h>
+
 // useful macros
 
 #define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
@@ -45,4 +47,21 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 	}
 
 	return hash;
+}
+
+// process manipulation functions
+
+static int wait_for_process(pid_t pid) {
+	int wstatus = 0;
+	while (waitpid(pid, &wstatus, 0) > 0);
+
+	if (WIFSIGNALED(wstatus)) {
+		return -1;
+	}
+
+	if (WIFEXITED(wstatus)) {
+		return WEXITSTATUS(wstatus);
+	}
+
+	return 0;
 }

@@ -93,7 +93,7 @@ static void cc_compile(WrenVM* vm) {
 
 	char* cmd;
 
-	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
+	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -Isrc/wren/include -DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0 -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
 		;
 
 	system(cmd); // TODO don't just 'system' lol - fork, exec, and wait for process... or not, lets rather wait like right before linking
