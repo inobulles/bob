@@ -6,12 +6,10 @@ foreign class CC {
 	// getters
 
 	foreign debug()
-	foreign std()
 
 	// setters
 
 	foreign debug=(x)
-	foreign std=(x)
 
 	// methods
 

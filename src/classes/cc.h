@@ -7,7 +7,6 @@
 
 typedef struct {
 	bool debug;
-	char* std;
 
 	char** opts;
 	size_t opts_len;
@@ -20,7 +19,6 @@ typedef struct {
 
 static void cc_init(cc_t* cc) {
 	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and CC.debug should default to that obviously
-	cc->std = strdup("c99");
 
 	cc->opts = NULL;
 	cc->opts_len = 0;
@@ -48,10 +46,6 @@ static void cc_new(WrenVM* vm) {
 static void cc_del(void* _cc) {
 	cc_t* cc = _cc;
 
-	if (cc->std) {
-		free(cc->std);
-	}
-
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		char* const opt = cc->opts[i];
 
@@ -76,13 +70,6 @@ static void cc_get_debug(WrenVM* vm) {
 	wrenSetSlotBool(vm, 0, cc->debug);
 }
 
-static void cc_get_std(WrenVM* vm) {
-	CHECK_ARGC("CC.std", 0, 0)
-
-	cc_t* cc = wrenGetSlotForeign(vm, 0);
-	wrenSetSlotString(vm, 0, cc->std);
-}
-
 // setters
 
 static void cc_set_debug(WrenVM* vm) {
@@ -90,13 +77,6 @@ static void cc_set_debug(WrenVM* vm) {
 
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 	cc->debug = wrenGetSlotBool(vm, 1);
-}
-
-static void cc_set_std(WrenVM* vm) {
-	CHECK_ARGC("CC.std=", 1, 1)
-
-	cc_t* cc = wrenGetSlotForeign(vm, 0);
-	cc->std = strdup(wrenGetSlotString(vm, 1));
 }
 
 // methods
@@ -185,12 +165,10 @@ static WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* sign
 	// getters
 
 	BIND_FOREIGN_METHOD(false, "debug()", cc_get_debug)
-	BIND_FOREIGN_METHOD(false, "std()", cc_get_std)
 
 	// setters
 
 	BIND_FOREIGN_METHOD(false, "debug=(_)", cc_set_debug)
-	BIND_FOREIGN_METHOD(false, "std=(_)", cc_set_std)
 
 	// methods
 
