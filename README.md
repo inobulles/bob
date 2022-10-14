@@ -11,3 +11,8 @@ Bob the builder (yes I know, I currently already have a project called this).
 - Centralised system for building, testing, deploying?
 - Easy method for building out a project skeleton to get things quickly up and running (serves the same purpose then as `aqua-manager` did)
 - ZPK or FreeBSD PKG packaging handled
+
+TODO
+
+- wren is okay with `wrenGetListCount` on a `*Sequence`, which happens because `IS_LIST` on a sequence value returns true (it shouldn't right? because that breaks things when doing `AS_LIST` on it to get a `ValueBuffer` afterwards...)
+- speaking of which, it'd be nice to have a little documentation on *getting* element counts and elements from lists in C, rather than just setting

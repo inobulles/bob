@@ -29,7 +29,7 @@ foreign class Linker {
 	construct new() {}
 	construct new(cc) {}
 
-	foreign link(pathList, out)
+	foreign link(path_list, out)
 }
 
 class Package {
@@ -43,16 +43,14 @@ class Package {
 // C compilation setup
 
 var cc = CC.new()
-var src = File.list("src")
+var src = File.list("src").where { |path| path.endsWith(".c") }
 
-src
-	.where { |path| path.endsWith(".c") }
-	.each  { |path| cc.compile(path) }
+src.each { |path| cc.compile(path) }
 
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src, "bob")
+linker.link(src.toList, "bin/bob")
 
 // packaging setup
 // TODO how do I know where artifacts end up?

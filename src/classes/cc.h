@@ -72,14 +72,14 @@ static void cc_compile(WrenVM* vm) {
 
 	cc_t* cc = wrenGetSlotForeign(vm, 0);
 
-	char const* _path = wrenGetSlotString(vm, 1);
-	char* path = realpath(_path, NULL);
+	char const* const _path = wrenGetSlotString(vm, 1);
+	char* const path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
 	}
 
-	uint64_t hash = hash_str(path);
+	uint64_t const hash = hash_str(path);
 
 	char* obj_path;
 
@@ -96,7 +96,7 @@ static void cc_compile(WrenVM* vm) {
 	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
 		;
 
-	system(cmd);
+	system(cmd); // TODO don't just 'system' lol - fork, exec, and wait for process... or not, lets rather wait like right before linking
 
 	free(cmd);
 	free(obj_path);
