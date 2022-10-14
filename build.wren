@@ -6,10 +6,12 @@ foreign class CC {
 	// getters
 
 	foreign debug()
+	foreign path()
 
 	// setters
 
 	foreign debug=(x)
+	foreign path=(x)
 
 	// methods
 
