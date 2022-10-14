@@ -64,6 +64,7 @@ void linker_link(WrenVM* vm) {
 		// TODO maybe we should check if we actually attempted generating this source file in the first place?
 		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
 		//      another solution would be to initially stage in an empty directory, and if we want to reuse resources, we explicitly copy from a temporary backup of the old directory (in '/tmp/', whatever)
+		//      but that would mean bringing in libcopyfile as a dependency and meeeeeeh
 
 		char* const abs_path = realpath(src_path, NULL);
 		uint64_t const hash = hash_str(abs_path);
@@ -91,12 +92,6 @@ void linker_link(WrenVM* vm) {
 	for (size_t i = 0; i < cc->compilation_processes_len; i++) {
 		pid_t pid = cc->compilation_processes[i];
 		wait_for_process(pid);
-	}
-
-	// print out all exec args verbosely
-
-	for (size_t i = 0; i < exec_args_len - 1; i++) {
-		LOG_VERBOSE("Linker argument: %s", exec_args[i])
 	}
 
 	// finally, execute linker

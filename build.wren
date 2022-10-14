@@ -20,9 +20,7 @@ foreign class CC {
 }
 
 class File {
-	foreign static list(path, depth) // TODO does this recursively, should there be an easy way to filter out entries we don't like through Wren rather than through options? e.g. by having a special 'Path' object which contains extra information about the path such as its depth and whatnot? Or maybe letting the user split the path string how they want through Wren is better?
-	// foreign static list(path, depth) // TODO perhaps in the case of depth specifically we'd like to be able to specify it straight away, since otherwise we may be wasting a lot of resources for nothing?
-
+	foreign static list(path, depth)
 	static list(path) { list(path, 0) }
 }
 
@@ -43,14 +41,6 @@ foreign class Linker {
 	foreign link(path_list, out)
 }
 
-class Package {
-	construct new(name) {
-		name = name
-	}
-
-	foreign package()
-}
-
 // C compilation setup
 
 var cc = CC.new()
@@ -66,14 +56,3 @@ src.each { |path| cc.compile(path) }
 
 var linker = Linker.new(cc)
 linker.link(src.toList, "bin/bobby")
-
-// packaging setup
-// TODO how do I know where artifacts end up?
-
-var package = Package.new("bob")
-
-package.descr = "Bob the builder"
-package.vers = "1.0"
-package.www = "https://github.com/inobulles/bob"
-
-package.package()
