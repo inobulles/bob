@@ -14,6 +14,8 @@
 
 #include "util.h"
 
+#include "base/base.h"
+
 #include "classes/cc.h"
 #include "classes/file.h"
 #include "classes/linker.h"
@@ -66,8 +68,31 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* m
 
 int main(int argc, char* argv[]) {
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
-	// read build configuration file
 	// TODO in the future, it'd be nice if this could detect various different scenarios and adapt intelligently, such as not finding a 'build.wren' file but instead finding a 'Makefile'
+
+	// setup wren virtual machine
+
+	WrenConfiguration config;
+	wrenInitConfiguration(&config);
+
+	config.writeFn = &wren_write_fn;
+	config.errorFn = &wren_error_fn;
+
+	config.bindForeignMethodFn = &wren_bind_foreign_method;
+	config.bindForeignClassFn  = &wren_bind_foreign_class;
+
+	WrenVM* vm = wrenNewVM(&config);
+
+	// read build configuration base file
+
+	char const* const module = "main";
+	WrenInterpretResult result = wrenInterpret(vm, module, base_src);
+
+	if (result == WREN_RESULT_SUCCESS) {
+		LOG_SUCCESS("Build configuration base ran successfully")
+	}
+
+	// read build configuration file
 
 	FILE* fp = fopen("build.wren", "r");
 
@@ -80,27 +105,14 @@ int main(int argc, char* argv[]) {
 	size_t bytes = ftell(fp);
 	rewind(fp);
 
-	char* config = malloc(bytes);
+	char* config_src = malloc(bytes);
 
-	if (fread(config, 1, bytes, fp))
+	if (fread(config_src, 1, bytes, fp))
 		;
 
-	config[bytes - 1] = 0;
+	config_src[bytes - 1] = 0;
 
-	WrenConfiguration wren_config;
-	wrenInitConfiguration(&wren_config);
-
-	wren_config.writeFn = &wren_write_fn;
-	wren_config.errorFn = &wren_error_fn;
-
-	wren_config.bindForeignMethodFn = &wren_bind_foreign_method;
-	wren_config.bindForeignClassFn  = &wren_bind_foreign_class;
-
-	WrenVM* vm = wrenNewVM(&wren_config);
-
-	char const* module = "main";
-
-	WrenInterpretResult result = wrenInterpret(vm, module, config);
+	result = wrenInterpret(vm, module, config_src);
 
 	if (result == WREN_RESULT_SUCCESS) {
 		LOG_SUCCESS("Build configuration ran successfully")
@@ -110,7 +122,7 @@ int main(int argc, char* argv[]) {
 
 	wrenFreeVM(vm);
 
-	free(config);
+	free(config_src);
 	fclose(fp);
 
 	return EXIT_SUCCESS;
