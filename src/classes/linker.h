@@ -62,6 +62,10 @@ void linker_link(WrenVM* vm) {
 		wrenGetListElement(vm, 1, i, 3);
 		char const* const src_path = wrenGetSlotString(vm, 3);
 
+		// TODO maybe we should check if we actually attempted generating this source file in the first place?
+		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
+		//      another solution would be to initially stage in an empty directory, and if we want to reuse resources, we explicitly copy from a temporary backup of the old directory (in '/tmp/', whatever)
+
 		char* const abs_path = realpath(src_path, NULL);
 		uint64_t const hash = hash_str(abs_path);
 		free(abs_path);

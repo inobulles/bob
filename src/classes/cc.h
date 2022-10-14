@@ -5,6 +5,9 @@
 typedef struct {
 	bool debug;
 	char* std;
+
+	char** opts;
+	size_t opts_len;
 } cc_t;
 
 // helpers
@@ -12,6 +15,14 @@ typedef struct {
 static void cc_init(cc_t* cc) {
 	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and CC.debug should default to that obviously
 	cc->std = strdup("c99");
+
+	cc->opts = NULL;
+	cc->opts_len = 0;
+}
+
+static inline void cc_internal_add_opt(cc_t* const cc, char const* const opt) {
+	cc->opts = realloc(cc->opts, ++cc->opts_len * sizeof *cc->opts);
+	cc->opts[cc->opts_len - 1] = strdup(opt);
 }
 
 // constructor/destructor
@@ -30,6 +41,14 @@ static void cc_del(void* _cc) {
 
 	if (cc->std) {
 		free(cc->std);
+	}
+
+	for (size_t i = 0; i < cc->opts_len; i++) {
+		free(cc->opts[i]);
+	}
+
+	if (cc->opts) {
+		free(cc->opts);
 	}
 }
 
@@ -67,6 +86,15 @@ static void cc_set_std(WrenVM* vm) {
 
 // methods
 
+static void cc_add_opt(WrenVM* vm) {
+	CHECK_ARGC("CC.add_opt", 1, 1)
+
+	cc_t* const cc = wrenGetSlotForeign(vm, 0);
+	char const* const opt = wrenGetSlotString(vm, 1);
+
+	cc_internal_add_opt(cc, opt);
+}
+
 static void cc_compile(WrenVM* vm) {
 	CHECK_ARGC("CC.compile", 1, 1)
 
@@ -90,10 +118,11 @@ static void cc_compile(WrenVM* vm) {
 
 	// TODO break here if object is more recent than source
 	//      what happens if options change in the meantime though?
+	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
 
 	char* cmd;
 
-	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -Isrc/wren/include -DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0 -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
+	if (asprintf(&cmd, "cc %s -std=%s -I/usr/local/include -c %s -o %s", cc->debug ? "-g" : "", cc->std, path, obj_path))
 		;
 
 	system(cmd); // TODO don't just 'system' lol - fork, exec, and wait for process... or not, lets rather wait like right before linking
@@ -118,6 +147,7 @@ static WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* sign
 
 	// methods
 
+	BIND_FOREIGN_METHOD(false, "add_opt(_)", cc_add_opt)
 	BIND_FOREIGN_METHOD(false, "compile(_)", cc_compile)
 
 	// unknown

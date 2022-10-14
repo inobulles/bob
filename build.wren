@@ -15,6 +15,7 @@ foreign class CC {
 
 	// methods
 
+	foreign add_opt(opt)
 	foreign compile(path)
 }
 
@@ -43,14 +44,18 @@ class Package {
 // C compilation setup
 
 var cc = CC.new()
-var src = File.list("src").where { |path| path.endsWith(".c") }
 
+cc.add_opt("-Isrc/wren/include")
+cc.add_opt("-DWREN_OPT_META=0")
+cc.add_opt("-DWREN_OPT_RANDOM=0")
+
+var src = File.list("src").where { |path| path.endsWith(".c") }
 src.each { |path| cc.compile(path) }
 
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, "bin/bobby")
+linker.link(src.toList, "bin/bob")
 
 // packaging setup
 // TODO how do I know where artifacts end up?
