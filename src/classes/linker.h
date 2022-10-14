@@ -15,13 +15,13 @@ typedef struct {
 static void linker_new(WrenVM* vm) {
 	CHECK_ARGC("Linker.new", 0, 1)
 
-	linker_t* linker = wrenSetSlotNewForeign(vm, 0, 0, sizeof *linker);
+	linker_t* const linker = wrenSetSlotNewForeign(vm, 0, 0, sizeof *linker);
 	bzero(linker, sizeof *linker); // XXX does 'wrenSetSlotNewForeign' automatically zero things out (guaranteed)?
 
 	linker->cc = calloc(1, sizeof *linker->cc);
 
-	if (argc == 2) {
-		void* const _cc = wrenGetSlotForeign(vm, 0);
+	if (argc == 1) {
+		void* const _cc = wrenGetSlotForeign(vm, 1);
 		memcpy(linker->cc, _cc, sizeof *linker->cc);
 	}
 
@@ -31,12 +31,7 @@ static void linker_new(WrenVM* vm) {
 }
 
 static void linker_del(void* _linker) {
-	linker_t* linker = _linker;
-
-	if (linker->cc) {
-		cc_del(linker->cc);
-		linker->cc = NULL;
-	}
+	__attribute__((unused)) linker_t* const linker = _linker;
 }
 
 // methods
@@ -84,6 +79,15 @@ void linker_link(WrenVM* vm) {
 	exec_args[1 + path_list_len + 1] = strdup("-lumber");
 	exec_args[1 + path_list_len + 2] = strdup("-o");
 	exec_args[1 + path_list_len + 3] = strdup(out);
+
+	// wait for all compilation processes to finish
+
+	cc_t* cc = linker->cc;
+
+	for (size_t i = 0; i < cc->compilation_processes_len; i++) {
+		pid_t pid = cc->compilation_processes[i];
+		wait_for_process(pid);
+	}
 
 	// print out all exec args verbosely
 

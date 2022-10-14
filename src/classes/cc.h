@@ -149,7 +149,10 @@ static void cc_compile(WrenVM* vm) {
 		_exit(EXIT_FAILURE);
 	}
 
-	// TODO add to list of pids
+	// add pid to list of processes
+
+	cc->compilation_processes = realloc(cc->compilation_processes, ++cc->compilation_processes_len * sizeof *cc->compilation_processes);
+	cc->compilation_processes[cc->compilation_processes_len - 1] = pid;
 
 	// clean up
 	// we don't need to free the contents of 'exec_args'!
