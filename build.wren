@@ -2,6 +2,7 @@
 
 var cc = CC.new()
 
+cc.add_opt("-std=c99")
 cc.add_opt("-I/usr/local/include")
 cc.add_opt("-Isrc/wren/include")
 cc.add_opt("-DWREN_OPT_META=0")
