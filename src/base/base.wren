@@ -1,5 +1,22 @@
 // this file is stuck at the top of every Wren build configuration file
 
+foreign class Archiver {
+	construct new() {}
+	construct new(cc) {}
+
+	// getters
+
+	foreign path()
+
+	// setters
+
+	foreign path=(path)
+
+	// methods
+
+	foreign archive(path_list, out)
+}
+
 foreign class CC {
 	construct new() {}
 
@@ -34,9 +51,10 @@ foreign class Linker {
 
 	// setters
 
-	foreign path=(x)
+	foreign path=(path)
 
 	// methods
 
 	foreign link(path_list, out)
+	// foreign link_lib(path_list, out)
 }

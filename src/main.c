@@ -10,14 +10,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wren.h>
+#include <unistd.h>
 
 #include <sys/stat.h>
+
+#include <wren.h>
 
 #include "util.h"
 
 #include "base/base.h"
 
+#include "classes/archiver.h"
 #include "classes/cc.h"
 #include "classes/file.h"
 #include "classes/linker.h"
@@ -27,7 +30,11 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* modu
 
 	// classes
 
-	if (!strcmp(class, "CC")) {
+	if (!strcmp(class, "Archiver")) {
+		fn = archiver_bind_foreign_method(static_, signature);
+	}
+
+	else if (!strcmp(class, "CC")) {
 		fn = cc_bind_foreign_method(static_, signature);
 	}
 
@@ -51,7 +58,12 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* modu
 static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* module, char const* class) {
 	WrenForeignClassMethods meth = { NULL };
 
-	if (!strcmp(class, "CC")) {
+	if (!strcmp(class, "Archiver")) {
+		meth.allocate = archiver_new;
+		meth.finalize = archiver_del;
+	}
+
+	else if (!strcmp(class, "CC")) {
 		meth.allocate = cc_new;
 		meth.finalize = cc_del;
 	}
