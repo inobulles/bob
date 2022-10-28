@@ -4,14 +4,12 @@
 
 #include "cc.h"
 
-#include <unistd.h>
-
 typedef struct {
 	cc_t* cc;
 	char* path;
 } linker_t;
 
-// constructor/desctructor
+// constructor/destructor
 
 static void linker_new(WrenVM* vm) {
 	CHECK_ARGC("Linker.new", 0, 1)
@@ -27,6 +25,8 @@ static void linker_new(WrenVM* vm) {
 	else {
 		cc_init(linker->cc);
 	}
+
+	// use the 'cc' command for linking, not 'ld'
 
 	linker->path = strdup(linker->cc->path);
 }
@@ -158,7 +158,7 @@ static WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* 
 	BIND_FOREIGN_METHOD(false, "path=(_)", linker_set_path)
 
 	// methods
-	
+
 	BIND_FOREIGN_METHOD(false, "link(_,_)", linker_link)
 
 	// unknown
