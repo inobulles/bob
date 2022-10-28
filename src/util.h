@@ -13,7 +13,14 @@
 	int argc = wrenGetSlotCount(vm) - 1; \
 	\
 	if (argc < (argc_little) || argc > (argc_big)) { \
-		LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
+		if ((argc_little) == (argc_big)) { \
+			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
+		} \
+		\
+		else { \
+			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected %d)", argc, (argc_little)) \
+		} \
+		\
 		return; \
 	}
 
