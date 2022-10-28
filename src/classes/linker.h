@@ -54,24 +54,30 @@ static void __linker_wait_cc(linker_t* linker) {
 }
 
 void linker_link(WrenVM* vm) {
-	CHECK_ARGC("Linker.link", 2, 2)
+	CHECK_ARGC("Linker.link", 2, 3)
 
 	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	char const* const out = wrenGetSlotString(vm, 2);
 
+	bool shared = false;
+
+	if (argc == 3) {
+		shared = wrenGetSlotBool(vm, 3);
+	}
+
 	// read list elements & construct exec args
 
-	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
+	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
 
-	size_t exec_args_len = 1 + path_list_len + 4 + 1 /* NULL sentinel */;
+	size_t exec_args_len = 1 + path_list_len + 5 + 1 /* NULL sentinel */;
 	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
 
 	exec_args[0] = strdup(linker->path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
-		wrenGetListElement(vm, 1, i, 3);
-		char const* const src_path = wrenGetSlotString(vm, 3);
+		wrenGetListElement(vm, 1, i, 4);
+		char const* const src_path = wrenGetSlotString(vm, 4);
 
 		// TODO maybe we should check if we actually attempted generating this source file in the first place?
 		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
@@ -94,8 +100,9 @@ void linker_link(WrenVM* vm) {
 
 	exec_args[1 + path_list_len + 0] = strdup("-lm");
 	exec_args[1 + path_list_len + 1] = strdup("-lumber");
-	exec_args[1 + path_list_len + 2] = strdup("-o");
-	exec_args[1 + path_list_len + 3] = strdup(out);
+	exec_args[1 + path_list_len + 2] = strdup(shared ? "-shared" : "");
+	exec_args[1 + path_list_len + 3] = strdup("-o");
+	exec_args[1 + path_list_len + 4] = strdup(out);
 
 	// wait for compilation processes and execute linker
 
@@ -231,6 +238,7 @@ static WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* 
 	// methods
 
 	BIND_FOREIGN_METHOD(false, "link(_,_)", linker_link)
+	BIND_FOREIGN_METHOD(false, "link(_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "archive(_,_)", linker_archive)
 
 	// unknown
