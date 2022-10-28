@@ -12,6 +12,8 @@
 #include <string.h>
 #include <wren.h>
 
+#include <sys/stat.h>
+
 #include "util.h"
 
 #include "base/base.h"
@@ -92,12 +94,19 @@ int main(int argc, char* argv[]) {
 		LOG_SUCCESS("Build configuration base ran successfully")
 	}
 
+	// create bin directory if it doesn't yet exist
+
+	if (mkdir("bin", 0700) < 0 && errno != EEXIST) {
+		LOG_FATAL("Couldn't create bin directory: %s", strerror(errno))
+		return EXIT_FAILURE;
+	}
+
 	// read build configuration file
 
 	FILE* fp = fopen("build.wren", "r");
 
 	if (!fp) {
-		LOG_FATAL("Couldn't read 'build.wren'!")
+		LOG_FATAL("Couldn't read 'build.wren'")
 		return EXIT_FAILURE;
 	}
 
