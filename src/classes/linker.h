@@ -6,7 +6,9 @@
 
 typedef struct {
 	cc_t* cc;
+
 	char* path;
+	char* archiver_path;
 } linker_t;
 
 // constructor/destructor
@@ -26,9 +28,8 @@ static void linker_new(WrenVM* vm) {
 		cc_init(linker->cc);
 	}
 
-	// use the 'cc' command for linking, not 'ld'
-
-	linker->path = strdup(linker->cc->path);
+	linker->path = strdup(linker->cc->path); // use the 'cc' command for linking, not 'ld'
+	linker->archiver_path = strdup("/usr/bin/ar");
 }
 
 static void linker_del(void* _linker) {
@@ -130,7 +131,7 @@ void linker_archive(WrenVM* vm) {
 	size_t exec_args_len = 3 + path_list_len + 1 /* NULL sentinel */;
 	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
 
-	exec_args[0] = strdup("/usr/bin/ar");
+	exec_args[0] = strdup(linker->archiver_path);
 	exec_args[1] = strdup("-rcs");
 	exec_args[2] = strdup(out);
 
@@ -181,6 +182,13 @@ static void linker_get_path(WrenVM* vm) {
 	wrenSetSlotString(vm, 0, linker->path);
 }
 
+static void linker_get_archiver_path(WrenVM* vm) {
+	CHECK_ARGC("Linker.archiver_path", 0, 0)
+
+	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotString(vm, 0, linker->archiver_path);
+}
+
 // setters
 
 static void linker_set_path(WrenVM* vm) {
@@ -195,16 +203,30 @@ static void linker_set_path(WrenVM* vm) {
 	linker->path = strdup(wrenGetSlotString(vm, 1));
 }
 
+static void linker_set_archiver_path(WrenVM* vm) {
+	CHECK_ARGC("Linker.archiver_path=", 1, 1)
+
+	linker_t* linker = wrenGetSlotForeign(vm, 0);
+
+	if (linker->archiver_path) {
+		free(linker->archiver_path);
+	}
+
+	linker->archiver_path = strdup(wrenGetSlotString(vm, 1));
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signature) {
 	// getters
 
 	BIND_FOREIGN_METHOD(false, "path()", linker_get_path)
+	BIND_FOREIGN_METHOD(false, "archiver_path()", linker_get_archiver_path)
 
 	// setters
 
 	BIND_FOREIGN_METHOD(false, "path=(_)", linker_set_path)
+	BIND_FOREIGN_METHOD(false, "archiver_path=(_)", linker_set_archiver_path)
 
 	// methods
 
