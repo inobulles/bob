@@ -142,7 +142,9 @@ void linker_archive(WrenVM* vm) {
 
 	exec_args[0] = strdup(linker->archiver_path);
 	exec_args[1] = strdup("-rcs");
-	exec_args[2] = strdup(out);
+
+	if (asprintf(&exec_args[2], "%s/%s", bin_path, out))
+		;
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
