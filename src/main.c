@@ -93,16 +93,16 @@ static void usage(void) {
 #endif
 
 	fprintf(stderr,
-		"usage: %1$s [-hv]\n",
+		"usage: %1$s [-o output path] build\n",
 	progname);
 
 	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[]) {
-	init_name = argv[0];
+	init_name = *argv;
 
-	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
+	// parse options
 
 	char* _bin_path = "bin"; // default output path
 
@@ -111,6 +111,29 @@ int main(int argc, char* argv[]) {
 	while ((c = getopt(argc, argv, "o:")) != -1) {
 		if (c == 'o') {
 			_bin_path = optarg;
+		}
+
+		else {
+			usage();
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	// need to run at least one instruction
+
+	if (!argc) {
+		usage();
+	}
+
+	// parse instructions
+
+	while (argc --> 0) {
+		char const* const instr = *argv;
+
+		if (!strcmp(instr, "build")) {
+			// XXX do_build();
 		}
 
 		else {

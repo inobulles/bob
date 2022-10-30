@@ -144,7 +144,7 @@ static void cc_compile(WrenVM* vm) {
 		exec_args_add(exec_args, cc->opts[i]);
 	}
 
-	// finally, actually compile
+	// finally, actually compile asynchronously
 
 	pid_t pid = execute_async(exec_args);
 	exec_args_del(exec_args);
