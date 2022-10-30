@@ -1,7 +1,5 @@
 #pragma once
 
-#include <sys/wait.h>
-
 // useful macros
 
 #define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
@@ -13,7 +11,14 @@
 	int argc = wrenGetSlotCount(vm) - 1; \
 	\
 	if (argc < (argc_little) || argc > (argc_big)) { \
-		LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
+		if ((argc_little) == (argc_big)) { \
+			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
+		} \
+		\
+		else { \
+			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected %d)", argc, (argc_little)) \
+		} \
+		\
 		return; \
 	}
 
@@ -64,4 +69,18 @@ static int wait_for_process(pid_t pid) {
 	}
 
 	return 0;
+}
+
+static int execute(char** exec_args) {
+	pid_t pid = fork();
+
+	if (!pid) {
+		if (execv(exec_args[0], exec_args) < 0) {
+			LOG_FATAL("execve(\"%s\"): %s", exec_args[0], strerror(errno))
+		}
+
+		_exit(EXIT_FAILURE);
+	}
+
+	return wait_for_process(pid);
 }

@@ -31,12 +31,16 @@ foreign class Linker {
 	// getters
 
 	foreign path()
+	foreign archiver_path()
 
 	// setters
 
-	foreign path=(x)
+	foreign path=(path)
+	foreign archiver_path=(path)
 
 	// methods
 
 	foreign link(path_list, out)
+	foreign link(path_list, out, shared)
+	foreign archive(path_list, out)
 }

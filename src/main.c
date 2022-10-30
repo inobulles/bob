@@ -7,9 +7,15 @@
 #include <umber.h>
 #define UMBER_COMPONENT "bob"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include <sys/stat.h>
+#include <sys/wait.h>
+
 #include <wren.h>
 
 // global options go here so they're accessible by everyone
@@ -148,12 +154,19 @@ int main(int argc, char* argv[]) {
 		LOG_SUCCESS("Build configuration base ran successfully")
 	}
 
+	// create bin directory if it doesn't yet exist
+
+	if (mkdir("bin", 0700) < 0 && errno != EEXIST) {
+		LOG_FATAL("Couldn't create bin directory: %s", strerror(errno))
+		return EXIT_FAILURE;
+	}
+
 	// read build configuration file
 
 	FILE* fp = fopen("build.wren", "r");
 
 	if (!fp) {
-		LOG_FATAL("Couldn't read 'build.wren'!")
+		LOG_FATAL("Couldn't read 'build.wren'")
 		return EXIT_FAILURE;
 	}
 
