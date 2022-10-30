@@ -72,7 +72,7 @@ void linker_link(WrenVM* vm) {
 
 		char* path;
 
-		if (asprintf(&path, "bin/%lx.o", hash))
+		if (asprintf(&path, "%s/%lx.o", out_path, hash))
 			;
 
 		exec_args[1 + i] = path;
