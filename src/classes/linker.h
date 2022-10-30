@@ -71,7 +71,7 @@ void linker_link(WrenVM* vm) {
 	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
 
 	size_t exec_args_len = 1 + path_list_len + 5 + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
+	char** exec_args = calloc(exec_args_len, sizeof *exec_args);
 
 	exec_args[0] = strdup(linker->path);
 
@@ -138,7 +138,7 @@ void linker_archive(WrenVM* vm) {
 	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
 	size_t exec_args_len = 3 + path_list_len + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
+	char** exec_args = calloc(exec_args_len, sizeof *exec_args);
 
 	exec_args[0] = strdup(linker->archiver_path);
 	exec_args[1] = strdup("-rcs");

@@ -141,7 +141,7 @@ static void cc_compile(WrenVM* vm) {
 	// construct exec args
 
 	size_t exec_args_len = 6 + cc->opts_len + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
+	char** exec_args = calloc(exec_args_len, sizeof *exec_args);
 
 	exec_args[0] = cc->path;
 	exec_args[1] = cc->debug ? "-g" : "";
