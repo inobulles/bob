@@ -7,6 +7,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "bob"
 
+#include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,14 +77,6 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* m
 	return meth;
 }
 
-static void __dead2 usage(void) {
-	fprintf(stderr,
-		"usage: %1$s [-hv]\n",
-	getprogname());
-
-	exit(EXIT_FAILURE);
-}
-
 int main(int argc, char* argv[]) {
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
 
@@ -91,13 +84,9 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "o:")) != 1) {
+	while ((c = getopt(argc, argv, "o:")) != -1) {
 		if (c == 'o') {
 			_bin_path = optarg;
-		}
-
-		else {
-			usage();
 		}
 	}
 
@@ -110,10 +99,10 @@ int main(int argc, char* argv[]) {
 		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
 	}
 
-	_bin_path = strdup(_bin_path); // don't care about freeing this
+	bin_path = strdup(_bin_path); // don't care about freeing this
 
-	if (*_bin_path == '/') { // absolute path
-		_bin_path++;
+	if (*bin_path == '/') { // absolute path
+		while (*++bin_path == '/'); // remove prepending slashes
 
 		if (chdir("/") < 0) {
 			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
@@ -122,7 +111,43 @@ int main(int argc, char* argv[]) {
 
 	char* bit;
 
-	while ((bit = strsep(&, "/")))
+	while ((bit = strsep(&bin_path, "/"))) {
+		// ignore if the bit is empty
+
+		if (!bit || !*bit) {
+			continue;
+		}
+
+		// ignore if the bit refers to the current directory
+
+		if (!strcmp(bit, ".")) {
+			continue;
+		}
+
+		// don't attempt to mkdir if we're going backwards, only chdir
+
+		if (!strcmp(bit, "..")) {
+			goto no_mkdir;
+		}
+
+		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
+			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
+		}
+
+	no_mkdir:
+
+		if (chdir(bit) < 0) {
+			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
+		}
+	}
+
+	// move back to current directory once we're sure the output directory exists
+
+	if (chdir(cwd) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
+	}
+
+	// get absolute path of output directory so we don't ever get lost or confused
 
 	bin_path = realpath(_bin_path, NULL);
 
