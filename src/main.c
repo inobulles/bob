@@ -77,7 +77,31 @@ static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* m
 	return meth;
 }
 
+static char const* init_name = "bob";
+
+static void usage(void) {
+#if defined(__FreeBSD__)
+	char const* const progname = getprogname();
+#elif defined(__Linux__)
+	char progname[16];
+
+	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
+		errx("prctl(PR_GET_NAME): %s", strerror(errno));
+	}
+#else
+	char const* const progname = init_name;
+#endif
+
+	fprintf(stderr,
+		"usage: %1$s [-hv]\n",
+	progname);
+
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char* argv[]) {
+	init_name = argv[0];
+
 	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
 
 	char* _bin_path = "bin"; // default output path
@@ -87,6 +111,10 @@ int main(int argc, char* argv[]) {
 	while ((c = getopt(argc, argv, "o:")) != -1) {
 		if (c == 'o') {
 			_bin_path = optarg;
+		}
+
+		else {
+			usage();
 		}
 	}
 
