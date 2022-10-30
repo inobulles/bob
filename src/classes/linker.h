@@ -90,7 +90,7 @@ void linker_link(WrenVM* vm) {
 
 		char* path;
 
-		if (asprintf(&path, "%s/%lx.o", out_path, hash))
+		if (asprintf(&path, "%s/%lx.o", bin_path, hash))
 			;
 
 		exec_args[1 + i] = path;
@@ -102,7 +102,9 @@ void linker_link(WrenVM* vm) {
 	exec_args[1 + path_list_len + 1] = strdup("-lumber");
 	exec_args[1 + path_list_len + 2] = strdup(shared ? "-shared" : "");
 	exec_args[1 + path_list_len + 3] = strdup("-o");
-	exec_args[1 + path_list_len + 4] = strdup(out);
+
+	if (asprintf(&exec_args[1 + path_list_len + 4], "%s/%s", bin_path, out))
+		;
 
 	// wait for compilation processes and execute linker
 
@@ -154,7 +156,7 @@ void linker_archive(WrenVM* vm) {
 
 		char* path;
 
-		if (asprintf(&path, "bin/%lx.o", hash))
+		if (asprintf(&path, "%s/%lx.o", bin_path, hash))
 			;
 
 		exec_args[3 + i] = path;

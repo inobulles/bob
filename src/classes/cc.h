@@ -129,7 +129,7 @@ static void cc_compile(WrenVM* vm) {
 
 	char* obj_path;
 
-	if (asprintf(&obj_path, "%s/%lx.o", out_path, hash))
+	if (asprintf(&obj_path, "%s/%lx.o", bin_path, hash))
 		;
 
 	LOG_INFO("'%s' -> '%s'", _path, obj_path)
