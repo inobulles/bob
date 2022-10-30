@@ -101,8 +101,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	// TODO in the future, it'd be nice if this could detect various different scenarios and adapt intelligently, such as not finding a 'build.wren' file but instead finding a 'Makefile'
-
 	// make sure output directory exists
 	// create it if it doesn't
 
@@ -152,13 +150,6 @@ int main(int argc, char* argv[]) {
 
 	if (result == WREN_RESULT_SUCCESS) {
 		LOG_SUCCESS("Build configuration base ran successfully")
-	}
-
-	// create bin directory if it doesn't yet exist
-
-	if (mkdir("bin", 0700) < 0 && errno != EEXIST) {
-		LOG_FATAL("Couldn't create bin directory: %s", strerror(errno))
-		return EXIT_FAILURE;
 	}
 
 	// read build configuration file
