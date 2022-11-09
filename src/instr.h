@@ -6,7 +6,7 @@
 #include "classes/file.h"
 #include "classes/linker.h"
 
-static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* module, char const* class, bool static_, char const* signature) {
+static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
 	WrenForeignMethodFn fn = unknown_foreign;
 
 	// classes
@@ -32,7 +32,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* modu
 	return fn;
 }
 
-static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* module, char const* class) {
+static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, char const* class) {
 	WrenForeignClassMethods meth = { NULL };
 
 	if (!strcmp(class, "CC")) {
