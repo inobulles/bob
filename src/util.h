@@ -136,7 +136,7 @@ static pid_t execute_async(exec_args_t* _exec_args) {
 
 	if (!pid) {
 		if (execv(exec_args[0], exec_args) < 0) {
-			LOG_FATAL("execve(\"%s\"): %s", exec_args[0], strerror(errno))
+			LOG_FATAL("execv(\"%s\"): %s", exec_args[0], strerror(errno))
 		}
 
 		_exit(EXIT_FAILURE);
