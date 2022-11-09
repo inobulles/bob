@@ -98,6 +98,22 @@ static void exec_args_fmt(exec_args_t* self, char* fmt, ...) {
 	va_end(va);
 }
 
+static void exec_args_print(exec_args_t* self) {
+	printf("exec_args(%p) = {\n", self);
+
+	for (size_t i = 0; i < self->len - 1 /* don't free NULL sentinel */; i++) {
+		char* const arg = self->args[i];
+
+		if (!arg) { // shouldn't happen but let's be defensive...
+			continue;
+		}
+
+		printf("\t\"%s\",\n", arg);
+	}
+
+	printf("}\n");
+}
+
 static void exec_args_del(exec_args_t* self) {
 	for (size_t i = 0; i < self->len - 1 /* don't free NULL sentinel */; i++) {
 		char* const arg = self->args[i];

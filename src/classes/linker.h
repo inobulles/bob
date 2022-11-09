@@ -115,6 +115,9 @@ void linker_link(WrenVM* vm) {
 	// wait for compilation processes and execute linker
 
 	__linker_wait_cc(linker);
+
+	exec_args_print(exec_args);
+
 	execute(exec_args);
 	exec_args_del(exec_args);
 }
@@ -155,6 +158,7 @@ void linker_archive(WrenVM* vm) {
 	// wait for compilation processes and execute archiver
 
 	__linker_wait_cc(linker);
+
 	execute(exec_args);
 	exec_args_del(exec_args);
 }
