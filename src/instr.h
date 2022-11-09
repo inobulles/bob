@@ -15,6 +15,10 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 		fn = cc_bind_foreign_method(static_, signature);
 	}
 
+	else if (!strcmp(class, "Deps")) {
+		fn = deps_bind_foreign_method(static_, signature);
+	}
+
 	else if (!strcmp(class, "File")) {
 		fn = file_bind_foreign_method(static_, signature);
 	}

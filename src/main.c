@@ -26,6 +26,7 @@ static char* bin_path = NULL;
 #include "util.h"
 
 #include "classes/cc.h"
+#include "classes/deps.h"
 #include "classes/file.h"
 #include "classes/linker.h"
 

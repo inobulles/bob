@@ -19,6 +19,10 @@ foreign class CC {
 	foreign compile(path)
 }
 
+class Deps {
+	foreign static git(url)
+}
+
 class File {
 	foreign static list(path, depth)
 	static list(path) { list(path, 0) }
