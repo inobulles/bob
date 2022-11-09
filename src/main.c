@@ -22,6 +22,7 @@
 // global options go here so they're accessible by everyone
 
 static char* bin_path = NULL;
+static char const* init_name = "bob";
 
 #include "util.h"
 
@@ -31,8 +32,6 @@ static char* bin_path = NULL;
 #include "classes/linker.h"
 
 #include "instr.h"
-
-static char const* init_name = "bob";
 
 static void usage(void) {
 #if defined(__FreeBSD__)

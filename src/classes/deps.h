@@ -11,12 +11,15 @@ static void deps_git(WrenVM* vm) {
 	// hash url to know where to clone repository
 
 	uint64_t const hash = hash_str(url);
+	char* repo_path;
+
+	if (!asprintf(&repo_path, "%s/%lx.git", bin_path, hash))
+		;
 
 	// clone remote repository
 
-	exec_args_t* args = exec_args_new(4, "/usr/local/bin/git", "clone", "--depth", "1");
-	exec_args_add(args, (char*) url);
-	exec_args_fmt(args, "%s/%lx.git", bin_path, hash);
+	// exec_args_t* args = exec_args_new(6, "/usr/local/bin/git", "clone", "--depth", "1", url, repo_path);
+	exec_args_t* args = exec_args_new(8, "/usr/local/bin/git", "clone", "--branch", "bob", "--depth", "1", url, repo_path);
 
 	int rv = execute(args);
 	exec_args_del(args);
@@ -26,8 +29,16 @@ static void deps_git(WrenVM* vm) {
 		return;
 	}
 
-	// TODO execute bob in the cloned repository, and pass our bin path to it
-	//      in the future, it'll know exactly what to do in a variety of different cases
+	// execute bob in the cloned repository, and pass our bin path to it
+
+	args = exec_args_new(6, init_name, "-C", repo_path, "-o", bin_path, "build");
+
+	rv = execute(args);
+	exec_args_del(args);
+
+	if (rv) {
+		LOG_ERROR("Failed to build git repository '%s'", url)
+	}
 }
 
 // foreign method binding
