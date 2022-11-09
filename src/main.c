@@ -48,7 +48,7 @@ static void usage(void) {
 #endif
 
 	fprintf(stderr,
-		"usage: %1$s [-o output path] build\n",
+		"usage: %1$s [-C project directory] [-o out directory] build\n",
 	progname);
 
 	exit(EXIT_FAILURE);
@@ -60,11 +60,16 @@ int main(int argc, char* argv[]) {
 	// parse options
 
 	char* _bin_path = "bin"; // default output path
+	char* project_path = NULL;
 
 	int c;
 
-	while ((c = getopt(argc, argv, "o:")) != -1) {
-		if (c == 'o') {
+	while ((c = getopt(argc, argv, "C:o:")) != -1) {
+		if (c == 'C') {
+			project_path = optarg;
+		}
+
+		else if (c == 'o') {
 			_bin_path = optarg;
 		}
 
@@ -80,6 +85,25 @@ int main(int argc, char* argv[]) {
 
 	if (!argc) {
 		usage();
+	}
+
+	// navigate into project directory, if one was specified
+	// in that case, we'll also need to make 'init_name' absolute
+
+	if (project_path) {
+		char const* const abs_init_name = realpath(init_name, NULL);
+
+		if (!abs_init_name) {
+			LOG_WARN("Could not get absolute path from 'init_name' ('%s')", init_name)
+		}
+
+		else {
+			init_name = abs_init_name;
+		}
+
+		if (chdir(project_path) < 0) {
+			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
+		}
 	}
 
 	// make sure output directory exists
