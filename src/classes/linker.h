@@ -70,7 +70,9 @@ void linker_link(WrenVM* vm) {
 	// read list elements & construct exec args
 
 	wrenEnsureSlots(vm, 6); // we just need a single extra slot for each list element
+
 	exec_args_t* exec_args = exec_args_new(1, linker->path);
+	exec_args_fmt(exec_args, "-L%s", bin_path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 5);
