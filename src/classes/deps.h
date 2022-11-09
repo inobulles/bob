@@ -16,6 +16,15 @@ static void deps_git(WrenVM* vm) {
 	if (!asprintf(&repo_path, "%s/%lx.git", bin_path, hash))
 		;
 
+	// check that the repository has not already been cloned
+	// e.g., a previous dependency could've already done that
+
+	struct stat sb;
+
+	if (!stat(repo_path, &sb) && S_ISDIR(sb.st_mode)) {
+		return;
+	}
+
 	// clone remote repository
 
 	// exec_args_t* args = exec_args_new(6, "/usr/local/bin/git", "clone", "--depth", "1", url, repo_path);

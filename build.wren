@@ -1,6 +1,7 @@
 // dependencies
 
 Deps.git("https://github.com/inobulles/umber")
+Deps.git("https://github.com/inobulles/umber")
 
 // C compilation
 
