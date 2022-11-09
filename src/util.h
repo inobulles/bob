@@ -54,6 +54,65 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 	return hash;
 }
 
+// exec args stack object
+
+typedef struct {
+	size_t len; // includes NULL sentinel
+	char** args;
+} exec_args_t;
+
+static exec_args_t* exec_args_new(int len, ...) {
+	va_list va;
+	va_start(va, len);
+
+	exec_args_t* self = calloc(1, sizeof *self);
+
+	self->len = len + 1;
+	self->args = calloc(self->len, sizeof *self->args);
+
+	for (size_t i = 0; i < len; i++) {
+		self->args[i] = strdup(va_arg(va, char*));
+	}
+
+	va_end(va);
+	return self;
+}
+
+static void exec_args_add(exec_args_t* self, char* arg) {
+	self->args = realloc(self->args, ++self->len * sizeof *self->args);
+
+	self->args[self->len - 2] = strdup(arg);
+	self->args[self->len - 1] = NULL;
+}
+
+__attribute__((__format__(__printf__, 2, 3)))
+static void exec_args_fmt(exec_args_t* self, char* fmt, ...) {
+	va_list va;
+	va_start(va, fmt);
+
+	self->args = realloc(self->args, ++self->len * sizeof *self->args);
+
+	vasprintf(&self->args[self->len - 2], fmt, va);
+	self->args[self->len - 1] = NULL;
+
+	va_end(va);
+}
+
+static void exec_args_del(exec_args_t* self) {
+	for (size_t i = 0; i < self->len - 1 /* don't free NULL sentinel */; i++) {
+		char* const arg = self->args[i];
+
+		if (!arg) { // shouldn't happen but let's be defensive...
+			continue;
+		}
+
+		free(arg);
+	}
+
+	free(self->args);
+	free(self);
+}
+
 // process manipulation functions
 
 static int wait_for_process(pid_t pid) {
@@ -71,7 +130,8 @@ static int wait_for_process(pid_t pid) {
 	return 0;
 }
 
-static int execute(char** exec_args) {
+static pid_t execute_async(exec_args_t* _exec_args) {
+	char** exec_args = _exec_args->args;
 	pid_t pid = fork();
 
 	if (!pid) {
@@ -82,5 +142,10 @@ static int execute(char** exec_args) {
 		_exit(EXIT_FAILURE);
 	}
 
+	return pid;
+}
+
+static int execute(exec_args_t* _exec_args) {
+	pid_t pid = execute_async(_exec_args);
 	return wait_for_process(pid);
 }

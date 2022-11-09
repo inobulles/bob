@@ -7,6 +7,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "bob"
 
+#include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,125 +19,155 @@
 
 #include <wren.h>
 
-#include "util.h"
+// global options go here so they're accessible by everyone
 
-#include "base/base.h"
+static char* bin_path = NULL;
+
+#include "util.h"
 
 #include "classes/cc.h"
 #include "classes/file.h"
 #include "classes/linker.h"
 
-static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* wm, char const* module, char const* class, bool static_, char const* signature) {
-	WrenForeignMethodFn fn = unknown_foreign;
+#include "instr.h"
 
-	// classes
+static char const* init_name = "bob";
 
-	if (!strcmp(class, "CC")) {
-		fn = cc_bind_foreign_method(static_, signature);
+static void usage(void) {
+#if defined(__FreeBSD__)
+	char const* const progname = getprogname();
+#elif defined(__Linux__)
+	char progname[16];
+
+	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
+		errx("prctl(PR_GET_NAME): %s", strerror(errno));
 	}
+#else
+	char const* const progname = init_name;
+#endif
 
-	else if (!strcmp(class, "File")) {
-		fn = file_bind_foreign_method(static_, signature);
-	}
+	fprintf(stderr,
+		"usage: %1$s [-o output path] build\n",
+	progname);
 
-	else if (!strcmp(class, "Linker")) {
-		fn = linker_bind_foreign_method(static_, signature);
-	}
-
-	// unknown
-
-	if (fn == unknown_foreign) {
-		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", signature, module, class)
-	}
-
-	return fn;
-}
-
-static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* wm, char const* module, char const* class) {
-	WrenForeignClassMethods meth = { NULL };
-
-	if (!strcmp(class, "CC")) {
-		meth.allocate = cc_new;
-		meth.finalize = cc_del;
-	}
-
-	else if (!strcmp(class, "Linker")) {
-		meth.allocate = linker_new;
-		meth.finalize = linker_del;
-	}
-
-	else {
-		LOG_WARN("Unknown foreign class '%s' in module '%s'", class, module)
-	}
-
-	return meth;
+	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[]) {
-	// XXX for now we're just gonna assume 'bob build' is the only thing being run each time
-	// TODO in the future, it'd be nice if this could detect various different scenarios and adapt intelligently, such as not finding a 'build.wren' file but instead finding a 'Makefile'
+	init_name = *argv;
 
-	// setup wren virtual machine
+	// parse options
 
-	WrenConfiguration config;
-	wrenInitConfiguration(&config);
+	char* _bin_path = "bin"; // default output path
 
-	config.writeFn = &wren_write_fn;
-	config.errorFn = &wren_error_fn;
+	int c;
 
-	config.bindForeignMethodFn = &wren_bind_foreign_method;
-	config.bindForeignClassFn  = &wren_bind_foreign_class;
+	while ((c = getopt(argc, argv, "o:")) != -1) {
+		if (c == 'o') {
+			_bin_path = optarg;
+		}
 
-	WrenVM* vm = wrenNewVM(&config);
-
-	// read build configuration base file
-
-	char const* const module = "main";
-	WrenInterpretResult result = wrenInterpret(vm, module, base_src);
-
-	if (result == WREN_RESULT_SUCCESS) {
-		LOG_SUCCESS("Build configuration base ran successfully")
+		else {
+			usage();
+		}
 	}
 
-	// create bin directory if it doesn't yet exist
+	argc -= optind;
+	argv += optind;
 
-	if (mkdir("bin", 0700) < 0 && errno != EEXIST) {
-		LOG_FATAL("Couldn't create bin directory: %s", strerror(errno))
-		return EXIT_FAILURE;
+	// need to run at least one instruction
+
+	if (!argc) {
+		usage();
 	}
 
-	// read build configuration file
+	// make sure output directory exists
+	// create it if it doesn't
 
-	FILE* fp = fopen("build.wren", "r");
+	char* cwd = getcwd(NULL, 0);
 
-	if (!fp) {
-		LOG_FATAL("Couldn't read 'build.wren'")
-		return EXIT_FAILURE;
+	if (!cwd) {
+		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
 	}
 
-	fseek(fp, 0, SEEK_END);
-	size_t bytes = ftell(fp);
-	rewind(fp);
+	bin_path = strdup(_bin_path); // don't care about freeing this
 
-	char* config_src = malloc(bytes);
+	if (*bin_path == '/') { // absolute path
+		while (*++bin_path == '/'); // remove prepending slashes
 
-	if (fread(config_src, 1, bytes, fp))
-		;
-
-	config_src[bytes - 1] = 0;
-
-	result = wrenInterpret(vm, module, config_src);
-
-	if (result == WREN_RESULT_SUCCESS) {
-		LOG_SUCCESS("Build configuration ran successfully")
+		if (chdir("/") < 0) {
+			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
+		}
 	}
 
-	// clean everything up (not super necessary, I'd put a little more effort in error handling if it was :P)
+	char* bit;
 
-	wrenFreeVM(vm);
+	while ((bit = strsep(&bin_path, "/"))) {
+		// ignore if the bit is empty
 
-	free(config_src);
-	fclose(fp);
+		if (!bit || !*bit) {
+			continue;
+		}
+
+		// ignore if the bit refers to the current directory
+
+		if (!strcmp(bit, ".")) {
+			continue;
+		}
+
+		// don't attempt to mkdir if we're going backwards, only chdir
+
+		if (!strcmp(bit, "..")) {
+			goto no_mkdir;
+		}
+
+		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
+			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
+		}
+
+	no_mkdir:
+
+		if (chdir(bit) < 0) {
+			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
+		}
+	}
+
+	// move back to current directory once we're sure the output directory exists
+
+	if (chdir(cwd) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
+	}
+
+	// get absolute path of output directory so we don't ever get lost or confused
+
+	bin_path = realpath(_bin_path, NULL);
+
+	if (!bin_path) {
+		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", _bin_path, strerror(errno));
+	}
+
+	// parse instructions
+
+	while (argc --> 0) {
+		char const* const instr = *argv;
+		int rv = EXIT_FAILURE; // I'm a pessimist
+
+		if (!strcmp(instr, "build")) {
+			rv = do_build();
+		}
+
+		else {
+			usage();
+		}
+
+		// stop here if there was an error in the execution of an instruction
+
+		if (rv != EXIT_SUCCESS) {
+			return rv;
+		}
+	}
+
+	// if all went well, we may rest peacefully
 
 	return EXIT_SUCCESS;
 }

@@ -125,50 +125,29 @@ static void cc_compile(WrenVM* vm) {
 		LOG_WARN("'%s' does not exist", path)
 	}
 
-	uint64_t const hash = hash_str(path);
-
-	char* obj_path;
-
-	if (asprintf(&obj_path, "bin/%lx.o", hash))
-		;
-
-	LOG_INFO("'%s' -> '%s'", _path, obj_path)
-
 	// TODO break here if object is more recent than source
 	//      what happens if options change in the meantime though?
 	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
 
 	// construct exec args
 
-	size_t exec_args_len = 6 + cc->opts_len + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
+	exec_args_t* exec_args = exec_args_new(4, cc->path, "-c", path, "-o");
 
-	exec_args[0] = cc->path;
-	exec_args[1] = cc->debug ? "-g" : "";
+	uint64_t const hash = hash_str(path);
+	exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
 
-	exec_args[2] = "-c";
-	exec_args[3] = path;
-
-	exec_args[4] = "-o";
-	exec_args[5] = obj_path;
-
-	// copy options into exec args
+	if (cc->debug) {
+		exec_args_add(exec_args, "-g");
+	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
-		exec_args[6 + i] = cc->opts[i];
+		exec_args_add(exec_args, cc->opts[i]);
 	}
 
-	// finally, actually compile
+	// finally, actually compile asynchronously
 
-	pid_t pid = fork();
-
-	if (!pid) {
-		if (execv(exec_args[0], exec_args) < 0) {
-			LOG_FATAL("execve(\"%s\"): %s", exec_args[0], strerror(errno))
-		}
-
-		_exit(EXIT_FAILURE);
-	}
+	pid_t pid = execute_async(exec_args);
+	exec_args_del(exec_args);
 
 	// add pid to list of processes
 
@@ -176,10 +155,7 @@ static void cc_compile(WrenVM* vm) {
 	cc->compilation_processes[cc->compilation_processes_len - 1] = pid;
 
 	// clean up
-	// we don't need to free the contents of 'exec_args'!
 
-	free(exec_args);
-	free(obj_path);
 	free(path);
 }
 

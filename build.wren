@@ -17,4 +17,4 @@ src
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, "bin/bobby")
+linker.link(src.toList, "bobby")

@@ -69,11 +69,7 @@ void linker_link(WrenVM* vm) {
 	// read list elements & construct exec args
 
 	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
-
-	size_t exec_args_len = 1 + path_list_len + 5 + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
-
-	exec_args[0] = strdup(linker->path);
+	exec_args_t* exec_args = exec_args_new(1, linker->path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 4);
@@ -88,40 +84,25 @@ void linker_link(WrenVM* vm) {
 		uint64_t const hash = hash_str(abs_path);
 		free(abs_path);
 
-		char* path;
-
-		if (asprintf(&path, "bin/%lx.o", hash))
-			;
-
-		exec_args[1 + i] = path;
+		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
 	}
 
 	// linker flags which must come after source files
 
-	exec_args[1 + path_list_len + 0] = strdup("-lm");
-	exec_args[1 + path_list_len + 1] = strdup("-lumber");
-	exec_args[1 + path_list_len + 2] = strdup(shared ? "-shared" : "");
-	exec_args[1 + path_list_len + 3] = strdup("-o");
-	exec_args[1 + path_list_len + 4] = strdup(out);
+	if (shared) {
+		exec_args_add(exec_args, "-shared");
+	}
+
+	exec_args_add(exec_args, "-lm");
+	exec_args_add(exec_args, "-lumber");
+	exec_args_add(exec_args, "-o");
+	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
 
 	// wait for compilation processes and execute linker
 
 	__linker_wait_cc(linker);
 	execute(exec_args);
-
-	// clean up
-
-	for (size_t i = 0; i < exec_args_len - 1 /* we obv don't want to free the NULL sentinel */; i++) {
-		char* const arg = exec_args[i];
-
-		if (!arg) { // shouldn't happen but let's be defensive...
-			continue;
-		}
-
-		free(arg);
-	}
-
-	free(exec_args);
+	exec_args_del(exec_args);
 }
 
 void linker_archive(WrenVM* vm) {
@@ -135,12 +116,8 @@ void linker_archive(WrenVM* vm) {
 
 	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
-	size_t exec_args_len = 3 + path_list_len + 1 /* NULL sentinel */;
-	char** exec_args = calloc(1, exec_args_len * sizeof *exec_args);
-
-	exec_args[0] = strdup(linker->archiver_path);
-	exec_args[1] = strdup("-rcs");
-	exec_args[2] = strdup(out);
+	exec_args_t* exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
+	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
@@ -152,32 +129,14 @@ void linker_archive(WrenVM* vm) {
 		uint64_t const hash = hash_str(abs_path);
 		free(abs_path);
 
-		char* path;
-
-		if (asprintf(&path, "bin/%lx.o", hash))
-			;
-
-		exec_args[3 + i] = path;
+		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
 	}
 
 	// wait for compilation processes and execute archiver
 
 	__linker_wait_cc(linker);
 	execute(exec_args);
-
-	// clean up
-
-	for (size_t i = 0; i < exec_args_len - 1 /* we obv don't want to free the NULL sentinel */; i++) {
-		char* const arg = exec_args[i];
-
-		if (!arg) { // shouldn't happen but let's be defensive...
-			continue;
-		}
-
-		free(arg);
-	}
-
-	free(exec_args);
+	exec_args_del(exec_args);
 }
 
 // getters
