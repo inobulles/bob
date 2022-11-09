@@ -44,7 +44,7 @@ foreign class Linker {
 
 	// methods
 
-	foreign link(path_list, out)
-	foreign link(path_list, out, shared)
+	foreign link(path_list, libs, out)
+	foreign link(path_list, libs, out, shared)
 	foreign archive(path_list, out)
 }

@@ -1,7 +1,6 @@
 // dependencies
 
 Deps.git("https://github.com/inobulles/umber")
-Deps.git("https://github.com/inobulles/umber")
 
 // C compilation
 
@@ -22,4 +21,4 @@ src
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, "bobby")
+linker.link(src.toList, ["m", "umber"], "bob")

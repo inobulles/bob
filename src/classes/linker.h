@@ -54,26 +54,27 @@ static void __linker_wait_cc(linker_t* linker) {
 }
 
 void linker_link(WrenVM* vm) {
-	CHECK_ARGC("Linker.link", 2, 3)
+	CHECK_ARGC("Linker.link", 3, 4)
 
 	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	size_t const path_list_len = wrenGetListCount(vm, 1);
-	char const* const out = wrenGetSlotString(vm, 2);
+	size_t const lib_list_len = wrenGetListCount(vm, 2);
+	char const* const out = wrenGetSlotString(vm, 3);
 
 	bool shared = false;
 
-	if (argc == 3) {
-		shared = wrenGetSlotBool(vm, 3);
+	if (argc == 4) {
+		shared = wrenGetSlotBool(vm, 4);
 	}
 
 	// read list elements & construct exec args
 
-	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
+	wrenEnsureSlots(vm, 6); // we just need a single extra slot for each list element
 	exec_args_t* exec_args = exec_args_new(1, linker->path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
-		wrenGetListElement(vm, 1, i, 4);
-		char const* const src_path = wrenGetSlotString(vm, 4);
+		wrenGetListElement(vm, 1, i, 5);
+		char const* const src_path = wrenGetSlotString(vm, 5);
 
 		// TODO maybe we should check if we actually attempted generating this source file in the first place?
 		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
@@ -81,10 +82,25 @@ void linker_link(WrenVM* vm) {
 		//      but that would mean bringing in libcopyfile as a dependency and meeeeeeh
 
 		char* const abs_path = realpath(src_path, NULL);
+
+		if (!abs_path) {
+			LOG_WARN("Could not find '%s', moving on", src_path)
+			continue;
+		}
+
 		uint64_t const hash = hash_str(abs_path);
 		free(abs_path);
 
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
+	}
+
+	// libraries
+
+	for (size_t i = 0; i < lib_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 5);
+		char const* const lib = wrenGetSlotString(vm, 5);
+
+		exec_args_fmt(exec_args, "-l%s", lib);
 	}
 
 	// linker flags which must come after source files
@@ -93,8 +109,6 @@ void linker_link(WrenVM* vm) {
 		exec_args_add(exec_args, "-shared");
 	}
 
-	exec_args_add(exec_args, "-lm");
-	exec_args_add(exec_args, "-lumber");
 	exec_args_add(exec_args, "-o");
 	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
 
@@ -126,6 +140,12 @@ void linker_archive(WrenVM* vm) {
 		// TODO same comment as in 'linker_link'
 
 		char* const abs_path = realpath(src_path, NULL);
+
+		if (!abs_path) {
+			LOG_WARN("Could not find '%s', moving on", src_path)
+			continue;
+		}
+
 		uint64_t const hash = hash_str(abs_path);
 		free(abs_path);
 
@@ -196,8 +216,8 @@ static WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* 
 
 	// methods
 
-	BIND_FOREIGN_METHOD(false, "link(_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "link(_,_,_)", linker_link)
+	BIND_FOREIGN_METHOD(false, "link(_,_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "archive(_,_)", linker_archive)
 
 	// unknown
