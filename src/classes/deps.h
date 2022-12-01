@@ -6,7 +6,10 @@
 
 static void deps_git(WrenVM* vm) {
 	CHECK_ARGC("Deps.git", 1, 1)
-	char const* url = wrenGetSlotString(vm, 1);
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	char const* const url = wrenGetSlotString(vm, 1);
 
 	// hash url to know where to clone repository
 
