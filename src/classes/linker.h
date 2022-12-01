@@ -194,25 +194,31 @@ static void linker_get_archiver_path(WrenVM* vm) {
 static void linker_set_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.path=", 1, 1)
 
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
 	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->path) {
 		free(linker->path);
 	}
 
-	linker->path = strdup(wrenGetSlotString(vm, 1));
+	linker->path = strdup(path);
 }
 
 static void linker_set_archiver_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.archiver_path=", 1, 1)
 
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
 	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->archiver_path) {
 		free(linker->archiver_path);
 	}
 
-	linker->archiver_path = strdup(wrenGetSlotString(vm, 1));
+	linker->archiver_path = strdup(path);
 }
 
 // foreign method binding
