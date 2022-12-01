@@ -55,22 +55,21 @@ static void __linker_wait_cc(linker_t* linker) {
 
 void linker_link(WrenVM* vm) {
 	CHECK_ARGC("Linker.link", 3, 4)
+	bool const has_shared = argc == 4;
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_LIST)
 	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
 	ASSERT_ARG_TYPE(3, WREN_TYPE_STRING)
 
+	if (has_shared) {
+		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL)
+	}
+
 	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	size_t const lib_list_len = wrenGetListCount(vm, 2);
 	char const* const out = wrenGetSlotString(vm, 3);
-
-	bool shared = false;
-
-	if (argc == 4) {
-		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL)
-		shared = wrenGetSlotBool(vm, 4);
-	}
+	bool shared = has_shared ? wrenGetSlotBool(vm, 4) : false;
 
 	// read list elements & construct exec args
 
@@ -81,7 +80,7 @@ void linker_link(WrenVM* vm) {
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 5);
-		char const* const src_path = wrenGetSlotString(vm, 5);
+		char const* const src_path = wrenGetSlotString(vm, 5); // TODO check types
 
 		// TODO maybe we should check if we actually attempted generating this source file in the first place?
 		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
@@ -105,7 +104,7 @@ void linker_link(WrenVM* vm) {
 
 	for (size_t i = 0; i < lib_list_len; i++) {
 		wrenGetListElement(vm, 2, i, 5);
-		char const* const lib = wrenGetSlotString(vm, 5);
+		char const* const lib = wrenGetSlotString(vm, 5); // TODO check types
 
 		exec_args_fmt(exec_args, "-l%s", lib);
 	}
