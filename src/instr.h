@@ -5,6 +5,8 @@
 #include "classes/cc.h"
 #include "classes/file.h"
 #include "classes/linker.h"
+#include "util.h"
+#include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
 	WrenForeignMethodFn fn = unknown_foreign;
@@ -130,11 +132,20 @@ static int wren_call(state_t* state, char const* name) {
 	WrenHandle* handle = wrenGetSlotHandle(state->vm, 0);
 
 	WrenInterpretResult rv = wrenCall(state->vm, handle);
-
-	printf("rv = %d\n", rv);
-
 	wrenReleaseHandle(state->vm, handle);
-	return EXIT_SUCCESS;
+
+	if (rv != WREN_RESULT_SUCCESS) {
+		LOG_WARN("Something went wrong running")
+		return EXIT_FAILURE;
+	}
+
+	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_NUM) {
+		LOG_WARN("Expected number as a return value")
+		return EXIT_FAILURE;
+	}
+
+	double const _rv = wrenGetSlotDouble(state->vm, 0);
+	return _rv;
 }
 
 static void wren_clean_vm(state_t* state) {
@@ -164,6 +175,17 @@ static int do_run(void) {
 
 	if (rv != EXIT_SUCCESS) {
 		goto error;
+	}
+
+	// setup environment for running
+	// ideally this should happen exclusively in a child process, but I think that would be quite complicated to implement
+
+	if (setenv("LD_LIBRARY_PATH", bin_path, true) < 0) {
+		errx(EXIT_FAILURE, "setenv(\"LD_LIBRARY_PATH\", \"%s\"): %s", bin_path, strerror(errno));
+	}
+
+	if (chdir(bin_path) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bin_path, strerror(errno));
 	}
 
 	// call the run function
