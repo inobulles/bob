@@ -8,17 +8,24 @@
 	}
 
 #define CHECK_ARGC(fn_name, argc_little, argc_big) \
+	char const* const __fn_name = (fn_name); /* accessibly by future macros */ \
 	int argc = wrenGetSlotCount(vm) - 1; \
 	\
 	if (argc < (argc_little) || argc > (argc_big)) { \
 		if ((argc_little) == (argc_big)) { \
-			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected between %d & %d)", argc, (argc_little), (argc_big)) \
+			LOG_WARN("'%s' not passed right number of arguments (got %d, expected between %d & %d)", __fn_name, argc, (argc_little), (argc_big)) \
 		} \
 		\
 		else { \
-			LOG_WARN("'" fn_name "' not passed right number of arguments (got %d, expected %d)", argc, (argc_little)) \
+			LOG_WARN("'%s' not passed right number of arguments (got %d, expected %d)", __fn_name, argc, (argc_little)) \
 		} \
 		\
+		return; \
+	}
+
+#define ASSERT_ARG_TYPE(i, type) \
+	if (wrenGetSlotType(vm, (i)) != (type)) { \
+		LOG_WARN("'%s' argument " #i " is of incorrect type", __fn_name) \
 		return; \
 	}
 
