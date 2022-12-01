@@ -68,7 +68,7 @@ void linker_link(WrenVM* vm) {
 	bool shared = false;
 
 	if (argc == 4) {
-		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL);
+		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL)
 		shared = wrenGetSlotBool(vm, 4);
 	}
 
@@ -131,6 +131,9 @@ void linker_link(WrenVM* vm) {
 
 void linker_archive(WrenVM* vm) {
 	CHECK_ARGC("Linker.archive", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_LIST)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
 
 	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	size_t const path_list_len = wrenGetListCount(vm, 1);
