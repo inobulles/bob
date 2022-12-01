@@ -83,12 +83,58 @@ err:
 	fts_close(fts);
 }
 
+static void file_exec(WrenVM* vm) {
+	CHECK_ARGC("File.exec", 1, 2)
+	bool const has_args = argc == 2;
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	if (has_args) {
+		ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
+	}
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	size_t const args_list_len = has_args ? wrenGetListCount(vm, 2) : 0;
+
+	// actually execute file
+
+	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
+	exec_args_t* exec_args = exec_args_new(1, path);
+
+	// add list of arguments to exec_args if we have them
+
+	for (size_t i = 0; has_args && i < args_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 3);
+
+		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+			LOG_WARN("'File.exec' list element %d of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const arg = wrenGetSlotString(vm, 3);
+		exec_args_add(exec_args, arg);
+	}
+
+	// actually execute file
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		LOG_WARN("'File.exec' failed execution with error code %d - here is the exec_args struct:", rv)
+		exec_args_print(exec_args);
+	}
+
+	exec_args_del(exec_args);
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
+	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec);
+	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec);
 
 	// unknown
 

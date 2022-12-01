@@ -26,6 +26,9 @@ class Deps {
 class File {
 	foreign static list(path, depth)
 	static list(path) { list(path, 0) }
+
+	foreign static exec(path)
+	foreign static exec(path, args)
 }
 
 foreign class Linker {
