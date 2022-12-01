@@ -10,9 +10,12 @@
 static void file_list(WrenVM* vm) {
 	CHECK_ARGC("File.list", 2, 2)
 
-	char const* path = wrenGetSlotString(vm, 1);
-	double _depth = wrenGetSlotDouble(vm, 2);
-	size_t depth = _depth;
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_NUM)
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	double const _depth = wrenGetSlotDouble(vm, 2);
+	size_t const depth = _depth;
 
 	// create return list
 
@@ -21,7 +24,7 @@ static void file_list(WrenVM* vm) {
 	// walk through directory
 
 	char* const path_argv[] = { (char*) path, NULL };
-	FTS* fts = fts_open(path_argv, 0, NULL);
+	FTS* const fts = fts_open(path_argv, 0, NULL);
 
 	if (!fts) {
 		// TODO errors like this should stop execution of wren (same thing in 'util.h' macros & 'cc.h')
