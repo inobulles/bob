@@ -80,7 +80,13 @@ void linker_link(WrenVM* vm) {
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 5);
-		char const* const src_path = wrenGetSlotString(vm, 5); // TODO check types
+
+		if (wrenGetSlotType(vm, 5) != WREN_TYPE_STRING) {
+			LOG_WARN("'Linker.link' list element %d of argument 1 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const src_path = wrenGetSlotString(vm, 5);
 
 		// TODO maybe we should check if we actually attempted generating this source file in the first place?
 		//      because currently, this would still link even if we, say, accidentally deleted a source file between builds
@@ -104,8 +110,13 @@ void linker_link(WrenVM* vm) {
 
 	for (size_t i = 0; i < lib_list_len; i++) {
 		wrenGetListElement(vm, 2, i, 5);
-		char const* const lib = wrenGetSlotString(vm, 5); // TODO check types
 
+		if (wrenGetSlotType(vm, 5) != WREN_TYPE_STRING) {
+			LOG_WARN("'Linker.link' list element %d of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const lib = wrenGetSlotString(vm, 5);
 		exec_args_fmt(exec_args, "-l%s", lib);
 	}
 
