@@ -45,7 +45,7 @@ static void linker_del(void* _linker) {
 static void __linker_wait_cc(linker_t* linker) {
 	// wait for all compilation processes to finish
 
-	cc_t* cc = linker->cc;
+	cc_t* const cc = linker->cc;
 
 	for (size_t i = 0; i < cc->compilation_processes_len; i++) {
 		pid_t pid = cc->compilation_processes[i];
@@ -178,14 +178,14 @@ void linker_archive(WrenVM* vm) {
 static void linker_get_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.path", 0, 0)
 
-	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotString(vm, 0, linker->path);
 }
 
 static void linker_get_archiver_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.archiver_path", 0, 0)
 
-	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotString(vm, 0, linker->archiver_path);
 }
 
@@ -196,7 +196,7 @@ static void linker_set_path(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->path) {
@@ -211,7 +211,7 @@ static void linker_set_archiver_path(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	linker_t* linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = wrenGetSlotForeign(vm, 0);
 	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->archiver_path) {
