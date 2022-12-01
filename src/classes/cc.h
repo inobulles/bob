@@ -86,26 +86,35 @@ static void cc_get_path(WrenVM* vm) {
 static void cc_set_debug(WrenVM* vm) {
 	CHECK_ARGC("CC.debug=", 1, 1)
 
+	ASSERT_ARG_TYPE(1, WREN_TYPE_BOOL)
+
 	cc_t* const cc = wrenGetSlotForeign(vm, 0);
-	cc->debug = wrenGetSlotBool(vm, 1);
+	bool const debug = wrenGetSlotBool(vm, 1);
+
+	cc->debug = debug;
 }
 
 static void cc_set_path(WrenVM* vm) {
 	CHECK_ARGC("CC.path=", 1, 1)
 
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
 	cc_t* const cc = wrenGetSlotForeign(vm, 0);
+	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (cc->path) {
 		free(cc->path);
 	}
 
-	cc->path = strdup(wrenGetSlotString(vm, 1));
+	cc->path = strdup(path);
 }
 
 // methods
 
 static void cc_add_opt(WrenVM* vm) {
 	CHECK_ARGC("CC.add_opt", 1, 1)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
 	cc_t* const cc = wrenGetSlotForeign(vm, 0);
 	char const* const opt = wrenGetSlotString(vm, 1);
@@ -116,9 +125,11 @@ static void cc_add_opt(WrenVM* vm) {
 static void cc_compile(WrenVM* vm) {
 	CHECK_ARGC("CC.compile", 1, 1)
 
-	cc_t* const cc = wrenGetSlotForeign(vm, 0);
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
+	cc_t* const cc = wrenGetSlotForeign(vm, 0);
 	char const* const _path = wrenGetSlotString(vm, 1);
+
 	char* const path = realpath(_path, NULL);
 
 	if (!path) {
