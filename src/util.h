@@ -25,7 +25,7 @@
 
 #define ASSERT_ARG_TYPE(i, type) \
 	if (wrenGetSlotType(vm, (i)) != (type)) { \
-		LOG_WARN("'%s' argument " #i " is of incorrect type", __fn_name) \
+		LOG_WARN("'%s' argument " #i " is of incorrect type (expected '" #type "')", __fn_name) \
 		return; \
 	}
 
@@ -85,7 +85,7 @@ static exec_args_t* exec_args_new(int len, ...) {
 	return self;
 }
 
-static void exec_args_add(exec_args_t* self, char* arg) {
+static void exec_args_add(exec_args_t* self, char const* arg) {
 	self->args = realloc(self->args, ++self->len * sizeof *self->args);
 
 	self->args[self->len - 2] = strdup(arg);
