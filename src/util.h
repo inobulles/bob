@@ -143,14 +143,14 @@ static int wait_for_process(pid_t pid) {
 	while (waitpid(pid, &wstatus, 0) > 0);
 
 	if (WIFSIGNALED(wstatus)) {
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	if (WIFEXITED(wstatus)) {
 		return WEXITSTATUS(wstatus);
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static pid_t execute_async(exec_args_t* _exec_args) {
