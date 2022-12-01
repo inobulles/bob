@@ -125,6 +125,7 @@ static void file_exec(WrenVM* vm) {
 	}
 
 	exec_args_del(exec_args);
+	wrenSetSlotDouble(vm, 0, rv);
 }
 
 // foreign method binding
