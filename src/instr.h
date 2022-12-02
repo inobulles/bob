@@ -270,44 +270,41 @@ err:
 	return rv;
 }
 
-static int do_install(void) {
-	state_t state = { 0 };
-	int rv = wren_setup_vm(&state);
-
-	if (rv != EXIT_SUCCESS) {
-		goto err;
-	}
+static int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* keys_len_ref) {
+	int rv = EXIT_SUCCESS;
 
 	// read installation map
 
-	if (!wrenHasVariable(state.vm, "main", "install")) {
+	if (!wrenHasVariable(state->vm, "main", "install")) {
 		LOG_ERROR("No installation map")
 
 		rv = EXIT_FAILURE;
 		goto err;
 	}
 
-	wrenEnsureSlots(state.vm, 4); // first slot for the receiver (ends up being the keys list), second slot for the key, third slot for the value, and last slot as a temporary working slot
-	wrenGetVariable(state.vm, "main", "install", 0);
+	wrenEnsureSlots(state->vm, 1); // first slot for the receiver (starts off as the installation map, ends up being the keys list)
+	wrenGetVariable(state->vm, "main", "install", 0);
 
-	if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_MAP) {
+	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_MAP) {
 		LOG_ERROR("'install' variable is not a map")
 
 		rv = EXIT_FAILURE;
 		goto err;
 	}
 
-	size_t const installation_map_len = wrenGetMapCount(state.vm, 0);
+	size_t const installation_map_len = wrenGetMapCount(state->vm, 0);
 
 	// keep handle to installation map
 
-	WrenHandle* const map_handle = wrenGetSlotHandle(state.vm, 0);
+	if (map_handle_ref) {
+		*map_handle_ref = wrenGetSlotHandle(state->vm, 0);
+	}
 
 	// run the 'keys' method on the map
 
-	WrenHandle* const keys_handle = wrenMakeCallHandle(state.vm, "keys");
-	WrenInterpretResult const keys_result = wrenCall(state.vm, keys_handle); // no need to set receiver - it's already in slot 0
-	wrenReleaseHandle(state.vm, keys_handle);
+	WrenHandle* const keys_handle = wrenMakeCallHandle(state->vm, "keys");
+	WrenInterpretResult const keys_result = wrenCall(state->vm, keys_handle); // no need to set receiver - it's already in slot 0
+	wrenReleaseHandle(state->vm, keys_handle);
 
 	if (keys_result != WREN_RESULT_SUCCESS) {
 		LOG_ERROR("Something went wrong running the 'keys' method on the installation map")
@@ -318,9 +315,9 @@ static int do_install(void) {
 
 	// run the 'toList' method on the 'MapKeySequence' object
 
-	WrenHandle* const to_list_handle = wrenMakeCallHandle(state.vm, "toList");
-	WrenInterpretResult const to_list_result = wrenCall(state.vm, to_list_handle);
-	wrenReleaseHandle(state.vm, to_list_handle);
+	WrenHandle* const to_list_handle = wrenMakeCallHandle(state->vm, "toList");
+	WrenInterpretResult const to_list_result = wrenCall(state->vm, to_list_handle);
+	wrenReleaseHandle(state->vm, to_list_handle);
 
 	if (to_list_result != WREN_RESULT_SUCCESS) {
 		LOG_ERROR("Something went wrong running the 'toList' method on the installation map keys' 'MapKeySequence'")
@@ -331,7 +328,7 @@ static int do_install(void) {
 
 	// small sanity check - is the converted keys list as big as the map?
 
-	size_t const keys_len = wrenGetListCount(state.vm, 0);
+	size_t const keys_len = wrenGetListCount(state->vm, 0);
 
 	if (installation_map_len != keys_len) {
 		LOG_ERROR("Installation map is not the same size as converted keys list (%zu vs %zu)", installation_map_len, keys_len)
@@ -339,6 +336,34 @@ static int do_install(void) {
 		rv = EXIT_FAILURE;
 		goto err;
 	}
+
+	if (keys_len_ref) {
+		*keys_len_ref = keys_len;
+	}
+
+err:
+
+	return rv;
+}
+
+static int do_install(void) {
+	state_t state = { 0 };
+	int rv = wren_setup_vm(&state);
+
+	if (rv != EXIT_SUCCESS) {
+		goto err;
+	}
+
+	WrenHandle* map_handle = NULL;
+	size_t keys_len;
+
+	rv = read_installation_map(&state, &map_handle, &keys_len);
+
+	if (rv != EXIT_SUCCESS) {
+		goto err;
+	}
+
+	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
 
 	// read key/value pairs
 
@@ -413,6 +438,8 @@ static int do_test(void) {
 		goto err;
 	}
 
+	// TODO recursively test? when and when not to?
+
 	// read test list
 
 	if (!wrenHasVariable(state.vm, "main", "tests")) {
@@ -433,6 +460,12 @@ static int do_test(void) {
 	}
 
 	size_t const test_list_len = wrenGetListCount(state.vm, 0);
+
+	// get list of installation map keys
+	// this will tell us which files we need to copy for each testing environment
+	// we don't wanna copy everything, because there might be a lot of shit in the output directory!
+
+	// actually run tests
 
 	size_t tests_len = 0;
 	test_t** tests = NULL;
