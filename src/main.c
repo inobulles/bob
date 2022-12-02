@@ -49,6 +49,7 @@ static void usage(void) {
 	fprintf(stderr,
 		"usage: %1$s [-C project directory] [-o out directory] build\n"
 		"       %1$s [-C project directory] [-o out directory] run\n"
+		"       %1$s [-C project directory] [-o out directory] install\n"
 		"       %1$s [-C project directory] [-o out directory] test\n",
 	progname);
 
@@ -185,6 +186,10 @@ int main(int argc, char* argv[]) {
 		else if (!strcmp(instr, "run")) {
 			// everything stops if we run the 'run' command
 			return do_run(argc, ++argv);
+		}
+
+		else if (!strcmp(instr, "install")) {
+			rv = do_install();
 		}
 
 		else if (!strcmp(instr, "test")) {

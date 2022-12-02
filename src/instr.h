@@ -6,6 +6,7 @@
 #include "classes/file.h"
 #include "classes/linker.h"
 #include "util.h"
+#include "wren/include/wren.h"
 #include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
@@ -158,7 +159,7 @@ static int wren_call(state_t* state, char const* class, char const* signature, i
 	// error checking & return value
 
 	if (rv != WREN_RESULT_SUCCESS) {
-		LOG_WARN("Something went wrong running")
+		LOG_ERROR("Something went wrong running")
 		return EXIT_FAILURE;
 	}
 
@@ -269,6 +270,136 @@ err:
 	return rv;
 }
 
+static int do_install(void) {
+	state_t state = { 0 };
+	int rv = wren_setup_vm(&state);
+
+	if (rv != EXIT_SUCCESS) {
+		goto err;
+	}
+
+	// read installation map
+
+	if (!wrenHasVariable(state.vm, "main", "install")) {
+		LOG_ERROR("No installation map")
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	wrenEnsureSlots(state.vm, 4); // first slot for the receiver (ends up being the keys list), second slot for the key, third slot for the value, and last slot as a temporary working slot
+	wrenGetVariable(state.vm, "main", "install", 0);
+
+	if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_MAP) {
+		LOG_ERROR("'install' variable is not a map")
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	size_t const installation_map_len = wrenGetMapCount(state.vm, 0);
+
+	// keep handle to installation map
+
+	WrenHandle* const map_handle = wrenGetSlotHandle(state.vm, 0);
+
+	// run the 'keys' method on the map
+
+	WrenHandle* const keys_handle = wrenMakeCallHandle(state.vm, "keys");
+	WrenInterpretResult const keys_result = wrenCall(state.vm, keys_handle); // no need to set receiver - it's already in slot 0
+	wrenReleaseHandle(state.vm, keys_handle);
+
+	if (keys_result != WREN_RESULT_SUCCESS) {
+		LOG_ERROR("Something went wrong running the 'keys' method on the installation map")
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	// run the 'toList' method on the 'MapKeySequence' object
+
+	WrenHandle* const to_list_handle = wrenMakeCallHandle(state.vm, "toList");
+	WrenInterpretResult const to_list_result = wrenCall(state.vm, to_list_handle);
+	wrenReleaseHandle(state.vm, to_list_handle);
+
+	if (to_list_result != WREN_RESULT_SUCCESS) {
+		LOG_ERROR("Something went wrong running the 'toList' method on the installation map keys' 'MapKeySequence'")
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	// small sanity check - is the converted keys list as big as the map?
+
+	size_t const keys_len = wrenGetListCount(state.vm, 0);
+
+	if (installation_map_len != keys_len) {
+		LOG_ERROR("Installation map is not the same size as converted keys list (%zu vs %zu)", installation_map_len, keys_len)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	// read key/value pairs
+
+	wrenSetSlotHandle(state.vm, 3, map_handle);
+
+	for (size_t i = 0; i < keys_len; i++) {
+		// get key
+
+		wrenGetListElement(state.vm, 0, i, 1);
+
+		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
+			LOG_WARN("Installation map element %d key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const key = wrenGetSlotString(state.vm, 1);
+
+		// sanity check - make sure map contains key
+
+		if (!wrenGetMapContainsKey(state.vm, 3, 1)) {
+			LOG_WARN("Installation map does not contain key '%s'", key)
+			continue;
+		}
+
+		// get value
+
+		wrenGetMapValue(state.vm, 3, 1, 2);
+
+		if (wrenGetSlotType(state.vm, 2) != WREN_TYPE_STRING) {
+			LOG_WARN("Installation map element '%s' value is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", key)
+			continue;
+		}
+
+		char const* const val = wrenGetSlotString(state.vm, 2);
+
+		char* src;
+
+		if (asprintf(&src, "%s/%s", bin_path, key))
+			;
+
+		if (copy(src, val) != EXIT_SUCCESS) {
+			LOG_WARN("Failed to install '%s' -> '%s'", key, val)
+		}
+
+		else {
+			LOG_SUCCESS("Installed '%s' -> '%s'", key, val)
+		}
+
+		free(src);
+	}
+
+err:
+
+	if (map_handle) {
+		wrenReleaseHandle(state.vm, map_handle);
+	}
+
+	wren_clean_vm(&state);
+	return rv;
+}
+
 typedef struct {
 	char* name;
 	pid_t pid;
@@ -321,15 +452,7 @@ static int do_test(void) {
 		pid_t const pid = fork();
 
 		if (!pid) {
-			// create testing environment
-			// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
-			// would've loved to use libcopyfile but, alas, POSIX is missing features :(
-
-			pid_t const pid = fork();
-
-			if (!pid) {
-				execlp("/bin/cp", "/bin/cp", "-rap", bin_path, "", NULL);
-			}
+			// TODO create testing environment
 
 			// setup testing environment
 			// TODO change into testing directory/setup testing environment properly

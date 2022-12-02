@@ -2,6 +2,8 @@
 
 // useful macros
 
+#include <unistd.h>
+
 #define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
 	if (static_ == (_static_) && !strcmp(signature, (_signature))) { \
 		return (fn); \
@@ -170,5 +172,21 @@ static pid_t execute_async(exec_args_t* _exec_args) {
 
 static int execute(exec_args_t* _exec_args) {
 	pid_t pid = execute_async(_exec_args);
+	return wait_for_process(pid);
+}
+
+// filesystem functions
+
+static int copy(char const* src, char const* dest) {
+	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
+	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
+
+	pid_t const pid = fork();
+
+	if (!pid) {
+		execlp("/bin/cp", "/bin/cp", src, dest, NULL);
+		_exit(EXIT_FAILURE);
+	}
+
 	return wait_for_process(pid);
 }
