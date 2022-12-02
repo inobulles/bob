@@ -321,6 +321,16 @@ static int do_test(void) {
 		pid_t const pid = fork();
 
 		if (!pid) {
+			// create testing environment
+			// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
+			// would've loved to use libcopyfile but, alas, POSIX is missing features :(
+
+			pid_t const pid = fork();
+
+			if (!pid) {
+				execlp("/bin/cp", "/bin/cp", "-rap", bin_path, "", NULL);
+			}
+
 			// setup testing environment
 			// TODO change into testing directory/setup testing environment properly
 
