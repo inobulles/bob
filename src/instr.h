@@ -190,10 +190,10 @@ static int do_build(void) {
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
-		goto error;
+		goto err;
 	}
 
-error:
+err:
 
 	wren_clean_vm(&state);
 	return rv;
@@ -247,7 +247,7 @@ static int do_run(int argc, char** argv) {
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
-		goto error;
+		goto err;
 	}
 
 	// setup environment for running
@@ -260,10 +260,10 @@ static int do_run(int argc, char** argv) {
 	rv = wren_call(&state, "Runner", "run(_)", argc, argv);
 
 	if (rv != EXIT_SUCCESS) {
-		goto error;
+		goto err;
 	}
 
-error:
+err:
 
 	wren_clean_vm(&state);
 	return rv;
@@ -279,7 +279,7 @@ static int do_test(void) {
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
-		goto error;
+		goto err;
 	}
 
 	// read test list
@@ -288,7 +288,7 @@ static int do_test(void) {
 		LOG_ERROR("No test list")
 
 		rv = EXIT_FAILURE;
-		goto error;
+		goto err;
 	}
 
 	wrenEnsureSlots(state.vm, 2); // one slot for the 'tests' list, the other for each element
@@ -298,7 +298,7 @@ static int do_test(void) {
 		LOG_ERROR("'tests' variable is not a list")
 
 		rv = EXIT_FAILURE;
-		goto error;
+		goto err;
 	}
 
 	size_t const test_list_len = wrenGetListCount(state.vm, 0);
@@ -398,7 +398,7 @@ static int do_test(void) {
 		LOG_ERROR("%d out of %d tests failed", failed_count, tests_len)
 	}
 
-error:
+err:
 
 	wren_clean_vm(&state);
 	return rv;
