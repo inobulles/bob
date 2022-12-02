@@ -158,7 +158,13 @@ void linker_archive(WrenVM* vm) {
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
-		char const* const src_path = wrenGetSlotString(vm, 3); // TODO check types
+
+		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+			LOG_WARN("'Linker.archive' list element %d of argument 1 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const src_path = wrenGetSlotString(vm, 3);
 
 		// TODO same comment as in 'linker_link'
 

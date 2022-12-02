@@ -259,13 +259,14 @@ static int do_test(void) {
 		pid_t const pid = fork();
 
 		if (!pid) {
-			// setup environment
+			// setup testing environment
+			// TODO change into testing directory/setup testing environment properly
 
 			if (setenv("LD_LIBRARY_PATH", bin_path, true) < 0) {
 				errx(EXIT_FAILURE, "setenv(\"LD_LIBRARY_PATH\", \"%s\"): %s", bin_path, strerror(errno));
 			}
 
-			if (chdir(bin_path) < 0) { // TODO change into testing directory
+			if (chdir(bin_path) < 0) {
 				errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bin_path, strerror(errno));
 			}
 
