@@ -197,6 +197,7 @@ static int do_build(void) {
 err:
 
 	wren_clean_vm(&state);
+
 	return rv;
 }
 
@@ -267,6 +268,7 @@ static int do_run(int argc, char** argv) {
 err:
 
 	wren_clean_vm(&state);
+
 	return rv;
 }
 
@@ -355,7 +357,7 @@ static int do_install(void) {
 	}
 
 	WrenHandle* map_handle = NULL;
-	size_t keys_len;
+	size_t keys_len = 0;
 
 	rv = read_installation_map(&state, &map_handle, &keys_len);
 
@@ -363,10 +365,9 @@ static int do_install(void) {
 		goto err;
 	}
 
-	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
-
 	// read key/value pairs
 
+	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
 	wrenSetSlotHandle(state.vm, 3, map_handle);
 
 	for (size_t i = 0; i < keys_len; i++) {
@@ -422,6 +423,7 @@ err:
 	}
 
 	wren_clean_vm(&state);
+
 	return rv;
 }
 
@@ -439,6 +441,34 @@ static int do_test(void) {
 	}
 
 	// TODO recursively test? when and when not to?
+
+	// get list of installation map keys
+	// this will tell us which files we need to copy for each testing environment
+	// we don't wanna copy everything, because there might be a lot of shit in the output directory!
+
+	WrenHandle* map_handle = NULL;
+	size_t keys_len = 0;
+
+	rv = read_installation_map(&state, &map_handle, &keys_len);
+
+	if (rv != EXIT_SUCCESS) {
+		goto err;
+	}
+
+	wrenEnsureSlots(state.vm, 2); // first for the key list itself, second for the keys
+	char** keys = calloc(keys_len, sizeof *keys);
+
+	for (size_t i = 0; i < keys_len; i++) {
+		wrenGetListElement(state.vm, 0, i, 1);
+
+		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
+			LOG_WARN("Installation map key %d is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		const char* const key = wrenGetSlotString(state.vm, 1);
+		keys[i] = strdup(key);
+	}
 
 	// read test list
 
@@ -461,10 +491,6 @@ static int do_test(void) {
 
 	size_t const test_list_len = wrenGetListCount(state.vm, 0);
 
-	// get list of installation map keys
-	// this will tell us which files we need to copy for each testing environment
-	// we don't wanna copy everything, because there might be a lot of shit in the output directory!
-
 	// actually run tests
 
 	size_t tests_len = 0;
@@ -485,7 +511,7 @@ static int do_test(void) {
 		pid_t const pid = fork();
 
 		if (!pid) {
-			// TODO create testing environment
+			// TODO create testing environment by copying all the files in 'keys'
 
 			// setup testing environment
 			// TODO change into testing directory/setup testing environment properly
@@ -556,6 +582,21 @@ static int do_test(void) {
 
 err:
 
+	for (size_t i = 0; keys && i < keys_len; i++) {
+		char* key = keys[i];
+
+		if (key) {
+			free(key);
+		}
+	}
+
+	free(keys);
+
+	if (map_handle) {
+		wrenReleaseHandle(state.vm, map_handle);
+	}
+
 	wren_clean_vm(&state);
+
 	return rv;
 }
