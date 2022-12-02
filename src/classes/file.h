@@ -19,6 +19,7 @@ static void file_list(WrenVM* vm) {
 
 	// create return list
 
+	wrenEnsureSlots(vm, 3);
 	wrenSetSlotNewList(vm, 0);
 
 	// walk through directory
@@ -70,9 +71,8 @@ static void file_list(WrenVM* vm) {
 				continue;
 			}
 
-			wrenEnsureSlots(vm, 3 + path_count);
-			wrenSetSlotString(vm, 3 + path_count, path);
-			wrenInsertInList(vm, 0, -1, 3 + path_count);
+			wrenSetSlotString(vm, 3, path);
+			wrenInsertInList(vm, 0, -1, 3);
 		}
 	}
 
