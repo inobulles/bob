@@ -6,6 +6,7 @@
 #include "classes/file.h"
 #include "classes/linker.h"
 #include "util.h"
+#include <sys/types.h>
 #include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
@@ -129,9 +130,9 @@ static int wren_call(state_t* state, char const* name) {
 
 	wrenEnsureSlots(state->vm, 1);
 	wrenGetVariable(state->vm, "main", "run", 0);
-	WrenHandle* handle = wrenGetSlotHandle(state->vm, 0);
+	WrenHandle* const handle = wrenGetSlotHandle(state->vm, 0);
 
-	WrenInterpretResult rv = wrenCall(state->vm, handle);
+	WrenInterpretResult const rv = wrenCall(state->vm, handle);
 	wrenReleaseHandle(state->vm, handle);
 
 	if (rv != WREN_RESULT_SUCCESS) {
@@ -149,28 +150,35 @@ static int wren_call(state_t* state, char const* name) {
 }
 
 static void wren_clean_vm(state_t* state) {
-	// clean everything up (not super necessary, I'd put a little more effort in error handling if it was :P)
+	if (state->vm) {
+		wrenFreeVM(state->vm);
+	}
 
-	wrenFreeVM(state->vm);
+	if (state->src) {
+		free(state->src);
+	}
 
-	free(state->src);
-	fclose(state->fp);
+	if (state->fp) {
+		fclose(state->fp);
+	}
 }
 
 static int do_build(void) {
-	state_t state;
+	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
-		return rv;
+		goto error;
 	}
 
+error:
+
 	wren_clean_vm(&state);
-	return EXIT_SUCCESS;
+	return rv;
 }
 
 static int do_run(void) {
-	state_t state;
+	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
@@ -178,7 +186,7 @@ static int do_run(void) {
 	}
 
 	// setup environment for running
-	// ideally this should happen exclusively in a child process, but I think that would be quite complicated to implement
+	// TODO ideally this should happen exclusively in a child process, but I think that would be quite complicated to implement
 
 	if (setenv("LD_LIBRARY_PATH", bin_path, true) < 0) {
 		errx(EXIT_FAILURE, "setenv(\"LD_LIBRARY_PATH\", \"%s\"): %s", bin_path, strerror(errno));
@@ -194,6 +202,115 @@ static int do_run(void) {
 
 	if (rv != EXIT_SUCCESS) {
 		goto error;
+	}
+
+error:
+
+	wren_clean_vm(&state);
+	return rv;
+}
+
+static int do_test(void) {
+	state_t state = { 0 };
+	int rv = wren_setup_vm(&state);
+
+	if (rv != EXIT_SUCCESS) {
+		goto error;
+	}
+
+	// read all tests
+
+	if (!wrenHasVariable(state.vm, "main", "tests")) {
+		LOG_ERROR("No test list")
+
+		rv = EXIT_FAILURE;
+		goto error;
+	}
+
+	wrenEnsureSlots(state.vm, 2); // one slot for the 'tests' list, the other for each element
+	wrenGetVariable(state.vm, "main", "tests", 0);
+
+	if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_LIST) {
+		LOG_ERROR("'tests' variable is not a list")
+
+		rv = EXIT_FAILURE;
+		goto error;
+	}
+
+	size_t const test_list_len = wrenGetListCount(state.vm, 0);
+
+	size_t test_processes_len = 0;
+	pid_t* test_processes = NULL;
+
+	for (size_t i = 0; i < test_list_len; i++) {
+		wrenGetListElement(state.vm, 0, i, 1);
+
+		// I don't know of a way to check if we're dealing with a function, so this is as good as we're gonna get for now
+
+		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_UNKNOWN) {
+			LOG_WARN("Test list element at index %d is not a function - skipping")
+			continue;
+		}
+
+		// actually run test
+
+		WrenHandle* const handle = wrenGetSlotHandle(state.vm, 1);
+
+		pid_t const pid = fork();
+
+		if (!pid) {
+			// setup environment
+
+			if (setenv("LD_LIBRARY_PATH", bin_path, true) < 0) {
+				errx(EXIT_FAILURE, "setenv(\"LD_LIBRARY_PATH\", \"%s\"): %s", bin_path, strerror(errno));
+			}
+
+			if (chdir(bin_path) < 0) { // TODO change into testing directory
+				errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bin_path, strerror(errno));
+			}
+
+			// call test function
+
+			WrenInterpretResult const rv = wrenCall(state.vm, handle);
+
+			if (rv != WREN_RESULT_SUCCESS) {
+				LOG_WARN("Something went wrong running one of the tests");
+				_exit(EXIT_FAILURE);
+			}
+
+			if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_NUM) {
+				LOG_WARN("Expected number as return value")
+				_exit(EXIT_FAILURE);
+			}
+
+			double const _rv = wrenGetSlotDouble(state.vm, 0);
+			_exit(_rv);
+		}
+
+		wrenReleaseHandle(state.vm, handle);
+
+		test_processes = realloc(test_processes, ++test_processes_len * sizeof *test_processes);
+		test_processes[test_processes_len - 1] = pid;
+	}
+
+	// wait for all test processes to finish
+
+	size_t failed_count = 0;
+
+	for (size_t i = 0; i < test_processes_len; i++) {
+		pid_t const pid = test_processes[i];
+		int const test_result = wait_for_process(pid);
+		failed_count += test_result != EXIT_SUCCESS;
+	}
+
+	free(test_processes);
+
+	if (!failed_count) {
+		LOG_SUCCESS("All %d tests passed!", test_processes_len)
+	}
+
+	else {
+		LOG_ERROR("%d out of %d tests failed", failed_count, test_processes_len)
 	}
 
 error:
