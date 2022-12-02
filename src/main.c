@@ -48,7 +48,8 @@ static void usage(void) {
 
 	fprintf(stderr,
 		"usage: %1$s [-C project directory] [-o out directory] build\n"
-		"       %1$s [-C project directory] [-o out directory] run\n",
+		"       %1$s [-C project directory] [-o out directory] run\n"
+		"       %1$s [-C project directory] [-o out directory] test\n",
 	progname);
 
 	exit(EXIT_FAILURE);
@@ -183,6 +184,12 @@ int main(int argc, char* argv[]) {
 
 		else if (!strcmp(instr, "run")) {
 			rv = do_run();
+
+			// TODO when doing run, pass all following arguments as arguments to run function
+		}
+
+		else if (!strcmp(instr, "test")) {
+			rv = do_test();
 		}
 
 		else {
