@@ -6,10 +6,6 @@
 #include "classes/file.h"
 #include "classes/linker.h"
 #include "util.h"
-#include "wren/include/wren.h"
-#include "wren/vm/wren_value.h"
-#include "wren/vm/wren_vm.h"
-#include <sys/types.h>
 #include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
@@ -236,6 +232,11 @@ error:
 	return rv;
 }
 
+typedef struct {
+	char* name;
+	pid_t pid;
+} test_t;
+
 static int do_test(void) {
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
@@ -244,7 +245,7 @@ static int do_test(void) {
 		goto error;
 	}
 
-	// read all tests
+	// read test list
 
 	if (!wrenHasVariable(state.vm, "main", "tests")) {
 		LOG_ERROR("No test list")
@@ -265,22 +266,20 @@ static int do_test(void) {
 
 	size_t const test_list_len = wrenGetListCount(state.vm, 0);
 
-	size_t test_processes_len = 0;
-	pid_t* test_processes = NULL;
+	size_t tests_len = 0;
+	test_t** tests = NULL;
 
 	for (size_t i = 0; i < test_list_len; i++) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
-		// I don't know of a way to check if we're dealing with a function, so this is as good as we're gonna get for now
-
-		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_UNKNOWN) {
-			LOG_WARN("Test list element at index %d is not a function - skipping")
+		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
+			LOG_WARN("Test list element %d is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 
-		// actually run test
+		char const* const test_name = wrenGetSlotString(state.vm, 1);
 
-		WrenHandle* const handle = wrenGetSlotHandle(state.vm, 1);
+		// actually run test
 
 		pid_t const pid = fork();
 
@@ -296,48 +295,66 @@ static int do_test(void) {
 				errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bin_path, strerror(errno));
 			}
 
+			// create signature
+			// we don't care about freeing anything here because the child process will die eventually anyway
+
+			char* signature;
+
+			if (asprintf(&signature, "%s", test_name))
+				;
+
 			// call test function
 
-			WrenInterpretResult const rv = wrenCall(state.vm, handle);
-
-			if (rv != WREN_RESULT_SUCCESS) {
-				LOG_WARN("Something went wrong running one of the tests");
-				_exit(EXIT_FAILURE);
-			}
-
-			if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_NUM) {
-				LOG_WARN("Expected number as return value")
-				_exit(EXIT_FAILURE);
-			}
-
-			double const _rv = wrenGetSlotDouble(state.vm, 0);
-			_exit(_rv);
+			_exit(wren_call(&state, "Tests", signature, 0, NULL));
 		}
 
-		wrenReleaseHandle(state.vm, handle);
+		// add to the tests list
 
-		test_processes = realloc(test_processes, ++test_processes_len * sizeof *test_processes);
-		test_processes[test_processes_len - 1] = pid;
+		test_t* test = malloc(sizeof *test);
+
+		test->name = strdup(test_name);
+		test->pid = pid;
+
+		tests = realloc(tests, ++tests_len * sizeof *tests);
+		tests[tests_len - 1] = test;
 	}
 
 	// wait for all test processes to finish
 
 	size_t failed_count = 0;
 
-	for (size_t i = 0; i < test_processes_len; i++) {
-		pid_t const pid = test_processes[i];
-		int const test_result = wait_for_process(pid);
-		failed_count += test_result != EXIT_SUCCESS;
+	for (size_t i = 0; i < tests_len; i++) {
+		test_t* const test = tests[i];
+		int const result = wait_for_process(test->pid);
+
+		if (result == EXIT_SUCCESS) {
+			LOG_SUCCESS("Test '%s' passed", test->name)
+		}
+
+		else {
+			LOG_ERROR("Test '%s' failed (error code %d)", test->name, result)
+			failed_count++;
+		}
+
+		// free test because we won't be needing it anymore
+
+		if (test->name) {
+			free(test->name);
+		}
+
+		free(test);
 	}
 
-	free(test_processes);
+	free(tests);
+
+	// show results
 
 	if (!failed_count) {
-		LOG_SUCCESS("All %d tests passed!", test_processes_len)
+		LOG_SUCCESS("All %d tests passed!", tests_len)
 	}
 
 	else {
-		LOG_ERROR("%d out of %d tests failed", failed_count, test_processes_len)
+		LOG_ERROR("%d out of %d tests failed", failed_count, tests_len)
 	}
 
 error:
