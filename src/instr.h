@@ -6,6 +6,9 @@
 #include "classes/file.h"
 #include "classes/linker.h"
 #include "util.h"
+#include "wren/include/wren.h"
+#include "wren/vm/wren_value.h"
+#include "wren/vm/wren_vm.h"
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -122,18 +125,41 @@ static int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
-static int wren_call(state_t* state, char const* name) {
-	if (!wrenHasVariable(state->vm, "main", name)) {
-		LOG_ERROR("No run function")
+static int wren_call(state_t* state, char const* class, char const* signature, int argc, char** argv) {
+	// get class handle
+
+	if (!wrenHasVariable(state->vm, "main", class)) {
+		LOG_ERROR("No '%s' class", class)
 		return EXIT_FAILURE;
 	}
 
-	wrenEnsureSlots(state->vm, 1);
-	wrenGetVariable(state->vm, "main", "run", 0);
-	WrenHandle* const handle = wrenGetSlotHandle(state->vm, 0);
+	wrenEnsureSlots(state->vm, 3);
+	wrenGetVariable(state->vm, "main", class, 0);
+	WrenHandle* const class_handle = wrenGetSlotHandle(state->vm, 0);
 
-	WrenInterpretResult const rv = wrenCall(state->vm, handle);
-	wrenReleaseHandle(state->vm, handle);
+	// get method handle
+
+	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, signature);
+	wrenReleaseHandle(state->vm, class_handle);
+
+	// pass argument list as first argument (if there is one)
+	// don't check for argc, because that only tells us if the list is empty - argv tells us if it exists
+
+	if (argv) {
+		wrenSetSlotNewList(state->vm, 1);
+
+		while (argc --> 0) {
+			wrenSetSlotString(state->vm, 2, *argv++);
+			wrenInsertInList(state->vm, 1, -1, 2);
+		}
+	}
+
+	// actually call function
+
+	WrenInterpretResult const rv = wrenCall(state->vm, method_handle);
+	wrenReleaseHandle(state->vm, method_handle);
+
+	// error checking & return value
 
 	if (rv != WREN_RESULT_SUCCESS) {
 		LOG_WARN("Something went wrong running")
@@ -177,7 +203,7 @@ error:
 	return rv;
 }
 
-static int do_run(void) {
+static int do_run(int argc, char** argv) {
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -198,7 +224,7 @@ static int do_run(void) {
 
 	// call the run function
 
-	rv = wren_call(&state, "run");
+	rv = wren_call(&state, "Runner", "run(_)", argc, argv);
 
 	if (rv != EXIT_SUCCESS) {
 		goto error;

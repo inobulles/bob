@@ -183,9 +183,8 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (!strcmp(instr, "run")) {
-			rv = do_run();
-
-			// TODO when doing run, pass all following arguments as arguments to run function
+			// everything stops if we run the 'run' command
+			return do_run(argc, ++argv);
 		}
 
 		else if (!strcmp(instr, "test")) {
