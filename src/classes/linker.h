@@ -96,7 +96,7 @@ void linker_link(WrenVM* vm) {
 		char* const abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
-			LOG_WARN("Could not find '%s', moving on", src_path)
+			LOG_WARN("Could not find '%s' - skipping", src_path)
 			continue;
 		}
 
@@ -158,14 +158,14 @@ void linker_archive(WrenVM* vm) {
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
-		char const* const src_path = wrenGetSlotString(vm, 3);
+		char const* const src_path = wrenGetSlotString(vm, 3); // TODO check types
 
 		// TODO same comment as in 'linker_link'
 
 		char* const abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
-			LOG_WARN("Could not find '%s', moving on", src_path)
+			LOG_WARN("Could not find '%s' - skipping", src_path)
 			continue;
 		}
 
