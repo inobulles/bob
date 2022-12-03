@@ -60,7 +60,7 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 
 #define LOG_FATAL(...)   vlog(stderr, "💀 " BOLD    PURPLE, __VA_ARGS__);
 #define LOG_ERROR(...)   vlog(stderr, "🔴 " BOLD    RED,    __VA_ARGS__);
-#define LOG_WARN(...)    vlog(stderr, "⚠️ " REGULAR YELLOW, __VA_ARGS__);
+#define LOG_WARN(...)    vlog(stderr, "⚠️  " REGULAR YELLOW, __VA_ARGS__);
 #define LOG_SUCCESS(...) vlog(stderr, "🟢 " REGULAR GREEN,  __VA_ARGS__);
 
 // wren functions
