@@ -1,10 +1,9 @@
 #!/bin/sh
 set -xe
-
-# TODO actually it isn't that smart to link with umber if umber itself needs bob to compile
+# TODO actually it isn't that smart to link with umber if umber itself needs bob to compile (issue #1)
 #      ideally, bob should rely on literally nothing else than what POSIX provides (except in the case of OS-specific stuff obviously)
 
-mkdir -p bin
+mkdir -p sh-bin # 'bin' reserved for when compiling bob with bob
 
 # compile all objects
 
@@ -17,7 +16,7 @@ cc_flags="
 "
 
 for src in $(find src -name "*.c" -type f); do
-	obj=bin/$(basename $src).o
+	obj=sh-bin/$(basename $src).o
 
 	# to speed things up, skip compilation if source file is older than current object file
 
@@ -37,5 +36,5 @@ wait
 
 # link everything together
 
-objs=$(find bin -name "*.o" -type f)
-cc $objs $cc_flags -o bin/bob
+objs=$(find sh-bin -name "*.o" -type f)
+cc $objs $cc_flags -o sh-bin/bob

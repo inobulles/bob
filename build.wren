@@ -1,4 +1,5 @@
 // dependencies
+// TODO see issue #1
 
 Deps.git("https://github.com/inobulles/umber")
 

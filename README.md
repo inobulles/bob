@@ -17,6 +17,24 @@ Then, you can install it to your system with:
 sh-bin/bob install
 ```
 
+## Usage
+
+### Building
+
+TODO
+
+### Running
+
+TODO
+
+### Testing
+
+TODO
+
+### Installing
+
+TODO
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
