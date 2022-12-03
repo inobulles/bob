@@ -24,6 +24,14 @@ src
 var linker = Linker.new(cc)
 linker.link(src.toList, ["m", "umber"], "bob")
 
+// running
+
+class Runner {
+	static run(args) {
+		return File.exec("bob", args)
+	}
+}
+
 // installation map
 
 var prefix = "/usr/local" // TODO way to discriminate between OS' - on Linux distros, this would usually be simply "/usr" instead
