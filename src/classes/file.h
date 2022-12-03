@@ -107,7 +107,7 @@ static void file_exec(WrenVM* vm) {
 		wrenGetListElement(vm, 2, i, 3);
 
 		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
-			LOG_WARN("'File.exec' list element %d of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("'File.exec' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 

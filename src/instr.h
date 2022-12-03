@@ -244,7 +244,7 @@ static void setup_env(char* working_dir) {
 
 	// move into working directory
 
-	if (chdir(working_dir) < 0) {
+	if (working_dir && chdir(working_dir) < 0) {
 		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", working_dir, strerror(errno));
 	}
 }
@@ -381,7 +381,7 @@ static int do_install(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map element %d key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("Installation map element %zu key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 
@@ -473,7 +473,7 @@ static int do_test(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map key %d is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("Installation map key %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 
@@ -511,7 +511,7 @@ static int do_test(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Test list element %d is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("Test list element %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 
@@ -619,11 +619,11 @@ static int do_test(void) {
 	// show results
 
 	if (!failed_count) {
-		LOG_SUCCESS("All %d tests passed!", tests_len)
+		LOG_SUCCESS("All %zu tests passed!", tests_len)
 	}
 
 	else {
-		LOG_ERROR("%d out of %d tests failed", failed_count, tests_len)
+		LOG_ERROR("%zu out of %zu tests failed", failed_count, tests_len)
 	}
 
 err:

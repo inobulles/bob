@@ -4,9 +4,6 @@
 	#define _GNU_SOURCE
 #endif
 
-#include <umber.h>
-#define UMBER_COMPONENT "bob"
-
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>

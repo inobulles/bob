@@ -1,8 +1,3 @@
-// dependencies
-// TODO see issue #1
-
-Deps.git("https://github.com/inobulles/umber")
-
 // C compilation
 
 var cc = CC.new()

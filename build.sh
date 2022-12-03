@@ -1,7 +1,5 @@
 #!/bin/sh
 set -xe
-# TODO actually it isn't that smart to link with umber if umber itself needs bob to compile (issue #1)
-#      ideally, bob should rely on literally nothing else than what POSIX provides (except in the case of OS-specific stuff obviously)
 
 mkdir -p sh-bin # 'bin' reserved for when compiling bob with bob
 
@@ -12,7 +10,7 @@ cc_flags="
 	-I/usr/local/include -L/usr/local/lib
 	-DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0
 	-Wno-unused-command-line-argument
-	-lm -lumber
+	-lm
 "
 
 for src in $(find src -name "*.c" -type f); do
