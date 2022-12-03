@@ -23,3 +23,18 @@ src
 
 var linker = Linker.new(cc)
 linker.link(src.toList, ["m", "umber"], "bob")
+
+// installation map
+
+var prefix = "/usr/local" // TODO way to discriminate between OS' - on Linux distros, this would usually be simply "/usr" instead
+
+var install = {
+	"bob": "%(prefix)/bin/bob",
+}
+
+// TODO testing
+
+class Tests {
+}
+
+var tests = []
