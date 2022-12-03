@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
 
 		else if (!strcmp(instr, "run")) {
 			// everything stops if we run the 'run' command
-			return do_run(argc, ++argv);
+			return do_run(argc, argv);
 		}
 
 		else if (!strcmp(instr, "install")) {
