@@ -21,19 +21,35 @@ sh-bin/bob install
 
 ### Building
 
-TODO
+To build a project with Bob, navigate to its root directory and run:
+
+```console
+bob build
+```
 
 ### Running
 
-TODO
+To run a project with Bob, run:
+
+```console
+bob run
+```
 
 ### Testing
 
-TODO
+To test a project with Bob, run:
+
+```console
+bob test
+```
 
 ### Installing
 
-TODO
+To install a project with Bob, run:
+
+```console
+bob install
+```
 
 ## Features
 
@@ -47,6 +63,7 @@ TODO
 - [ ] Understands other popular buildsystems (simple makefile, cmake, autoconf, qmake, setup.py, &c) to eliminate tmw you have to google stuff when you just want something to compile 🤪
 - [ ] Watch source files to automatically rebuild them.
 - [ ] Can build in sandboxes (local CI in background truly continuously by watching source files instead of just on commits? integration with other CI providers, e.g. with Cirrus CI by Automatically generating `.cirrus.yml`?).
+- [ ] Proper documentation not only on how to use bob, but also on how to write a `build.wren` configuration.
 
 ## Personal notes
 
