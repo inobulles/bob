@@ -1,0 +1,21 @@
+task:
+  timeout_in: 5m
+  container:
+    image: gcc:latest
+  build_script:
+    - sh build.sh
+  test_script:
+    - $(realpath sh-bin/bob) test install
+  amd64_artifacts:
+    path: "bin/bob"
+
+task:
+  timeout_in: 5m
+  arm_container:
+    image: gcc:latest
+  build_script:
+    - sh build.sh
+  test_script:
+    - $(realpath sh-bin/bob) test install
+  arm64_artifacts:
+    path: "bin/bob"
