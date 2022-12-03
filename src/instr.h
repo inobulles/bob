@@ -8,6 +8,7 @@
 #include "classes/resources.h"
 #include "util.h"
 #include "wren/include/wren.h"
+#include <stdlib.h>
 #include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
@@ -623,6 +624,7 @@ static int do_test(void) {
 	}
 
 	else {
+		rv = EXIT_FAILURE;
 		LOG_ERROR("%zu out of %zu tests failed", failed_count, tests_len)
 	}
 
