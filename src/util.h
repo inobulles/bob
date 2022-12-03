@@ -184,7 +184,7 @@ static int copy_recursive(char const* src, char const* dest) {
 	pid_t const pid = fork();
 
 	if (!pid) {
-		execlp("/bin/cp", "/bin/cp", src, dest, NULL);
+		execlp("/bin/cp", "/bin/cp", "-RpP", src, dest, NULL);
 		_exit(EXIT_FAILURE);
 	}
 

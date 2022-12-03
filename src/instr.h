@@ -526,7 +526,20 @@ static int do_test(void) {
 			if (asprintf(&test_dir, "%s/%lx", bin_path, hash))
 				;
 
-			if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) {
+			// copy over test directory
+			// create it if it doesn't yet exist
+			// TODO don't hardcode the prefix
+
+			char* test_files_dir;
+
+			if (asprintf(&test_files_dir, "tests/%s", test_name))
+				;
+
+			if (!access(test_files_dir, W_OK)) {
+				copy_recursive(test_files_dir, test_dir);
+			}
+
+			else if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) {
 				errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", test_dir, strerror(errno));
 			}
 
