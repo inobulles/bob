@@ -28,7 +28,7 @@ static void deps_git(WrenVM* vm) {
 	struct stat sb;
 
 	if (stat(repo_path, &sb) || !S_ISDIR(sb.st_mode)) {
-		args = exec_args_new(6, "/usr/local/bin/git", "clone", "--depth", "1", url, repo_path);
+		args = exec_args_new(6, "git", "clone", "--depth", "1", url, repo_path);
 
 		rv = execute(args);
 		exec_args_del(args);

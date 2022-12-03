@@ -29,7 +29,7 @@ static void linker_new(WrenVM* vm) {
 	}
 
 	linker->path = strdup(linker->cc->path); // use the 'cc' command for linking, not 'ld'
-	linker->archiver_path = strdup("/usr/bin/ar");
+	linker->archiver_path = strdup("ar");
 }
 
 static void linker_del(void* _linker) {

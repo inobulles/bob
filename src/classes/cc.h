@@ -20,7 +20,7 @@ typedef struct {
 
 static void cc_init(cc_t* cc) {
 	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and 'CC.debug' should default to that obviously
-	cc->path = strdup("/usr/bin/cc");
+	cc->path = strdup("cc");
 
 	cc->opts = NULL;
 	cc->opts_len = 0;

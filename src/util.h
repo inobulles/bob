@@ -245,25 +245,19 @@ static int copy_recursive(char const* src, char const* dest) {
 	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
 	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
 
-	pid_t const pid = fork();
+	exec_args_t* exec_args = exec_args_new(4, "cp", "-RpP", src, dest);
+	int rv = execute(exec_args);
+	exec_args_del(exec_args);
 
-	if (!pid) {
-		execlp("/bin/cp", "/bin/cp", "-RpP", src, dest, NULL);
-		_exit(EXIT_FAILURE);
-	}
-
-	return wait_for_process(pid);
+	return rv;
 }
 
 static int remove_recursive(char const* path) {
 	// same comment as for 'copy'
 
-	pid_t const pid = fork();
+	exec_args_t* exec_args = exec_args_new(3, "rm", "-rf", path);
+	int rv = execute(exec_args);
+	exec_args_del(exec_args);
 
-	if (!pid) {
-		execlp("/bin/rm", "/bin/rm", "-rf", path, NULL);
-		_exit(EXIT_FAILURE);
-	}
-
-	return wait_for_process(pid);
+	return rv;
 }

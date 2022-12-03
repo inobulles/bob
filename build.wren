@@ -40,7 +40,7 @@ var install = {
 
 class Tests {
 	static umber {
-		return Deps.git("git@github.com:inobulles/umber.git")
+		return Deps.git("https://github.com/inobulles/umber.git")
 	}
 }
 
