@@ -405,7 +405,7 @@ static int do_install(void) {
 		if (asprintf(&src, "%s/%s", bin_path, key))
 			;
 
-		if (copy(src, val) != EXIT_SUCCESS) {
+		if (copy_recursive(src, val) != EXIT_SUCCESS) {
 			LOG_WARN("Failed to install '%s' -> '%s'", key, val)
 		}
 
@@ -433,6 +433,12 @@ typedef struct {
 } test_t;
 
 static int do_test(void) {
+	// declarations which must come before first goto
+
+	char** keys = NULL;
+
+	// setup state
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -456,7 +462,7 @@ static int do_test(void) {
 	}
 
 	wrenEnsureSlots(state.vm, 2); // first for the key list itself, second for the keys
-	char** keys = calloc(keys_len, sizeof *keys);
+	keys = calloc(keys_len, sizeof *keys);
 
 	for (size_t i = 0; i < keys_len; i++) {
 		wrenGetListElement(state.vm, 0, i, 1);
@@ -511,15 +517,37 @@ static int do_test(void) {
 		pid_t const pid = fork();
 
 		if (!pid) {
-			// TODO create testing environment by copying all the files in 'keys'
+			// in here, we don't care about freeing anything because the child process will die eventually anyway
+			// create testing environment by first creating the test directory
+
+			uint64_t const hash = hash_str(test_name);
+			char* test_dir;
+
+			if (asprintf(&test_dir, "%s/%lx", bin_path, hash))
+				;
+
+			if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) {
+				errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", test_dir, strerror(errno));
+			}
 
 			// setup testing environment
-			// TODO change into testing directory/setup testing environment properly
 
-			setup_env(bin_path);
+			setup_env(test_dir);
+
+			// then, copy over all the files in 'keys'
+
+			for (size_t i = 0; i < keys_len; i++) {
+				char* const key = keys[i];
+				char* src;
+
+				if (asprintf(&src, "%s/%s", bin_path, key))
+					;
+
+				copy_recursive(src, key);
+				free(src);
+			}
 
 			// create signature
-			// we don't care about freeing anything here because the child process will die eventually anyway
 
 			char* signature;
 
@@ -583,14 +611,16 @@ static int do_test(void) {
 err:
 
 	for (size_t i = 0; keys && i < keys_len; i++) {
-		char* key = keys[i];
+		char* const key = keys[i];
 
 		if (key) {
 			free(key);
 		}
 	}
 
-	free(keys);
+	if (keys) {
+		free(keys);
+	}
 
 	if (map_handle) {
 		wrenReleaseHandle(state.vm, map_handle);
