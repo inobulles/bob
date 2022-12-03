@@ -201,9 +201,13 @@ static pid_t execute_async(exec_args_t* _exec_args) {
 		// if we can't, search for a binary in our PATH
 		// only take into account the last component of the query path
 
-		char* const query = strrchr(exec_args[0], '/');
-		char* search = strdup(getenv("PATH"));
+		char* query = strrchr(exec_args[0], '/');
 
+		if (!query) {
+			query = exec_args[0];
+		}
+
+		char* search = strdup(getenv("PATH"));
 		char* tok;
 
 		while ((tok = strsep(&search, ":"))) {
