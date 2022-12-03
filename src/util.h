@@ -192,10 +192,38 @@ static pid_t execute_async(exec_args_t* _exec_args) {
 	pid_t pid = fork();
 
 	if (!pid) {
-		if (execv(exec_args[0], exec_args) < 0) {
-			LOG_FATAL("execv(\"%s\"): %s", exec_args[0], strerror(errno))
+		// attempt first to execute at the path passed
+
+		if (!execv(exec_args[0], exec_args)) {
+			_exit(EXIT_SUCCESS);
 		}
 
+		// if we can't, search for a binary in our PATH
+		// only take into account the last component of the query path
+
+		char* const query = strrchr(exec_args[0], '/');
+		char* search = strdup(getenv("PATH"));
+
+		char* tok;
+
+		while ((tok = strsep(&search, ":"))) {
+			char* path;
+
+			if (asprintf(&path, "%s/%s", tok, query))
+				;
+
+			exec_args[0] = path;
+
+			if (!execv(exec_args[0], exec_args)) {
+				_exit(EXIT_SUCCESS);
+			}
+
+			free(path);
+		}
+
+		// error if all else fails
+
+		LOG_FATAL("execv(\"%s\" and searched in PATH): %s", query, strerror(errno))
 		_exit(EXIT_FAILURE);
 	}
 
