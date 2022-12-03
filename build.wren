@@ -35,9 +35,13 @@ var install = {
 	"bob": "%(prefix)/bin/bob",
 }
 
-// TODO testing
+// testing
+// TODO argument to 'Deps.git' to tell it what to do with the dependency (e.g. should it test or just build?)
 
 class Tests {
+	static umber {
+		return Deps.git("git@github.com:inobulles/umber.git")
+	}
 }
 
-var tests = []
+var tests = ["umber"]

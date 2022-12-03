@@ -41,7 +41,7 @@ static void deps_git(WrenVM* vm) {
 
 	// execute bob in the cloned repository, and pass our bin path to it
 
-	args = exec_args_new(6, init_name, "-C", repo_path, "-o", bin_path, "build");
+	args = exec_args_new(6, init_name, "-C", repo_path, "-o", bin_path, "test");
 
 	rv = execute(args);
 	exec_args_del(args);
