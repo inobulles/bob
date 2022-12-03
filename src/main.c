@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
 	// parse instructions
 
 	while (argc --> 0) {
-		char const* const instr = *argv;
+		char const* const instr = *argv++;
 		int rv = EXIT_FAILURE; // I'm a pessimist
 
 		if (!strcmp(instr, "build")) {
