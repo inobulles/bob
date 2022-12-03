@@ -30,8 +30,7 @@ static void deps_git(WrenVM* vm) {
 
 	// clone remote repository
 
-	// exec_args_t* args = exec_args_new(6, "/usr/local/bin/git", "clone", "--depth", "1", url, repo_path);
-	exec_args_t* args = exec_args_new(8, "/usr/local/bin/git", "clone", "--branch", "bob", "--depth", "1", url, repo_path);
+	exec_args_t* args = exec_args_new(6, "/usr/local/bin/git", "clone", "--depth", "1", url, repo_path);
 
 	int rv = execute(args);
 	exec_args_del(args);
