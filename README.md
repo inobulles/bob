@@ -3,6 +3,20 @@
 Bob the builder (yes I know, I currently already have a project called this - the old project will be completely merged into the aquarium system, and this one will be the "definitive" bob).
 Buildsystem for the AQUA ecosystem.
 
+## Installation
+
+If you don't already have Bob on your system, you can bootstrap it as such:
+
+```console
+sh build.sh
+```
+
+Then, you can install it to your system with:
+
+```console
+sh-bin/bob install
+```
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
