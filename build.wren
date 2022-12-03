@@ -17,7 +17,7 @@ src
 // linking
 
 var linker = Linker.new(cc)
-linker.link(src.toList, ["m", "umber"], "bob")
+linker.link(src.toList, ["m"], "bob")
 
 // running
 
