@@ -3,6 +3,7 @@
 // useful macros
 
 #include <stdio.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
