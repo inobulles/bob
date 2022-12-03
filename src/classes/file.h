@@ -134,8 +134,8 @@ static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* si
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
-	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec);
-	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec);
+	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec)
+	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
 
 	// unknown
 
