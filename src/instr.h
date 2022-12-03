@@ -5,6 +5,7 @@
 #include "classes/cc.h"
 #include "classes/file.h"
 #include "classes/linker.h"
+#include "classes/resources.h"
 #include "util.h"
 #include "wren/include/wren.h"
 #include <unistd.h>
@@ -28,6 +29,10 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 
 	else if (!strcmp(class, "Linker")) {
 		fn = linker_bind_foreign_method(static_, signature);
+	}
+
+	else if (!strcmp(class, "Resources")) {
+		fn = resources_bind_foreign_method(static_, signature);
 	}
 
 	// unknown
@@ -528,7 +533,7 @@ static int do_test(void) {
 
 			// copy over test directory
 			// create it if it doesn't yet exist
-			// TODO don't hardcode the prefix
+			// TODO don't hardcode the prefix - should be defined by a variable in the base configuration instead
 
 			char* test_files_dir;
 

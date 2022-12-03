@@ -51,3 +51,7 @@ foreign class Linker {
 	foreign link(path_list, libs, out, shared)
 	foreign archive(path_list, out)
 }
+
+class Resources {
+	foreign static install(path)
+}
