@@ -355,15 +355,19 @@ err:
 }
 
 static int do_install(void) {
+	// declarations which must come before first goto
+
+	WrenHandle* map_handle = NULL;
+	size_t keys_len = 0;
+
+	// setup state
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
 	if (rv != EXIT_SUCCESS) {
 		goto err;
 	}
-
-	WrenHandle* map_handle = NULL;
-	size_t keys_len = 0;
 
 	rv = read_installation_map(&state, &map_handle, &keys_len);
 
