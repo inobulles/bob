@@ -536,6 +536,10 @@ static int do_test(void) {
 			if (asprintf(&test_dir, "%s/%lx", bin_path, hash))
 				;
 
+			// remove test directory if it already exists
+
+			remove_recursive(test_dir);
+
 			// copy over test directory
 			// create it if it doesn't yet exist
 			// TODO don't hardcode the prefix - should be defined by a variable in the base configuration instead

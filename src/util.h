@@ -229,7 +229,7 @@ static int remove_recursive(char const* path) {
 	pid_t const pid = fork();
 
 	if (!pid) {
-		execlp("/bin/rm", "/bin/rm", path, NULL);
+		execlp("/bin/rm", "/bin/rm", "-r", path, NULL);
 		_exit(EXIT_FAILURE);
 	}
 
