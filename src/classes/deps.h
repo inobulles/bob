@@ -50,20 +50,14 @@ static void deps_git(WrenVM* vm) {
 		}
 	}
 
-	// execute bob in the cloned repository, and pass our bin path to it
+	// return the path to the repository
 
-	args = exec_args_new(6, init_name, "-C", repo_path, "-o", bin_path, "test");
-
-	rv = execute(args);
-	exec_args_del(args);
-
-	if (rv) {
-		LOG_ERROR("Failed to build git repository '%s'", url)
-	}
+	wrenSetSlotString(vm, 0, repo_path);
+	return;
 
 err:
 
-	wrenSetSlotDouble(vm, 0, rv);
+	wrenSetSlotNull(vm, 0);
 }
 
 // foreign method binding
