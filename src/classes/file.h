@@ -112,13 +112,6 @@ static void file_list(WrenVM* vm) {
 	char* const path_argv[] = { (char*) path, NULL };
 	FTS* const fts = fts_open(path_argv, 0, NULL);
 
-	if (!fts) {
-		// TODO errors like this should stop execution of wren (same thing in 'util.h' macros & 'cc.h')
-
-		LOG_ERROR("fts_open(\"%s\"): %s", path, strerror(errno))
-		goto err;
-	}
-
 	size_t path_count = 0;
 
 	for (FTSENT* ent; (ent = fts_read(fts));) {
@@ -143,8 +136,10 @@ static void file_list(WrenVM* vm) {
 		case FTS_ERR:
 		case FTS_NS:
 
-			LOG_ERROR("fts_read: Failed to read '%s': %s", path, strerror(errno))
-			break;
+			LOG_WARN("fts_read: Failed to read '%s': %s", path, strerror(errno))
+
+			wrenSetSlotNull(vm, 0);
+			goto err;
 
 		case FTS_D:
 		case FTS_DC:
