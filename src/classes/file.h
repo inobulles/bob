@@ -7,6 +7,91 @@
 
 // methods
 
+static void file_bob(WrenVM* vm) {
+	CHECK_ARGC("File.bob", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	size_t const args_list_len = wrenGetListCount(vm, 2);
+
+	// actually execute bob
+
+	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
+	exec_args_t* exec_args = exec_args_new(5, init_name, "-C", path, "-o", bin_path);
+
+	// add list of arguments to exec_args if we have them
+
+	for (size_t i = 0; i < args_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 3);
+
+		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+			LOG_WARN("'File.bob' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const arg = wrenGetSlotString(vm, 3);
+		exec_args_add(exec_args, arg);
+	}
+
+	// actually execute file
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		LOG_WARN("'File.bob' failed execution with error code %d", rv)
+	}
+
+	exec_args_del(exec_args);
+	wrenSetSlotDouble(vm, 0, rv);
+}
+
+static void file_exec(WrenVM* vm) {
+	CHECK_ARGC("File.exec", 1, 2)
+	bool const has_args = argc == 2;
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	if (has_args) {
+		ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
+	}
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	size_t const args_list_len = has_args ? wrenGetListCount(vm, 2) : 0;
+
+	// actually execute file
+
+	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
+	exec_args_t* exec_args = exec_args_new(1, path);
+
+	// add list of arguments to exec_args if we have them
+
+	for (size_t i = 0; has_args && i < args_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 3);
+
+		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+			LOG_WARN("'File.exec' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const arg = wrenGetSlotString(vm, 3);
+		exec_args_add(exec_args, arg);
+	}
+
+	// actually execute file
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		LOG_WARN("'File.exec' failed execution with error code %d - here is the exec_args struct:", rv)
+		exec_args_print(exec_args);
+	}
+
+	exec_args_del(exec_args);
+	wrenSetSlotDouble(vm, 0, rv);
+}
+
 static void file_list(WrenVM* vm) {
 	CHECK_ARGC("File.list", 2, 2)
 
@@ -83,89 +168,33 @@ err:
 	fts_close(fts);
 }
 
-static void file_exec(WrenVM* vm) {
-	CHECK_ARGC("File.exec", 1, 2)
-	bool const has_args = argc == 2;
+static void file_read(WrenVM* vm) {
+	CHECK_ARGC("File.read", 1, 1)
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	if (has_args) {
-		ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
-	}
-
 	char const* const path = wrenGetSlotString(vm, 1);
-	size_t const args_list_len = has_args ? wrenGetListCount(vm, 2) : 0;
 
-	// actually execute file
+	// preemptively set the return value to null, so we can just return on error
 
-	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
-	exec_args_t* exec_args = exec_args_new(1, path);
+	wrenSetSlotNull(vm, 0);
 
-	// add list of arguments to exec_args if we have them
+	// read file & return contents as string
 
-	for (size_t i = 0; has_args && i < args_list_len; i++) {
-		wrenGetListElement(vm, 2, i, 3);
+	FILE* fp = fopen(path, "r");
 
-		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
-			LOG_WARN("'File.exec' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
-			continue;
-		}
-
-		char const* const arg = wrenGetSlotString(vm, 3);
-		exec_args_add(exec_args, arg);
+	if (!fp) {
+		LOG_ERROR("Failed to open file \"%s\" for reading", path)
+		return;
 	}
 
-	// actually execute file
+	size_t const size = file_get_size(fp);
+	char* const str = file_read_str(fp, size);
 
-	int rv = execute(exec_args);
+	fclose(fp);
 
-	if (rv != EXIT_SUCCESS) {
-		LOG_WARN("'File.exec' failed execution with error code %d - here is the exec_args struct:", rv)
-		exec_args_print(exec_args);
-	}
-
-	exec_args_del(exec_args);
-	wrenSetSlotDouble(vm, 0, rv);
-}
-
-static void file_bob(WrenVM* vm) {
-	CHECK_ARGC("File.bob", 2, 2)
-
-	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
-	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
-
-	char const* const path = wrenGetSlotString(vm, 1);
-	size_t const args_list_len = wrenGetListCount(vm, 2);
-
-	// actually execute bob
-
-	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
-	exec_args_t* exec_args = exec_args_new(5, init_name, "-C", path, "-o", bin_path);
-
-	// add list of arguments to exec_args if we have them
-
-	for (size_t i = 0; i < args_list_len; i++) {
-		wrenGetListElement(vm, 2, i, 3);
-
-		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
-			LOG_WARN("'File.bob' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
-			continue;
-		}
-
-		char const* const arg = wrenGetSlotString(vm, 3);
-		exec_args_add(exec_args, arg);
-	}
-
-	// actually execute file
-
-	int rv = execute(exec_args);
-
-	if (rv != EXIT_SUCCESS) {
-		LOG_WARN("'File.bob' failed execution with error code %d", rv)
-	}
-
-	exec_args_del(exec_args);
-	wrenSetSlotDouble(vm, 0, rv);
+	wrenSetSlotString(vm, 0, str);
+	free(str);
 }
 
 // foreign method binding
@@ -173,10 +202,11 @@ static void file_bob(WrenVM* vm) {
 static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
-	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
+	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
 	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
-	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
+	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
+	BIND_FOREIGN_METHOD(true, "read(_)", file_read)
 
 	// unknown
 

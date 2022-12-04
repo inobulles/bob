@@ -69,13 +69,15 @@ class Deps {
 }
 
 class File {
-	foreign static list(path, depth)
-	static list(path) { list(path, 0) }
+	foreign static bob(path, args)
 
 	foreign static exec(path)
 	foreign static exec(path, args)
 
-	foreign static bob(path, args)
+	foreign static list(path, depth)
+	static list(path) { list(path, 0) }
+
+	foreign static read(path)
 }
 
 class Meta {

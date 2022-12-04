@@ -241,6 +241,24 @@ static int execute(exec_args_t* _exec_args) {
 
 // filesystem functions
 
+static size_t file_get_size(FILE* fp) {
+	fseek(fp, 0, SEEK_END);
+	size_t const size = ftell(fp);
+	rewind(fp);
+
+	return size;
+}
+
+static char* file_read_str(FILE* fp, size_t size) {
+	char* const str = malloc(size);
+
+	if (fread(str, 1, size, fp))
+		;
+
+	str[size - 1] = 0;
+	return str;
+}
+
 static int copy_recursive(char const* src, char const* dest) {
 	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
 	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
