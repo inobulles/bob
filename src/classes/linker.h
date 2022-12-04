@@ -73,7 +73,7 @@ void linker_link(WrenVM* vm) {
 		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL)
 	}
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	size_t const lib_list_len = wrenGetListCount(vm, 2);
 	char const* const out = wrenGetSlotString(vm, 3);
@@ -154,7 +154,7 @@ void linker_archive(WrenVM* vm) {
 	ASSERT_ARG_TYPE(1, WREN_TYPE_LIST)
 	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	char const* const out = wrenGetSlotString(vm, 2);
 
@@ -203,14 +203,14 @@ void linker_archive(WrenVM* vm) {
 static void linker_get_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.path", 0, 0)
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	wrenSetSlotString(vm, 0, linker->path);
 }
 
 static void linker_get_archiver_path(WrenVM* vm) {
 	CHECK_ARGC("Linker.archiver_path", 0, 0)
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	wrenSetSlotString(vm, 0, linker->archiver_path);
 }
 
@@ -221,7 +221,7 @@ static void linker_set_path(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->path) {
@@ -236,7 +236,7 @@ static void linker_set_archiver_path(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	linker_t* const linker = wrenGetSlotForeign(vm, 0);
+	linker_t* const linker = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
 	if (linker->archiver_path) {

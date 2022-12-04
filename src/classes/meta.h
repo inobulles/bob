@@ -22,11 +22,7 @@ static void meta_getenv(WrenVM* vm) {
 
 	char const* const contents = getenv(env);
 
-	if (!contents) {
-		wrenSetSlotNull(vm, 0);
-	}
-
-	else {
+	if (contents) {
 		wrenSetSlotString(vm, 0, contents);
 	}
 }

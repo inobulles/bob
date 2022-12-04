@@ -11,9 +11,26 @@
 		return (fn); \
 	}
 
+// this may be a contender for ugliest macro I've ever written
+// not sure though, I've written some pretty ugly macros in my time
+
 #define CHECK_ARGC(fn_name, argc_little, argc_big) \
-	char const* const __fn_name = (fn_name); /* accessibly by future macros */ \
+	char const* const __fn_name = (fn_name); /* accessible by future macros */ \
 	int argc = wrenGetSlotCount(vm) - 1; \
+	\
+	/* be pessimistic and set return value to null right off the bat */ \
+	/* foreign values in slot 0 really come in to put a thorn in our side, but that's alright, we too cool for that to stop us 😎 */ \
+	/* getting the value of the foreign slot doesn't work when calling 'wrenSetSlotNewForeign' though, because we can't just read what's in 'classSlot', so we'll have to make an exception to 'new' functions */ \
+	\
+	void* foreign = NULL; \
+	\
+	if (strcmp(strrchr(__fn_name, '.'), ".new")) { \
+		if (wrenGetSlotType(vm, 0) == WREN_TYPE_FOREIGN) { \
+			foreign = wrenGetSlotForeign(vm, 0); \
+		} \
+		\
+		wrenSetSlotNull(vm, 0); \
+	} \
 	\
 	if (argc < (argc_little) || argc > (argc_big)) { \
 		if ((argc_little) == (argc_big)) { \
@@ -23,7 +40,7 @@
 		else { \
 			LOG_WARN("'%s' not passed right number of arguments (got %d, expected %d)", __fn_name, argc, (argc_little)) \
 		} \
-		\
+		wrenSetSlotNull(vm, 0);\
 		return; \
 	}
 

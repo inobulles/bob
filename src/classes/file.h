@@ -2,6 +2,8 @@
 
 #include <errno.h>
 #include <fts.h>
+#include <sys/unistd.h>
+#include <unistd.h>
 
 #include "../util.h"
 
@@ -169,10 +171,6 @@ static void file_read(WrenVM* vm) {
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
 	char const* const path = wrenGetSlotString(vm, 1);
-
-	// preemptively set the return value to null, so we can just return on error
-
-	wrenSetSlotNull(vm, 0);
 
 	// read file & return contents as string
 

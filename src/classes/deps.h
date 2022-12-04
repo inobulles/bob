@@ -53,11 +53,10 @@ static void deps_git(WrenVM* vm) {
 	// return the path to the repository
 
 	wrenSetSlotString(vm, 0, repo_path);
-	return;
 
 err:
 
-	wrenSetSlotNull(vm, 0);
+	free(repo_path);
 }
 
 // foreign method binding
