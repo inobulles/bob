@@ -15,11 +15,16 @@ typedef struct {
 
 static void linker_new(WrenVM* vm) {
 	CHECK_ARGC("Linker.new", 0, 1)
+	bool const has_cc = argc == 1;
+
+	if (has_cc) {
+		ASSERT_ARG_TYPE(1, WREN_TYPE_FOREIGN);
+	}
 
 	linker_t* const linker = wrenSetSlotNewForeign(vm, 0, 0, sizeof *linker);
 	linker->cc = calloc(1, sizeof *linker->cc);
 
-	if (argc == 1) {
+	if (has_cc) {
 		void* const _cc = wrenGetSlotForeign(vm, 1);
 		memcpy(linker->cc, _cc, sizeof *linker->cc);
 	}
