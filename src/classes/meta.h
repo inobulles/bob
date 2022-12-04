@@ -11,6 +11,15 @@ static void meta_os_add(WrenVM* vm, char const* str) {
 
 // methods
 
+static void meta_instruction(WrenVM* vm) {
+	CHECK_ARGC("Meta.instruction", 0, 0)
+
+	// return the current instruction
+
+	wrenEnsureSlots(vm, 1);
+	wrenSetSlotString(vm, 0, curr_instr);
+}
+
 static void meta_os(WrenVM* vm) {
 	CHECK_ARGC("Meta.os", 0, 0)
 
@@ -85,6 +94,7 @@ static void meta_prefix(WrenVM* vm) {
 static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
+	BIND_FOREIGN_METHOD(true, "instruction()", meta_instruction)
 	BIND_FOREIGN_METHOD(true, "os()", meta_os)
 	BIND_FOREIGN_METHOD(true, "prefix()", meta_prefix)
 

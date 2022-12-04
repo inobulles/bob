@@ -20,6 +20,7 @@
 
 static char* bin_path = NULL;
 static char const* init_name = "bob";
+static char const* curr_instr = NULL;
 
 #include "util.h"
 
@@ -169,23 +170,23 @@ int main(int argc, char* argv[]) {
 	// parse instructions
 
 	while (argc --> 0) {
-		char const* const instr = *argv++;
+		curr_instr = *argv++;
 		int rv = EXIT_FAILURE; // I'm a pessimist
 
-		if (!strcmp(instr, "build")) {
+		if (!strcmp(curr_instr, "build")) {
 			rv = do_build();
 		}
 
-		else if (!strcmp(instr, "run")) {
+		else if (!strcmp(curr_instr, "run")) {
 			// everything stops if we run the 'run' command
 			return do_run(argc, argv);
 		}
 
-		else if (!strcmp(instr, "install")) {
+		else if (!strcmp(curr_instr, "install")) {
 			rv = do_install();
 		}
 
-		else if (!strcmp(instr, "test")) {
+		else if (!strcmp(curr_instr, "test")) {
 			rv = do_test();
 		}
 

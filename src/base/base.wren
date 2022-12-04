@@ -59,7 +59,7 @@ class File {
 }
 
 class Meta {
-	foreign static options()
+	foreign static instruction()
 	foreign static os()
 	foreign static prefix()
 }
