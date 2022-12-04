@@ -5,11 +5,17 @@
 // methods
 
 static void deps_git(WrenVM* vm) {
-	CHECK_ARGC("Deps.git", 1, 1)
+	CHECK_ARGC("Deps.git", 1, 2)
+	bool const has_branch = argc == 2;
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
+	if (has_branch) {
+		ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+	}
+
 	char const* const url = wrenGetSlotString(vm, 1);
+	char const* const branch = has_branch ? wrenGetSlotString(vm, 2) : NULL;
 
 	// hash url to know where to clone repository
 
@@ -28,7 +34,12 @@ static void deps_git(WrenVM* vm) {
 	struct stat sb;
 
 	if (stat(repo_path, &sb) || !S_ISDIR(sb.st_mode)) {
-		args = exec_args_new(6, "git", "clone", "--depth", "1", url, repo_path);
+		args = exec_args_new(6, "git", "clone", url, repo_path, "--depth", "1");
+
+		if (branch) {
+			exec_args_add(args, "--branch");
+			exec_args_add(args, branch);
+		}
 
 		rv = execute(args);
 		exec_args_del(args);
@@ -61,6 +72,7 @@ static WrenForeignMethodFn deps_bind_foreign_method(bool static_, char const* si
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "git(_)", deps_git)
+	BIND_FOREIGN_METHOD(true, "git(_,_)", deps_git)
 
 	// unknown
 

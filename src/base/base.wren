@@ -45,6 +45,7 @@ foreign class Linker {
 
 class Deps {
 	foreign static git(url)
+	foreign static git(url, branch)
 }
 
 class File {
