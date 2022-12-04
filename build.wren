@@ -38,12 +38,7 @@ var install = {
 class Tests {
 	static umber {
 		var path = Deps.git("https://github.com/inobulles/umber.git")
-
-		if (path == null) {
-			return 1
-		}
-
-		return File.bob(path, ["test"])
+		return path == null ? 1 : File.bob(path, ["test"])
 	}
 }
 
