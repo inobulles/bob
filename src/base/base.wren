@@ -46,6 +46,26 @@ foreign class Linker {
 class Deps {
 	foreign static git(url)
 	foreign static git(url, branch)
+
+	static git_inherit(url, branch) {
+		var path = git(url, branch)
+
+		if (path == null) {
+			return null
+		}
+
+		return File.bob(path, [Meta.instruction()])
+	}
+
+	static git_inherit(url) {
+		var path = git(url)
+
+		if (path == null) {
+			return null
+		}
+
+		return File.bob(path, [Meta.instruction()])
+	}
 }
 
 class File {
