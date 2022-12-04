@@ -36,10 +36,22 @@ var install = {
 // testing
 
 class Tests {
-	static umber {
+	// unit tests
+
+	static file_read_error { // check if we error correctly if file does not exist
+		return File.read("this_file_does_not_exist") == null ? 0 : -1
+	}
+
+	static file_read { // check if we read files correctly
+		return File.read("lorem") == "Lorem ipsum dolor sit amet\n" ? 0 : -1
+	}
+
+	// e2e tests
+
+	static umber { // check if we can correctly clone & build a dependency completely
 		var path = Deps.git("https://github.com/inobulles/umber.git")
 		return path == null ? 1 : File.bob(path, ["test"])
 	}
 }
 
-var tests = ["umber"]
+var tests = ["file_read_error", "file_read", "umber"]
