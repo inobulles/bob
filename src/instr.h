@@ -3,9 +3,13 @@
 #include "base/base.h"
 
 #include "classes/cc.h"
-#include "classes/file.h"
 #include "classes/linker.h"
+
+#include "classes/deps.h"
+#include "classes/file.h"
+#include "classes/os.h"
 #include "classes/resources.h"
+
 #include "util.h"
 #include "wren/include/wren.h"
 #include <stdlib.h>
@@ -14,11 +18,17 @@
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
 	WrenForeignMethodFn fn = unknown_foreign;
 
-	// classes
+	// object classes
 
 	if (!strcmp(class, "CC")) {
 		fn = cc_bind_foreign_method(static_, signature);
 	}
+
+	else if (!strcmp(class, "Linker")) {
+		fn = linker_bind_foreign_method(static_, signature);
+	}
+
+	// static classes
 
 	else if (!strcmp(class, "Deps")) {
 		fn = deps_bind_foreign_method(static_, signature);
@@ -28,8 +38,8 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 		fn = file_bind_foreign_method(static_, signature);
 	}
 
-	else if (!strcmp(class, "Linker")) {
-		fn = linker_bind_foreign_method(static_, signature);
+	else if (!strcmp(class, "OS")) {
+		fn = os_bind_foreign_method(static_, signature);
 	}
 
 	else if (!strcmp(class, "Resources")) {
