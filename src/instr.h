@@ -103,8 +103,9 @@ static int wren_setup_vm(state_t* state) {
 	char const* const module = "main";
 	WrenInterpretResult result = wrenInterpret(state->vm, module, base_src);
 
-	if (result == WREN_RESULT_SUCCESS) {
-		LOG_SUCCESS("Configuration base ran successfully")
+	if (result != WREN_RESULT_SUCCESS) {
+		LOG_FATAL("Something went wrong executing configuration base")
+		return EXIT_FAILURE;
 	}
 
 	// read configuration file
@@ -130,8 +131,9 @@ static int wren_setup_vm(state_t* state) {
 
 	curr_instr = prev_instr;
 
-	if (result == WREN_RESULT_SUCCESS) {
-		LOG_SUCCESS("Build configuration ran successfully")
+	if (result != WREN_RESULT_SUCCESS) {
+		LOG_FATAL("Something wrong executing build configuration")
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
