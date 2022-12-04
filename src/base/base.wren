@@ -58,8 +58,9 @@ class File {
 	foreign static bob(path, args)
 }
 
-class OS {
-	foreign static name()
+class Meta {
+	foreign static options()
+	foreign static os()
 	foreign static prefix()
 }
 

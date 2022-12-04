@@ -30,7 +30,7 @@ class Runner {
 // installation map
 
 var install = {
-	"bob": "%(OS.prefix())/bin/bob",
+	"bob": "%(Meta.prefix())/bin/bob",
 }
 
 // testing

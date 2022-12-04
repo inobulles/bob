@@ -7,7 +7,7 @@
 
 #include "classes/deps.h"
 #include "classes/file.h"
-#include "classes/os.h"
+#include "classes/meta.h"
 #include "classes/resources.h"
 
 #include "util.h"
@@ -38,8 +38,8 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 		fn = file_bind_foreign_method(static_, signature);
 	}
 
-	else if (!strcmp(class, "OS")) {
-		fn = os_bind_foreign_method(static_, signature);
+	else if (!strcmp(class, "Meta")) {
+		fn = meta_bind_foreign_method(static_, signature);
 	}
 
 	else if (!strcmp(class, "Resources")) {

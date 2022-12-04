@@ -4,15 +4,15 @@
 
 // helpers
 
-static void os_name_add(WrenVM* vm, char const* str) {
+static void meta_os_add(WrenVM* vm, char const* str) {
 	wrenSetSlotString(vm, 1, str);
 	wrenInsertInList(vm, 0, -1, 1);
 }
 
 // methods
 
-static void os_name(WrenVM* vm) {
-	CHECK_ARGC("OS.name", 0, 0)
+static void meta_os(WrenVM* vm) {
+	CHECK_ARGC("Meta.os", 0, 0)
 
 	// create return list
 
@@ -58,17 +58,17 @@ static void os_name(WrenVM* vm) {
 
 cached:
 
-	os_name_add(vm, name.sysname);
+	meta_os_add(vm, name.sysname);
 
 #if defined(__linux__)
 	if (wsl) {
-		os_name_add(vm, "WSL");
+		meta_os_add(vm, "WSL");
 	}
 #endif
 }
 
-static void os_prefix(WrenVM* vm) {
-	CHECK_ARGC("OS.prefix", 0, 0)
+static void meta_prefix(WrenVM* vm) {
+	CHECK_ARGC("Meta.prefix", 0, 0)
 
 	// if on FreeBSD/aquaBSD (and, to be safe, anywhere else), the prefix will be '/usr/local'
 	// on Linux, it will simply be '/usr'
@@ -82,11 +82,11 @@ static void os_prefix(WrenVM* vm) {
 
 // foreign method binding
 
-static WrenForeignMethodFn os_bind_foreign_method(bool static_, char const* signature) {
+static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
-	BIND_FOREIGN_METHOD(true, "name()", os_name)
-	BIND_FOREIGN_METHOD(true, "prefix()", os_prefix)
+	BIND_FOREIGN_METHOD(true, "os()", meta_os)
+	BIND_FOREIGN_METHOD(true, "prefix()", meta_prefix)
 
 	// unknown
 
