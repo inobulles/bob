@@ -40,11 +40,9 @@ static void file_list(WrenVM* vm) {
 		char* const path = ent->fts_path; // shadow parent scope's 'path'
 
 		switch (ent->fts_info) {
-		case FTS_D:
-		case FTS_DC:
 		case FTS_DP:
 
-			break; // ignore directories
+			break; // ignore directories being visited in postorder
 
 		case FTS_SL:
 		case FTS_SLNONE:
@@ -63,6 +61,8 @@ static void file_list(WrenVM* vm) {
 			LOG_ERROR("fts_read: Failed to read '%s': %s", path, strerror(errno))
 			break;
 
+		case FTS_D:
+		case FTS_DC:
 		case FTS_F:
 		case FTS_DEFAULT:
 		default:
