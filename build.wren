@@ -34,6 +34,7 @@ var install = {
 }
 
 // testing
+// TODO ALL THE TESTS
 // XXX this tests the build being used to run the build configuration, not the one currently being built
 //     it's a little bizarre, but since bootstrapping anyway requires building twice, it's fine imo
 
@@ -57,6 +58,10 @@ var Strcmp = Fn.new { |a, b| // XXX because 'String' does not implement '<(_)' -
 
 class Tests {
 	// unit tests
+
+	static file_exec {
+		return File.exec("execute-me.sh", ["69"]) == 69 ? 0 : -1
+	}
 
 	static file_list_error {
 		return File.list("this_tree_does_not_exist") == null ? 0 : -1
@@ -93,4 +98,4 @@ class Tests {
 	}
 }
 
-var tests = ["file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
+var tests = ["file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
