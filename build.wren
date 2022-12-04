@@ -60,29 +60,29 @@ class Tests {
 	// unit tests
 
 	static file_exec {
-		return File.exec("execute-me.sh", ["69"]) == 69 ? 0 : -1
+		return File.exec("execute-me.sh", ["69"]) == 69
 	}
 
 	static file_list_error {
-		return File.list("this_tree_does_not_exist") == null ? 0 : -1
+		return File.list("this_tree_does_not_exist") == null
 	}
 
 	static file_list { // check if we can fully list a directory
 		var correct = ["tree", "tree/a", "tree/b", "tree/c", "tree/c/a", "tree/c/b"]
-		return File.list("tree").sort(Strcmp).join(":") == correct.join(":") ? 0 : 1
+		return File.list("tree").sort(Strcmp).join(":") == correct.join(":")
 	}
 
 	static file_list_depth {
 		var correct = ["tree", "tree/a", "tree/b", "tree/c"]
-		return File.list("tree", 1).sort(Strcmp).join(":") == correct.join(":") ? 0 : 1
+		return File.list("tree", 1).sort(Strcmp).join(":") == correct.join(":")
 	}
 
 	static file_read_error { // check if we error correctly if file does not exist
-		return File.read("this_file_does_not_exist") == null ? 0 : -1
+		return File.read("this_file_does_not_exist") == null
 	}
 
 	static file_read { // check if we read files correctly
-		return File.read("lorem") == "Lorem ipsum dolor sit amet\n" ? 0 : -1
+		return File.read("lorem") == "Lorem ipsum dolor sit amet\n"
 	}
 
 	static file_write { // check if we write files correctly
@@ -94,7 +94,7 @@ class Tests {
 
 	static umber { // check if we can correctly clone & build a dependency completely
 		var path = Deps.git("https://github.com/inobulles/umber.git")
-		return path == null ? 1 : File.bob(path, ["test"])
+		return path == null ? false : (File.bob(path, ["test"]) == 0)
 	}
 }
 

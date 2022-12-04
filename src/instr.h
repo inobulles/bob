@@ -180,13 +180,18 @@ static int wren_call(state_t* state, char const* class, char const* signature, i
 		return EXIT_FAILURE;
 	}
 
-	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_NUM) {
-		LOG_WARN("Expected number as a return value")
-		return EXIT_FAILURE;
+	if (wrenGetSlotType(state->vm, 0) == WREN_TYPE_NUM) {
+		double const _rv = wrenGetSlotDouble(state->vm, 0);
+		return _rv;
 	}
 
-	double const _rv = wrenGetSlotDouble(state->vm, 0);
-	return _rv;
+	else if (wrenGetSlotType(state->vm, 0) == WREN_TYPE_BOOL) {
+		return !wrenGetSlotBool(state->vm, 0);
+	}
+
+
+	LOG_WARN("Expected number or boolean as a return value")
+	return EXIT_FAILURE;
 }
 
 static void wren_clean_vm(state_t* state) {
