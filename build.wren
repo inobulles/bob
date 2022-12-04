@@ -46,6 +46,11 @@ class Tests {
 		return File.read("lorem") == "Lorem ipsum dolor sit amet\n" ? 0 : -1
 	}
 
+	static file_write { // check if we write files correctly
+		File.write("lorem", "Lorem ipsum dolor sit amet\n")
+		return file_read
+	}
+
 	// e2e tests
 
 	static umber { // check if we can correctly clone & build a dependency completely
@@ -54,4 +59,4 @@ class Tests {
 	}
 }
 
-var tests = ["file_read_error", "file_read", "umber"]
+var tests = ["file_read_error", "file_read", "file_write", "umber"]
