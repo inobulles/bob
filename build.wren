@@ -35,6 +35,7 @@ var install = {
 
 // testing
 // TODO argument to 'Deps.git' to tell it what to do with the dependency (e.g. should it test or just build?)
+//      'Deps.git' should probably not build, instead there should be a separate instruction like 'File.bob' so that we can easily solve this issue
 
 class Tests {
 	static umber {

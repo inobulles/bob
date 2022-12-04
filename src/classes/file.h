@@ -128,6 +128,46 @@ static void file_exec(WrenVM* vm) {
 	wrenSetSlotDouble(vm, 0, rv);
 }
 
+static void file_bob(WrenVM* vm) {
+	CHECK_ARGC("File.bob", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	size_t const args_list_len = wrenGetListCount(vm, 2);
+
+	// actually execute bob
+
+	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
+	exec_args_t* exec_args = exec_args_new(5, init_name, "-C", path, "-o", bin_path);
+
+	// add list of arguments to exec_args if we have them
+
+	for (size_t i = 0; i < args_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 3);
+
+		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+			LOG_WARN("'File.bob' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const arg = wrenGetSlotString(vm, 3);
+		exec_args_add(exec_args, arg);
+	}
+
+	// actually execute file
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		LOG_WARN("'File.bob' failed execution with error code %d", rv)
+	}
+
+	exec_args_del(exec_args);
+	wrenSetSlotDouble(vm, 0, rv);
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature) {
@@ -136,6 +176,7 @@ static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* si
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
 	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
+	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
 
 	// unknown
 

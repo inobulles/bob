@@ -54,6 +54,8 @@ class File {
 
 	foreign static exec(path)
 	foreign static exec(path, args)
+
+	foreign static bob(path, args)
 }
 
 class OS {
