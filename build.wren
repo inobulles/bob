@@ -29,10 +29,8 @@ class Runner {
 
 // installation map
 
-var prefix = "/usr/local" // TODO way to discriminate between OS' - on Linux distros, this would usually be simply "/usr" instead
-
 var install = {
-	"bob": "%(prefix)/bin/bob",
+	"bob": "%(OS.prefix())/bin/bob",
 }
 
 // testing
