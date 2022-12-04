@@ -42,15 +42,18 @@ static void linker_del(void* _linker) {
 
 // methods
 
-static void __linker_wait_cc(linker_t* linker) {
+static bool __linker_wait_cc(linker_t* linker) {
 	// wait for all compilation processes to finish
 
 	cc_t* const cc = linker->cc;
+	bool error = false;
 
 	for (size_t i = 0; i < cc->compilation_processes_len; i++) {
 		pid_t pid = cc->compilation_processes[i];
-		wait_for_process(pid);
+		error |= !!wait_for_process(pid);
 	}
+
+	return error;
 }
 
 void linker_link(WrenVM* vm) {
@@ -131,7 +134,10 @@ void linker_link(WrenVM* vm) {
 
 	// wait for compilation processes and execute linker
 
-	__linker_wait_cc(linker);
+	if (__linker_wait_cc(linker)) {
+		LOG_FATAL("Error while compiling")
+		exit(EXIT_FAILURE);
+	}
 
 	execute(exec_args);
 	exec_args_del(exec_args);

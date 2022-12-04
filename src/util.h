@@ -127,7 +127,7 @@ static void exec_args_add(exec_args_t* self, char const* arg) {
 }
 
 __attribute__((__format__(__printf__, 2, 3)))
-static void exec_args_fmt(exec_args_t* self, char* fmt, ...) {
+static void exec_args_fmt(exec_args_t* self, char const* fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
 
