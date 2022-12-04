@@ -34,9 +34,43 @@ var install = {
 }
 
 // testing
+// XXX this tests the build being used to run the build configuration, not the one currently being built
+//     it's a little bizarre, but since bootstrapping anyway requires building twice, it's fine imo
+
+var Strcmp = Fn.new { |a, b| // XXX because 'String' does not implement '<(_)' - must be capitalized, likely a bug, cf https://wren.io/classes.html#method-scope
+	// don't do 'a.count', because that looks at codepoints, not bytes
+
+	var a_len = a.bytes.count
+	var b_len = b.bytes.count
+
+	for (i in 0...a_len.min(b_len)) {
+		var byte_a = a.bytes[i]
+		var byte_b = b.bytes[i]
+
+		if (byte_a != byte_b) {
+			return byte_a < byte_b
+		}
+	}
+
+	return a_len < b_len
+}
 
 class Tests {
 	// unit tests
+
+	static file_list_error {
+		return File.list("this_tree_does_not_exist") == null ? 0 : -1
+	}
+
+	static file_list { // check if we can fully list a directory
+		var correct = ["tree", "tree/a", "tree/b", "tree/c", "tree/c/a", "tree/c/b"]
+		return File.list("tree").sort(Strcmp).join(":") == correct.join(":") ? 0 : 1
+	}
+
+	static file_list_depth {
+		var correct = ["tree", "tree/a", "tree/b", "tree/c"]
+		return File.list("tree", 1).sort(Strcmp).join(":") == correct.join(":") ? 0 : 1
+	}
 
 	static file_read_error { // check if we error correctly if file does not exist
 		return File.read("this_file_does_not_exist") == null ? 0 : -1
@@ -59,4 +93,4 @@ class Tests {
 	}
 }
 
-var tests = ["file_read_error", "file_read", "file_write", "umber"]
+var tests = ["file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
