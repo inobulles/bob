@@ -11,6 +11,26 @@ static void meta_os_add(WrenVM* vm, char const* str) {
 
 // methods
 
+static void meta_getenv(WrenVM* vm) {
+	CHECK_ARGC("Meta.getenv", 1, 1)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	char const* const env = wrenGetSlotString(vm, 1);
+
+	// return contents of environment variable if it exists, null if not
+
+	char const* const contents = getenv(env);
+
+	if (!contents) {
+		wrenSetSlotNull(vm, 0);
+	}
+
+	else {
+		wrenSetSlotString(vm, 0, contents);
+	}
+}
+
 static void meta_instruction(WrenVM* vm) {
 	CHECK_ARGC("Meta.instruction", 0, 0)
 
@@ -94,6 +114,7 @@ static void meta_prefix(WrenVM* vm) {
 static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
+	BIND_FOREIGN_METHOD(true, "getenv(_)", meta_getenv)
 	BIND_FOREIGN_METHOD(true, "instruction()", meta_instruction)
 	BIND_FOREIGN_METHOD(true, "os()", meta_os)
 	BIND_FOREIGN_METHOD(true, "prefix()", meta_prefix)
