@@ -108,6 +108,7 @@ static int wren_setup_vm(state_t* state) {
 	}
 
 	// read configuration file
+	// TODO can the filepointer be closed right after reading?
 
 	state->fp = fopen("build.wren", "r");
 
@@ -116,16 +117,8 @@ static int wren_setup_vm(state_t* state) {
 		return EXIT_FAILURE;
 	}
 
-	fseek(state->fp, 0, SEEK_END);
-	size_t const bytes = ftell(state->fp);
-	rewind(state->fp);
-
-	state->src = malloc(bytes);
-
-	if (fread(state->src, 1, bytes, state->fp))
-		;
-
-	state->src[bytes - 1] = 0;
+	size_t const size = file_get_size(state->fp);
+	state->src = file_read_str(state->fp, size);
 
 	// run configuration file
 	// temporarily set 'curr_instr' to 'build', as this will build
