@@ -40,7 +40,7 @@
 		else { \
 			LOG_WARN("'%s' not passed right number of arguments (got %d, expected %d)", __fn_name, argc, (argc_little)) \
 		} \
-		wrenSetSlotNull(vm, 0);\
+		\
 		return; \
 	}
 

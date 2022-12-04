@@ -59,12 +59,16 @@ var Strcmp = Fn.new { |a, b| // XXX because 'String' does not implement '<(_)' -
 class Tests {
 	// unit tests
 
+	static file_exec_error {
+		return File.exec("this-is-not-a-script") == null
+	}
+
 	static file_exec {
 		return File.exec("execute-me.sh", ["69"]) == 69
 	}
 
 	static file_list_error {
-		return File.list("this_tree_does_not_exist") == null
+		return File.list("this-tree-does-not-exist") == null
 	}
 
 	static file_list { // check if we can fully list a directory
@@ -78,7 +82,7 @@ class Tests {
 	}
 
 	static file_read_error { // check if we error correctly if file does not exist
-		return File.read("this_file_does_not_exist") == null
+		return File.read("this-file-does-not-exist") == null
 	}
 
 	static file_read { // check if we read files correctly
@@ -98,4 +102,4 @@ class Tests {
 	}
 }
 
-var tests = ["file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
+var tests = ["file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
