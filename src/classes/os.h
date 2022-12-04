@@ -67,12 +67,26 @@ cached:
 #endif
 }
 
+static void os_prefix(WrenVM* vm) {
+	CHECK_ARGC("OS.prefix", 0, 0)
+
+	// if on FreeBSD/aquaBSD (and, to be safe, anywhere else), the prefix will be '/usr/local'
+	// on Linux, it will simply be '/usr'
+
+#if defined(__linux__)
+	wrenSetSlotString(vm, 0, "/usr");
+#else
+	wrenSetSlotString(vm, 0, "/usr/local");
+#endif
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn os_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "name()", os_name)
+	BIND_FOREIGN_METHOD(true, "prefix()", os_prefix)
 
 	// unknown
 
