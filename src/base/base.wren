@@ -78,6 +78,7 @@ class File {
 	static list(path) { list(path, 0) }
 
 	foreign static read(path)
+	foreign static write(path, str)
 }
 
 class Meta {

@@ -184,7 +184,7 @@ static void file_read(WrenVM* vm) {
 	FILE* fp = fopen(path, "r");
 
 	if (!fp) {
-		LOG_ERROR("Failed to open file \"%s\" for reading", path)
+		LOG_WARN("Failed to open file \"%s\" for reading (%s)", path, strerror(errno))
 		return;
 	}
 
@@ -197,6 +197,28 @@ static void file_read(WrenVM* vm) {
 	free(str);
 }
 
+static void file_write(WrenVM* vm) {
+	CHECK_ARGC("File.write", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING);
+	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING);
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	char const* const str = wrenGetSlotString(vm, 2);
+
+	// write to file, simply
+
+	FILE* fp = fopen(path, "w");
+
+	if (!fp) {
+		LOG_WARN("Failed to open file \"%s\" for writing (%s)", path, strerror(errno))
+		return;
+	}
+
+	fprintf(fp, "%s", str);
+	fclose(fp);
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature) {
@@ -207,6 +229,7 @@ static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* si
 	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
 	BIND_FOREIGN_METHOD(true, "read(_)", file_read)
+	BIND_FOREIGN_METHOD(true, "write(_,_)", file_write)
 
 	// unknown
 
