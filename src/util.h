@@ -117,6 +117,11 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 typedef struct {
 	size_t len; // includes NULL sentinel
 	char** args;
+
+	int pipe_in;
+	int pipe_out;
+
+	bool save_out;
 } exec_args_t;
 
 static exec_args_t* exec_args_new(int len, ...) {
@@ -134,6 +139,38 @@ static exec_args_t* exec_args_new(int len, ...) {
 
 	va_end(va);
 	return self;
+}
+
+static void exec_args_save_out(exec_args_t* self, bool save_out) {
+	self->save_out = save_out;
+}
+
+static char* exec_args_read_out(exec_args_t* self) {
+	if (self->pipe_out < 0) {
+		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out(self, true)'?")
+		return NULL;
+	}
+
+	char* out = strdup("");
+	size_t total = 0;
+
+	char chunk[4096];
+	ssize_t bytes;
+
+	while ((bytes = read(self->pipe_out, chunk, sizeof chunk)) > 0) {
+		total += bytes;
+
+		out = realloc(out, total + 1);
+		out[total] = 0;
+
+		memcpy(out + total - bytes, chunk, bytes);
+	}
+
+	if (bytes < 0) {
+		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", self->pipe_out, strerror(errno))
+	}
+
+	return out;
 }
 
 static void exec_args_add(exec_args_t* self, char const* arg) {
@@ -183,7 +220,18 @@ static void exec_args_del(exec_args_t* self) {
 		free(arg);
 	}
 
-	free(self->args);
+	if (self->args) {
+		free(self->args);
+	}
+
+	if (self->pipe_in >= 0) {
+		close(self->pipe_in);
+	}
+
+	if (self->pipe_out >= 0) {
+		close(self->pipe_out);
+	}
+
 	free(self);
 }
 
@@ -204,11 +252,53 @@ static int wait_for_process(pid_t pid) {
 	return EXIT_SUCCESS;
 }
 
-static pid_t execute_async(exec_args_t* _exec_args) {
-	char** exec_args = _exec_args->args;
+static pid_t execute_async(exec_args_t* self) {
+	char** exec_args = self->args;
+
+	// create bi-directional pipe if we're asked to save output
+	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
+
+	self->pipe_in  = -1;
+	self->pipe_out = -1;
+
+	if (self->save_out) {
+		int fd[2];
+
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->pipe_in  = fd[0];
+		self->pipe_out = fd[1];
+	}
+
+	// fork process
+
 	pid_t pid = fork();
 
+	if (pid < 0) {
+		errx(EXIT_FAILURE, "fork: %s", strerror(errno));
+	}
+
 	if (!pid) {
+		// close input side of pipe if it exists, as we wanna send output
+
+		if (self->save_out) {
+			close(self->pipe_out);
+
+			// redirect stdout of process to pipe output
+
+			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
+				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
+			}
+
+			// redirect stderr of process to pipe output
+
+			if (dup2(self->pipe_in, STDERR_FILENO) < 0) {
+				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_in, strerror(errno));
+			}
+		}
+
 		// attempt first to execute at the path passed
 
 		if (!execv(exec_args[0], exec_args)) {
@@ -246,6 +336,13 @@ static pid_t execute_async(exec_args_t* _exec_args) {
 
 		LOG_FATAL("execv(\"%s\" and searched in PATH): %s", query, strerror(errno))
 		_exit(EXIT_FAILURE);
+	}
+
+	// we're the parent
+	// close the output side of the pipe if it exists, as we wanna receive input
+
+	if (self->save_out) {
+		close(self->pipe_in);
 	}
 
 	return pid;
