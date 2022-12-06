@@ -65,6 +65,7 @@ bob install
 - [ ] Watch source files to automatically rebuild them.
 - [ ] Can build in sandboxes (local CI in background truly continuously by watching source files instead of just on commits? integration with other CI providers, e.g. with Cirrus CI by Automatically generating `.cirrus.yml`?).
 - [ ] Proper documentation not only on how to use bob, but also on how to write a `build.wren` configuration.
+- [ ] Warn against two commands outputting to the same file.
 
 ## Personal notes
 

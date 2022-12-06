@@ -643,7 +643,11 @@ static int do_test(void) {
 
 	// show results
 
-	if (!failed_count) {
+	if (!tests_len) {
+		LOG_WARN("No tests to run")
+	}
+
+	else if (!failed_count) {
 		LOG_SUCCESS("All %zu tests passed!", tests_len)
 	}
 
