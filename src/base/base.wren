@@ -17,6 +17,7 @@ foreign class CC {
 	// methods
 
 	foreign add_opt(opt)
+	foreign add_lib(lib)
 	foreign compile(path)
 }
 

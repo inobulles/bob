@@ -3,6 +3,7 @@
 #include "../util.h"
 
 #include <errno.h>
+#include <sys/unistd.h>
 #include <unistd.h>
 
 typedef struct {
@@ -18,6 +19,34 @@ typedef struct {
 
 // helpers
 
+static void cc_internal_add_opt(cc_t* cc, char const* opt) {
+	cc->opts = realloc(cc->opts, ++cc->opts_len * sizeof *cc->opts);
+	cc->opts[cc->opts_len - 1] = strdup(opt);
+}
+
+static int cc_internal_add_lib(cc_t* cc, char const* lib) {
+	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
+	exec_args_save_out(exec_args, true);
+
+	int rv = execute(exec_args);
+	char* opts = exec_args_read_out(exec_args);
+
+	char* opt;
+
+	while ((opt = strsep(&opts, " "))) {
+		if (*opt == '\n') {
+			continue;
+		}
+
+		cc_internal_add_opt(cc, opt);
+	}
+
+	free(opts);
+	exec_args_del(exec_args);
+
+	return rv;
+}
+
 static void cc_init(cc_t* cc) {
 	cc->debug = true; // TODO be able to choose between various build types when running the bob command, and 'CC.debug' should default to that obviously
 	cc->path = strdup("cc");
@@ -27,11 +56,10 @@ static void cc_init(cc_t* cc) {
 
 	cc->compilation_processes = NULL;
 	cc->compilation_processes_len = 0;
-}
 
-static inline void cc_internal_add_opt(cc_t* const cc, char const* const opt) {
-	cc->opts = realloc(cc->opts, ++cc->opts_len * sizeof *cc->opts);
-	cc->opts[cc->opts_len - 1] = strdup(opt);
+	// this is very annoying and dumb so whatever just disable it for everyone
+
+	cc_internal_add_opt(cc, "-Wno-unused-command-line-argument");
 }
 
 // constructor/destructor
@@ -111,6 +139,21 @@ static void cc_set_path(WrenVM* vm) {
 
 // methods
 
+static void cc_add_lib(WrenVM* vm) {
+	CHECK_ARGC("CC.add_lib", 1, 1)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	cc_t* const cc = foreign;
+	char const* const lib = wrenGetSlotString(vm, 1);
+
+	int rv = cc_internal_add_lib(cc, lib);
+
+	if (rv) {
+		LOG_WARN("'CC.add_lib' failed to add '%s' (error code is %d)", lib, rv);
+	}
+}
+
 static void cc_add_opt(WrenVM* vm) {
 	CHECK_ARGC("CC.add_opt", 1, 1)
 
@@ -185,6 +228,7 @@ static WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* sign
 
 	// methods
 
+	BIND_FOREIGN_METHOD(false, "add_lib(_)", cc_add_lib)
 	BIND_FOREIGN_METHOD(false, "add_opt(_)", cc_add_opt)
 	BIND_FOREIGN_METHOD(false, "compile(_)", cc_compile)
 
