@@ -287,15 +287,10 @@ static pid_t execute_async(exec_args_t* self) {
 			close(self->pipe_out);
 
 			// redirect stdout of process to pipe output
+			// don't redirect stderr, because we still wanna see a log of any child process errors ;)
 
 			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
 				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
-			}
-
-			// redirect stderr of process to pipe output
-
-			if (dup2(self->pipe_in, STDERR_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_in, strerror(errno));
 			}
 		}
 
