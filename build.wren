@@ -59,15 +59,15 @@ var Strcmp = Fn.new { |a, b| // XXX because 'String' does not implement '<(_)' -
 class Tests {
 	// unit tests
 
-	static file_exec_error {
+	static file_exec_error { // check if we error correctly if file does not exist/is unexecutable
 		return File.exec("this-is-not-a-script") == null
 	}
 
-	static file_exec {
+	static file_exec { // check if we process error codes of executed files correctly
 		return File.exec("execute-me.sh", ["69"]) == 69
 	}
 
-	static file_list_error {
+	static file_list_error { // check if we error correctly if directory does not exist
 		return File.list("this-tree-does-not-exist") == null
 	}
 
@@ -76,7 +76,7 @@ class Tests {
 		return File.list("tree").sort(Strcmp).join(":") == correct.join(":")
 	}
 
-	static file_list_depth {
+	static file_list_depth { // check if we can list a directory at a given depth
 		var correct = ["tree", "tree/a", "tree/b", "tree/c"]
 		return File.list("tree", 1).sort(Strcmp).join(":") == correct.join(":")
 	}
@@ -94,6 +94,22 @@ class Tests {
 		return file_read
 	}
 
+	static meta_instruction { // check we're indeed getting the "test" instruction
+		return Meta.instruction() == "test"
+	}
+
+	static meta_getenv_error { // check if we error correctly if environment variable does not exist
+		return Meta.getenv("THIS_ENVVAR_DOES_NOT_EXIST") == null
+	}
+
+	static meta_prefix { // check if prefix is what we'd expect based on 'Meta.os()'
+		if (Meta.os().contains("Linux")) {
+			return Meta.prefix() == "/usr"
+		}
+
+		return Meta.prefix() == "/usr/local"
+	}
+
 	// e2e tests
 
 	static umber { // check if we can correctly clone & build a dependency completely
@@ -102,4 +118,8 @@ class Tests {
 	}
 }
 
-var tests = ["file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write", "umber"]
+var tests = [
+	"file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write",
+	"meta_instruction", "meta_getenv_error", "meta_prefix",
+	"umber",
+]
