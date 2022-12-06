@@ -29,6 +29,11 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	exec_args_save_out(exec_args, true);
 
 	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		goto err;
+	}
+
 	char* opts = exec_args_read_out(exec_args);
 
 	char* opt;
@@ -42,8 +47,10 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	}
 
 	free(opts);
-	exec_args_del(exec_args);
 
+err:
+
+	exec_args_del(exec_args);
 	return rv;
 }
 
