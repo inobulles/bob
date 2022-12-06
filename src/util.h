@@ -296,3 +296,16 @@ static int remove_recursive(char const* path) {
 
 	return rv;
 }
+
+// misc stuff
+
+static char const* install_prefix(void) {
+	// if on FreeBSD/aquaBSD (and, to be safe, anywhere else), the prefix will be '/usr/local'
+	// on Linux, it will simply be '/usr'
+
+#if defined(__linux__)
+	return "/usr";
+#endif
+
+	return "/usr/local";
+}

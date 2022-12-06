@@ -94,15 +94,7 @@ cached:
 
 static void meta_prefix(WrenVM* vm) {
 	CHECK_ARGC("Meta.prefix", 0, 0)
-
-	// if on FreeBSD/aquaBSD (and, to be safe, anywhere else), the prefix will be '/usr/local'
-	// on Linux, it will simply be '/usr'
-
-#if defined(__linux__)
-	wrenSetSlotString(vm, 0, "/usr");
-#else
-	wrenSetSlotString(vm, 0, "/usr/local");
-#endif
+	wrenSetSlotString(vm, 0, install_prefix());
 }
 
 // foreign method binding
