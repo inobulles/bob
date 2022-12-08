@@ -242,15 +242,13 @@ static void cc_compile(WrenVM* vm) {
 		goto cpp_err; // CPP as in C PreProcessor
 	}
 
-	char* headers = exec_args_read_out(exec_args);
+	char* const orig_headers = exec_args_read_out(exec_args);
 
-	exec_args_del(exec_args);
-	exec_args = NULL;
-
-	if (!headers) {
+	if (!orig_headers) {
 		goto cpp_err;
 	}
 
+	char* headers = orig_headers;
 	char* header;
 
 	while ((header = strsep(&headers, " "))) {
@@ -261,7 +259,7 @@ static void cc_compile(WrenVM* vm) {
 		size_t len = strlen(header);
 
 		if (header[len - 1] == '\n') {
-			header[--len] = 0;
+			header[--len] = '\0';
 		}
 
 		// if header is more recent than the output, compile
@@ -272,12 +270,12 @@ static void cc_compile(WrenVM* vm) {
 		}
 
 		if (sb.st_mtime >= out_mtime) {
-			free(headers);
+			free(orig_headers);
 			goto compile;
 		}
 	}
 
-	free(headers);
+	free(orig_headers);
 
 	// TODO what happens if compile options change in the meantime?
 	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
@@ -293,6 +291,10 @@ compile: {}
 	LOG_FATAL("Compiling %s", path);
 
 	// construct exec args
+
+	if (exec_args) {
+		exec_args_del(exec_args);
+	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 

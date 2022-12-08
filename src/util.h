@@ -161,7 +161,7 @@ static char* exec_args_read_out(exec_args_t* self) {
 		total += bytes;
 
 		out = realloc(out, total + 1);
-		out[total] = 0;
+		out[total] = '\0';
 
 		memcpy(out + total - bytes, chunk, bytes);
 	}
@@ -169,6 +169,8 @@ static char* exec_args_read_out(exec_args_t* self) {
 	if (bytes < 0) {
 		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", self->pipe_out, strerror(errno))
 	}
+
+	out[total] = '\0';
 
 	return out;
 }
