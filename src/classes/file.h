@@ -124,7 +124,7 @@ static void file_list(WrenVM* vm) {
 	// walk through directory
 
 	char* const path_argv[] = { (char*) path, NULL };
-	FTS* const fts = fts_open(path_argv, 0, NULL);
+	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
 
 	size_t path_count = 0;
 
@@ -139,6 +139,7 @@ static void file_list(WrenVM* vm) {
 		case FTS_SL:
 		case FTS_SLNONE:
 
+			LOG_ERROR("fts_read: Got 'FTS_SL' or 'FTS_SLNONE' when 'FTS_LOGICAL' was passed");
 			break; // ignore symlinks
 
 		case FTS_DOT:
