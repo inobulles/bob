@@ -185,6 +185,13 @@ static void cc_compile(WrenVM* vm) {
 	// declarations which must come before first goto
 
 	exec_args_t* exec_args = NULL;
+	FILE* fp = NULL;
+
+	char* orig_headers = NULL;
+	char* orig_prev = NULL;
+
+	char* out_path = NULL;
+	char* opts_path = NULL;
 
 	// get absolute path or source file, hashing it, and getting output path
 
@@ -192,16 +199,13 @@ static void cc_compile(WrenVM* vm) {
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
-		return;
+		goto done;
 	}
 
 	uint64_t const hash = hash_str(path);
-	char* out_path;
 
 	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash))
 		;
-
-	char* opts_path;
 
 	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash))
 		;
@@ -216,7 +220,7 @@ static void cc_compile(WrenVM* vm) {
 		}
 
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
-		goto stat_err;
+		goto done;
 	}
 
 	// if the source file is newer than the output, compile
@@ -246,13 +250,13 @@ static void cc_compile(WrenVM* vm) {
 	int rv = execute(exec_args);
 
 	if (rv != EXIT_SUCCESS) {
-		goto cpp_err; // CPP as in C PreProcessor
+		goto done;
 	}
 
-	char* const orig_headers = exec_args_read_out(exec_args);
+	orig_headers = exec_args_read_out(exec_args);
 
 	if (!orig_headers) {
-		goto cpp_err;
+		goto done;
 	}
 
 	char* headers = orig_headers;
@@ -277,23 +281,20 @@ static void cc_compile(WrenVM* vm) {
 		}
 
 		if (sb.st_mtime >= out_mtime) {
-			free(orig_headers);
 			goto compile;
 		}
 	}
 
-	free(orig_headers);
-
 	// if one of the options changed, compile
 	// if options file doesn't exist, compile
 
-	FILE* fp = fopen(opts_path, "r");
+	fp = fopen(opts_path, "r");
 
 	if (!fp) {
 		goto compile;
 	}
 
-	char* const orig_prev = file_read_str(fp, file_get_size(fp));
+	orig_prev = file_read_str(fp, file_get_size(fp));
 	char* prev = orig_prev;
 
 	char* prev_opt;
@@ -309,9 +310,7 @@ static void cc_compile(WrenVM* vm) {
 		}
 
 		if (prev_done != opts_done) {
-			free(orig_prev);
 			fclose(fp);
-
 			goto compile;
 		}
 
@@ -319,19 +318,14 @@ static void cc_compile(WrenVM* vm) {
 		prev_opt[strlen(prev_opt)] = '\0'; // remove newline
 
 		if (strcmp(opt, prev_opt)) {
-			free(orig_prev);
 			fclose(fp);
-
 			goto compile;
 		}
 	}
 
-	free(orig_prev);
-	fclose(fp);
-
 	// don't need to compile!
 
-	return;
+	goto done;
 
 	// actually compile
 
@@ -346,7 +340,6 @@ compile: {}
 	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
-
 	fp = fopen(opts_path, "w");
 
 	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
@@ -357,8 +350,6 @@ compile: {}
 		exec_args_add(exec_args, cc->opts[i]);
 		fprintf(fp, "%s\n", cc->opts[i]);
 	}
-
-	fclose(fp);
 
 	// finally, actually compile asynchronously
 
@@ -371,15 +362,35 @@ compile: {}
 
 	// clean up
 
-cpp_err:
+done:
 
-	exec_args_del(exec_args);
+	if (exec_args) {
+		exec_args_del(exec_args);
+	}
 
-stat_err:
+	if (fp) {
+		fclose(fp);
+	}
 
-	free(opts_path);
-	free(out_path);
-	free(path);
+	if (orig_headers) {
+		free(orig_headers);
+	}
+
+	if (orig_prev) {
+		free(orig_prev);
+	}
+
+	if (out_path) {
+		free(out_path);
+	}
+
+	if (opts_path) {
+		free(opts_path);
+	}
+
+	if (path) {
+		free(path);
+	}
 }
 
 // foreign method binding
