@@ -2,13 +2,14 @@
 
 #include "../util.h"
 
-#include <errno.h>
 #include <sys/unistd.h>
 #include <unistd.h>
 
 typedef struct {
 	bool debug;
 	char* path;
+
+	// TODO make this a hashset
 
 	char** opts;
 	size_t opts_len;
@@ -184,18 +185,45 @@ static void cc_compile(WrenVM* vm) {
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
+		return;
 	}
 
+	uint64_t const hash = hash_str(path);
+	char* out_path;
+
+	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash))
+		;
+
+	// if the output simply doesn't yet exist, don't bother doing anything, compile
+
+	struct stat sb;
+
+	if (stat(out_path, &sb) < 0) {
+		if (errno == ENOENT) {
+			goto compile;
+		}
+
+		LOG_ERROR("CC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
+		goto stat_err;
+	}
+
+	// TODO if the source file is newer than the output, compile
+	// TODO first get source file dependencies
 	// TODO break here if object is more recent than source
 	//      what happens if options change in the meantime though?
 	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
 
+	// don't need to compile!
+
+	return;
+
+	// actually compile
+
+compile: {}
+
 	// construct exec args
 
-	exec_args_t* exec_args = exec_args_new(4, cc->path, "-c", path, "-o");
-
-	uint64_t const hash = hash_str(path);
-	exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
+	exec_args_t* exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 
 	if (cc->debug) {
 		exec_args_add(exec_args, "-g");
@@ -217,6 +245,9 @@ static void cc_compile(WrenVM* vm) {
 
 	// clean up
 
+stat_err:
+
+	free(out_path);
 	free(path);
 }
 
