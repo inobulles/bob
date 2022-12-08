@@ -35,7 +35,8 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 		goto err;
 	}
 
-	char* opts = exec_args_read_out(exec_args);
+	char* const orig_opts = exec_args_read_out(exec_args);
+	char* opts = orig_opts;
 
 	char* opt;
 
@@ -47,7 +48,7 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 		cc_internal_add_opt(cc, opt);
 	}
 
-	free(opts);
+	free(orig_opts);
 
 err:
 
@@ -288,7 +289,7 @@ static void cc_compile(WrenVM* vm) {
 
 compile: {}
 
-	LOG_FATAL("Compiling %s", path);
+	LOG_SUCCESS("Compiling %s", path);
 
 	// construct exec args
 
