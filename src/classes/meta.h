@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sys/utsname.h>
+#include <unistd.h>
 
 // helpers
 
@@ -10,6 +11,17 @@ static void meta_os_add(WrenVM* vm, char const* str) {
 }
 
 // methods
+
+static void meta_cwd(WrenVM* vm) {
+	CHECK_ARGC("Meta.cwd", 0, 0)
+
+	// return current working directory
+
+	char* const cwd = getcwd(NULL, 0);
+	wrenSetSlotString(vm, 0, cwd);
+
+	free(cwd);
+}
 
 static void meta_getenv(WrenVM* vm) {
 	CHECK_ARGC("Meta.getenv", 1, 1)
@@ -102,6 +114,7 @@ static void meta_prefix(WrenVM* vm) {
 static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* signature) {
 	// methods
 
+	BIND_FOREIGN_METHOD(true, "cwd()", meta_cwd)
 	BIND_FOREIGN_METHOD(true, "getenv(_)", meta_getenv)
 	BIND_FOREIGN_METHOD(true, "instruction()", meta_instruction)
 	BIND_FOREIGN_METHOD(true, "os()", meta_os)

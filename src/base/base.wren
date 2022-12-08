@@ -83,6 +83,7 @@ class File {
 }
 
 class Meta {
+	foreign static cwd()
 	foreign static getenv(env)
 	foreign static instruction()
 	foreign static os()

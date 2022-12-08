@@ -94,6 +94,10 @@ class Tests {
 		return file_read
 	}
 
+	static meta_cwd { // check if we know what the current directory is
+		return Meta.cwd().split("/")[-1] == "1ae74c881c64a9" // hex djb2 hash of "meta_cwd"
+	}
+
 	static meta_instruction { // check we're indeed getting the "test" instruction
 		return Meta.instruction() == "test"
 	}
@@ -120,6 +124,6 @@ class Tests {
 
 var tests = [
 	"file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write",
-	"meta_instruction", "meta_getenv_error", "meta_prefix",
+	"meta_cwd", "meta_instruction", "meta_getenv_error", "meta_prefix",
 	"umber",
 ]
