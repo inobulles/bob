@@ -207,7 +207,18 @@ static void cc_compile(WrenVM* vm) {
 		goto stat_err;
 	}
 
-	// TODO if the source file is newer than the output, compile
+	// if the source file is newer than the output, compile
+
+	size_t out_mtime = sb.st_mtime;
+
+	if (stat(path, &sb) < 0) {
+		LOG_ERROR("CC.compile: start(\"%s\"): %s", path, strerror(errno))
+	}
+
+	if (sb.st_mtime > out_mtime) {
+		goto compile;
+	}
+
 	// TODO first get source file dependencies
 	// TODO break here if object is more recent than source
 	//      what happens if options change in the meantime though?
