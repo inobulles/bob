@@ -15,18 +15,6 @@ cc_flags="
 
 for src in $(find src -name "*.c" -type f); do
 	obj=sh-bin/$(basename $src).o
-
-	# to speed things up, skip compilation if source file is older than current object file
-
-	if [ -f $obj ]; then
-		src_age=$(date -r $src +%s)
-		obj_age=$(date -r $obj +%s)
-
-		if [ $src_age -lt $obj_age ]; then
-			continue
-		fi
-	fi
-
 	cc $cc_flags -c $src -o $obj &
 done
 
