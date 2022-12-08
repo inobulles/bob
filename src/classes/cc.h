@@ -201,6 +201,11 @@ static void cc_compile(WrenVM* vm) {
 	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash))
 		;
 
+	char* opts_path;
+
+	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash))
+		;
+
 	// if the output simply doesn't yet exist, don't bother doing anything, compile
 
 	struct stat sb;
@@ -229,6 +234,7 @@ static void cc_compile(WrenVM* vm) {
 	// if one of the dependencies (i.e. included headers) of the source file is more recent than the output, compile
 	// for this, parse the makefile rule output by the preprocessor
 	// see: https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html#Preprocessor-Options
+	// also see: https://wiki.sei.cmu.edu/confluence/display/c/STR06-C.+Do+not+assume+that+strtok%28%29+leaves+the+parse+string+unchanged
 
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
 	exec_args_save_out(exec_args, true);
@@ -257,10 +263,10 @@ static void cc_compile(WrenVM* vm) {
 			continue;
 		}
 
-		size_t len = strlen(header);
+		size_t const len = strlen(header);
 
 		if (header[len - 1] == '\n') {
-			header[--len] = '\0';
+			header[len - 1] = '\0';
 		}
 
 		// if header is more recent than the output, compile
@@ -278,8 +284,50 @@ static void cc_compile(WrenVM* vm) {
 
 	free(orig_headers);
 
-	// TODO what happens if compile options change in the meantime?
-	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
+	// if one of the options changed, compile
+	// if options file doesn't exist, compile
+
+	FILE* fp = fopen(opts_path, "r");
+
+	if (!fp) {
+		goto compile;
+	}
+
+	char* const orig_prev = file_read_str(fp, file_get_size(fp));
+	char* prev = orig_prev;
+
+	char* prev_opt;
+
+	for (size_t i = 0;; i++) {
+		prev_opt = strsep(&prev, "\n");
+
+		bool const prev_done = !prev_opt || !*prev_opt || *prev_opt == '\n';
+		bool const opts_done = i == cc->opts_len;
+
+		if (opts_done && prev_done) {
+			break;
+		}
+
+		if (prev_done != opts_done) {
+			free(orig_prev);
+			fclose(fp);
+
+			goto compile;
+		}
+
+		char* const opt = cc->opts[i];
+		prev_opt[strlen(prev_opt)] = '\0'; // remove newline
+
+		if (strcmp(opt, prev_opt)) {
+			free(orig_prev);
+			fclose(fp);
+
+			goto compile;
+		}
+	}
+
+	free(orig_prev);
+	fclose(fp);
 
 	// don't need to compile!
 
@@ -299,13 +347,18 @@ compile: {}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 
-	if (cc->debug) {
+	fp = fopen(opts_path, "w");
+
+	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
 		exec_args_add(exec_args, "-g");
 	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		exec_args_add(exec_args, cc->opts[i]);
+		fprintf(fp, "%s\n", cc->opts[i]);
 	}
+
+	fclose(fp);
 
 	// finally, actually compile asynchronously
 
@@ -324,6 +377,7 @@ cpp_err:
 
 stat_err:
 
+	free(opts_path);
 	free(out_path);
 	free(path);
 }
