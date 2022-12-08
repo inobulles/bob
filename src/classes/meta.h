@@ -109,6 +109,34 @@ static void meta_prefix(WrenVM* vm) {
 	wrenSetSlotString(vm, 0, install_prefix());
 }
 
+static void meta_setenv(WrenVM* vm) {
+	CHECK_ARGC("Meta.setenv", 1, 2)
+	bool const unset = argc == 1;
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	if (!unset) {
+		ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+	}
+
+	char const* const env = wrenGetSlotString(vm, 1);
+	char const* const val = unset ? NULL : wrenGetSlotString(vm, 2);
+
+	// set/unset environment variable
+
+	if (unset) {
+		if (unsetenv(env) < 0) {
+			LOG_WARN("Meta.setenv: unsetenv(\"%s\"): %s", env, strerror(errno))
+		}
+	}
+
+	else {
+		if (setenv(env, val, true) < 0) {
+			LOG_WARN("Meta.setenv: setenv(\"%s\", \"%s\"): %s", env, val, strerror(errno))
+		}
+	}
+}
+
 // foreign method binding
 
 static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* signature) {
@@ -119,6 +147,8 @@ static WrenForeignMethodFn meta_bind_foreign_method(bool static_, char const* si
 	BIND_FOREIGN_METHOD(true, "instruction()", meta_instruction)
 	BIND_FOREIGN_METHOD(true, "os()", meta_os)
 	BIND_FOREIGN_METHOD(true, "prefix()", meta_prefix)
+	BIND_FOREIGN_METHOD(true, "setenv(_)", meta_setenv)
+	BIND_FOREIGN_METHOD(true, "setenv(_,_)", meta_setenv)
 
 	// unknown
 

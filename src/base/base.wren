@@ -88,6 +88,8 @@ class Meta {
 	foreign static instruction()
 	foreign static os()
 	foreign static prefix()
+	foreign static setenv(env)
+	foreign static setenv(env, val)
 }
 
 class Resources {

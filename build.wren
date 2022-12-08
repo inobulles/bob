@@ -56,6 +56,8 @@ var Strcmp = Fn.new { |a, b| // XXX because 'String' does not implement '<(_)' -
 	return a_len < b_len
 }
 
+var LOREM = "Lorem ipsum dolor sit amet"
+
 class Tests {
 	// unit tests
 
@@ -86,11 +88,11 @@ class Tests {
 	}
 
 	static file_read { // check if we read files correctly
-		return File.read("lorem") == "Lorem ipsum dolor sit amet\n"
+		return File.read("lorem") == "%(LOREM)\n"
 	}
 
 	static file_write { // check if we write files correctly
-		File.write("lorem", "Lorem ipsum dolor sit amet\n")
+		File.write("lorem", "%(LOREM)\n")
 		return file_read
 	}
 
@@ -114,6 +116,22 @@ class Tests {
 		return Meta.prefix() == "/usr/local"
 	}
 
+	static meta_setenv {
+		Meta.setenv("TEST_META_SETENV_ENVVAR", LOREM)
+		return Meta.getenv("TEST_META_SETENV_ENVVAR") == LOREM
+	}
+
+	static meta_unsetenv {
+		Meta.setenv("TEST_META_UNSETENV_ENVVAR", LOREM)
+
+		if (Meta.getenv("TEST_META_UNSETENV_ENVVAR") != LOREM) {
+			return false
+		}
+
+		Meta.setenv("TEST_META_UNSETENV_ENVVAR")
+		return Meta.getenv("TEST_META_UNSETENV_ENVVAR") == null
+	}
+
 	// e2e tests
 
 	static umber { // check if we can correctly clone & build a dependency completely
@@ -124,6 +142,6 @@ class Tests {
 
 var tests = [
 	"file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write",
-	"meta_cwd", "meta_instruction", "meta_getenv_error", "meta_prefix",
+	"meta_cwd", "meta_instruction", "meta_getenv_error", "meta_prefix", "meta_setenv", "meta_unsetenv",
 	"umber",
 ]
