@@ -122,14 +122,8 @@ static int wren_setup_vm(state_t* state) {
 	state->src = file_read_str(state->fp, size);
 
 	// run configuration file
-	// temporarily set 'curr_instr' to 'build', as this will build
-
-	char const* const prev_instr = curr_instr;
-	curr_instr = "build";
 
 	result = wrenInterpret(state->vm, module, state->src);
-
-	curr_instr = prev_instr;
 
 	if (result != WREN_RESULT_SUCCESS) {
 		LOG_FATAL("Something wrong executing build configuration")
