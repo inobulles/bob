@@ -181,6 +181,12 @@ static void cc_compile(WrenVM* vm) {
 	cc_t* const cc = foreign;
 	char const* const _path = wrenGetSlotString(vm, 1);
 
+	// declarations which must come before first goto
+
+	exec_args_t* exec_args = NULL;
+
+	// get absolute path or source file, hashing it, and getting output path
+
 	char* const path = realpath(_path, NULL);
 
 	if (!path) {
@@ -212,16 +218,68 @@ static void cc_compile(WrenVM* vm) {
 	size_t out_mtime = sb.st_mtime;
 
 	if (stat(path, &sb) < 0) {
-		LOG_ERROR("CC.compile: start(\"%s\"): %s", path, strerror(errno))
+		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
 	}
 
-	if (sb.st_mtime > out_mtime) {
+	if (sb.st_mtime >= out_mtime) {
 		goto compile;
 	}
 
-	// TODO first get source file dependencies
-	// TODO break here if object is more recent than source
-	//      what happens if options change in the meantime though?
+	// if one of the dependencies (i.e. included headers) of the source file is more recent than the output, compile
+	// for this, parse the makefile rule output by the preprocessor
+	// see: https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html#Preprocessor-Options
+
+	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
+	exec_args_save_out(exec_args, true);
+
+	for (size_t i = 0; i < cc->opts_len; i++) {
+		exec_args_add(exec_args, cc->opts[i]);
+	}
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS) {
+		goto cpp_err; // CPP as in C PreProcessor
+	}
+
+	char* headers = exec_args_read_out(exec_args);
+
+	exec_args_del(exec_args);
+	exec_args = NULL;
+
+	if (!headers) {
+		goto cpp_err;
+	}
+
+	char* header;
+
+	while ((header = strsep(&headers, " "))) {
+		if (*header == ':' || *header == '\\' || !*header) {
+			continue;
+		}
+
+		size_t len = strlen(header);
+
+		if (header[len - 1] == '\n') {
+			header[--len] = 0;
+		}
+
+		// if header is more recent than the output, compile
+
+		if (stat(header, &sb) < 0) {
+			LOG_WARN("CC.compile: stat(\"%s\"): %s", header, strerror(errno));
+			continue;
+		}
+
+		if (sb.st_mtime >= out_mtime) {
+			free(headers);
+			goto compile;
+		}
+	}
+
+	free(headers);
+
+	// TODO what happens if compile options change in the meantime?
 	//      maybe I could hash the options list (XOR each option's hash together) and store that in 'bin/'?
 
 	// don't need to compile!
@@ -232,9 +290,11 @@ static void cc_compile(WrenVM* vm) {
 
 compile: {}
 
+	LOG_FATAL("Compiling %s", path);
+
 	// construct exec args
 
-	exec_args_t* exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
+	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 
 	if (cc->debug) {
 		exec_args_add(exec_args, "-g");
@@ -246,8 +306,7 @@ compile: {}
 
 	// finally, actually compile asynchronously
 
-	pid_t pid = execute_async(exec_args);
-	exec_args_del(exec_args);
+	pid_t const pid = execute_async(exec_args);
 
 	// add pid to list of processes
 
@@ -255,6 +314,10 @@ compile: {}
 	cc->compilation_processes[cc->compilation_processes_len - 1] = pid;
 
 	// clean up
+
+cpp_err:
+
+	exec_args_del(exec_args);
 
 stat_err:
 
