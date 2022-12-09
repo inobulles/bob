@@ -185,7 +185,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
-	int r = fcntl(pipe, F_GETFD);
+	int r = fcntl(pipe_out, F_GETFD);
 	printf("fcntl %d %s\n", r, strerror(errno));
 
 	char* cmd;
@@ -194,7 +194,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	free(cmd);
 
 	if (bytes < 0) {
-		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
+		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe_out, strerror(errno))
 	}
 
 	out[total] = '\0';
@@ -348,9 +348,6 @@ static pid_t execute_async(exec_args_t* self) {
 				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
 			}
 		}
-
-		fprintf(stderr, "error testing\n");
-		close(self->pipe_err_in);
 
 		// attempt first to execute at the path passed
 
