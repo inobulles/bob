@@ -254,21 +254,21 @@ static void exec_args_del(exec_args_t* self) {
 		free(self->args);
 	}
 
-	if (self->pipe_in >= 0) {
-		close(self->pipe_in);
-	}
+	// if (self->pipe_in >= 0) {
+	// 	close(self->pipe_in);
+	// }
 
-	if (self->pipe_out >= 0) {
-		close(self->pipe_out);
-	}
+	// if (self->pipe_out >= 0) {
+	// 	close(self->pipe_out);
+	// }
 
-	if (self->pipe_err_in >= 0) {
-		close(self->pipe_err_in);
-	}
+	// if (self->pipe_err_in >= 0) {
+	// 	close(self->pipe_err_in);
+	// }
 
-	if (self->pipe_err_out >= 0) {
-		close(self->pipe_err_out);
-	}
+	// if (self->pipe_err_out >= 0) {
+	// 	close(self->pipe_err_out);
+	// }
 
 	free(self);
 }
