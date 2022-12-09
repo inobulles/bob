@@ -186,7 +186,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	}
 
 	int r = fcntl(pipe_out, F_GETFD);
-	printf("fcntl %d %s\n", r, strerror(errno));
+	fprintf(stderr, "%p fcntl %d %s\n", self, r, strerror(errno));
 
 	char* cmd;
 	asprintf(&cmd, "ls /proc/%d/fd", getpid());
@@ -239,6 +239,7 @@ static void exec_args_print(exec_args_t* self) {
 }
 
 static void exec_args_del(exec_args_t* self) {
+	fprintf(stderr, "%p del\n", self);
 	for (size_t i = 0; i < self->len - 1 /* don't free NULL sentinel */; i++) {
 		char* const arg = self->args[i];
 
