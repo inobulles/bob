@@ -305,6 +305,8 @@ static pid_t execute_async(exec_args_t* self) {
 
 		self->pipe_err_in  = fd[0];
 		self->pipe_err_out = fd[1];
+
+		printf("%d\n", self->pipe_err_out);
 	}
 
 	// fork process
