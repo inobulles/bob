@@ -7,6 +7,11 @@
 #include "../util.h"
 
 typedef struct {
+	pid_t pid;
+	exec_args_t* exec_args;
+} cc_proc_t;
+
+typedef struct {
 	bool debug;
 	char* path;
 
@@ -15,8 +20,8 @@ typedef struct {
 	char** opts;
 	size_t opts_len;
 
-	pid_t* compilation_processes;
-	size_t compilation_processes_len;
+	cc_proc_t* cc_procs;
+	size_t cc_procs_len;
 } cc_t;
 
 // helpers
@@ -64,8 +69,8 @@ static void cc_init(cc_t* cc) {
 	cc->opts = NULL;
 	cc->opts_len = 0;
 
-	cc->compilation_processes = NULL;
-	cc->compilation_processes_len = 0;
+	cc->cc_procs = NULL;
+	cc->cc_procs_len = 0;
 
 	// this is very annoying and dumb so whatever just disable it for everyone
 
@@ -358,16 +363,15 @@ compile: {}
 
 	// add pid to list of processes
 
-	cc->compilation_processes = realloc(cc->compilation_processes, ++cc->compilation_processes_len * sizeof *cc->compilation_processes);
-	cc->compilation_processes[cc->compilation_processes_len - 1] = pid;
+	cc->cc_procs = realloc(cc->cc_procs, ++cc->cc_procs_len * sizeof *cc->cc_procs);
+	cc_proc_t* cc_proc = &cc->cc_procs[cc->cc_procs_len - 1];
+
+	cc_proc->exec_args = exec_args;
+	cc_proc->pid = pid;
 
 	// clean up
 
 done:
-
-	if (exec_args) {
-		exec_args_del(exec_args);
-	}
 
 	if (fp) {
 		fclose(fp);
