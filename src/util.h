@@ -183,8 +183,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
-	printf("write %zu\n", write(pipe, "testing", 4));
-
 	int r = fcntl(pipe, F_GETFD);
 	printf("fcntl %d %s\n", r, strerror(errno));
 
@@ -308,8 +306,8 @@ static pid_t execute_async(exec_args_t* self) {
 			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
 		}
 
-		self->pipe_in  = fd[0];
-		self->pipe_out = fd[1];
+		self->pipe_in  = fd[1];
+		self->pipe_out = fd[0];
 	}
 
 	if (self->save_out & EXEC_ARGS_STDERR) {
@@ -317,8 +315,8 @@ static pid_t execute_async(exec_args_t* self) {
 			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
 		}
 
-		self->pipe_err_in  = fd[0];
-		self->pipe_err_out = fd[1];
+		self->pipe_err_in  = fd[1];
+		self->pipe_err_out = fd[0];
 	}
 
 	// fork process
