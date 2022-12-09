@@ -3,7 +3,6 @@ task:
   container:
     image: gcc:latest
   build_script:
-    - apt install -y lsof
     - sh build.sh
   test_script:
     - CLICOLOR_FORCE= $(realpath sh-bin/bob) test install
@@ -15,7 +14,6 @@ task:
   arm_container:
     image: gcc:latest
   build_script:
-    - apt install -y lsof
     - sh build.sh
   test_script:
     - CLICOLOR_FORCE= $(realpath sh-bin/bob) test install
