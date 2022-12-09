@@ -350,9 +350,10 @@ compile: {}
 
 	// if we've got colour support, force it in the compiler
 	// we do this, because compiler output is piped
+	// '-fcolor-diagnostics' also works, but only on clang
 
 	if (colour_support) {
-		exec_args_add(exec_args, "-fcolor-diagnostics");
+		exec_args_add(exec_args, "-fdiagnostics-color=always");
 	}
 
 	fp = fopen(opts_path, "w");
