@@ -10,6 +10,14 @@
 static bool colour_support = false;
 
 static bool supports_colour(void) {
+	// if we're forced to do colours, oblige 😞
+
+	char* const clicolor_force = getenv("CLICOLOR_FORCE");
+
+	if (clicolor_force) {
+		return true;
+	}
+
 	// if stdout or stderr is not a TTY, we don't want colours
 
 	if (!isatty(STDOUT_FILENO) || !isatty(STDERR_FILENO)) {
