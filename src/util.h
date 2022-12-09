@@ -146,12 +146,10 @@ static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out)
 static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
 	// make sure everything is as we expect it
 
-	int pipe_in  = self->pipe_in;
-	int pipe_out = self->pipe_out;
+	int pipe = self->pipe_out;
 
 	if (save_out == EXEC_ARGS_STDERR) {
-		pipe_in  = self->pipe_err_in;
-		pipe_out = self->pipe_err_out;
+		pipe = self->pipe_err_out;
 	}
 
 	else if (save_out != EXEC_ARGS_STDOUT) {
@@ -174,7 +172,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 
 	errno = 0;
 
-	while ((bytes = read(pipe_out, chunk, sizeof chunk)) > 0) {
+	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
 		out = realloc(out, total + 1);
@@ -184,7 +182,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	}
 
 	if (bytes < 0) {
-		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe_out, strerror(errno))
+		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
 	}
 
 	out[total] = '\0';
