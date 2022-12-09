@@ -321,18 +321,10 @@ static pid_t execute_async(exec_args_t* self) {
 
 		if (self->save_out & EXEC_ARGS_STDOUT) {
 			close(self->pipe_out);
-
-			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
-			}
 		}
 
 		if (self->save_out & EXEC_ARGS_STDERR) {
 			close(self->pipe_err_out);
-
-			if (dup2(self->pipe_err_in, STDERR_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
-			}
 		}
 
 		// attempt first to execute at the path passed
