@@ -143,8 +143,6 @@ static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out)
 	self->save_out = save_out;
 }
 
-#include <fcntl.h>
-
 static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
 	// make sure everything is as we expect it
 
