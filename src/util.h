@@ -320,11 +320,9 @@ static pid_t execute_async(exec_args_t* self) {
 		// then, redirect stdout/stderr of process to pipe input
 
 		if (self->save_out & EXEC_ARGS_STDOUT) {
-			close(self->pipe_out);
 		}
 
 		if (self->save_out & EXEC_ARGS_STDERR) {
-			close(self->pipe_err_out);
 		}
 
 		// attempt first to execute at the path passed
@@ -368,14 +366,6 @@ static pid_t execute_async(exec_args_t* self) {
 
 	// we're the parent
 	// close the output side of the pipes if they exist, as we wanna receive input
-
-	if (self->save_out & EXEC_ARGS_STDOUT) {
-		close(self->pipe_in);
-	}
-
-	if (self->save_out & EXEC_ARGS_STDERR) {
-		close(self->pipe_err_in);
-	}
 
 	return pid;
 }
