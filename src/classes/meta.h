@@ -1,7 +1,10 @@
 #pragma once
 
-#include <sys/utsname.h>
 #include <unistd.h>
+
+#include <sys/utsname.h>
+
+#include "../util.h"
 
 // helpers
 

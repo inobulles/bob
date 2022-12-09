@@ -1,10 +1,28 @@
 #pragma once
 
+#include <err.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
+#include <sys/wait.h>
+
+// XXX can't do this right now, because clangd doesn't know relative to where the '-Iwren/include' options is
+//     the solution will be to generate a 'clang_commands.json' file automatically I believe :)
+
+//#include <wren.h>
+#include "wren/include/wren.h"
+
 #include "logging.h"
+
+// global variables
+
+extern char* bin_path;
+extern char const* init_name;
+extern char const* curr_instr;
 
 // useful macros
 
@@ -22,9 +40,9 @@
 	\
 	/* be pessimistic and set return value to null right off the bat */ \
 	/* foreign values in slot 0 really come in to put a thorn in our side, but that's alright, we too cool for that to stop us 😎 */ \
-	/* getting the value of the foreign slot doesn't work when calling 'wrenSetSlotNewForeign' though, because we can't just read what's in 'classSlot', so we'll have to make an exception to 'new' functions */ \
+	/* getting the value of the foreign slot doesn't work when calling 'wrenSetSlotNewForeign' though, because we can't just read what's in 'classSlot', so we'll have to make an exception to '.new' methods */ \
 	\
-	void* foreign = NULL; \
+	__attribute__((unused)) void* foreign = NULL; \
 	\
 	if (strcmp(strrchr(__fn_name, '.'), ".new")) { \
 		if (wrenGetSlotType(vm, 0) == WREN_TYPE_FOREIGN) { \
@@ -96,7 +114,7 @@ typedef struct {
 	bool save_out;
 } exec_args_t;
 
-static exec_args_t* exec_args_new(int len, ...) {
+static exec_args_t* exec_args_new(size_t len, ...) {
 	va_list va;
 	va_start(va, len);
 

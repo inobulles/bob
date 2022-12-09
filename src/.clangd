@@ -1,0 +1,14 @@
+CompileFlags:
+  Add:
+    - -std=c99
+    - -Wall
+    - -Wextra
+    - -Iwren/include
+    - -I/usr/local/include
+Diagnostics:
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add: modernize*
+    WarnOnSizeOfPointerToAggregate: false # don't worry about the warning here - this is indeed valid to clang-tidy!
+InlayHints:
+  ParameterNames: No

@@ -1,5 +1,12 @@
 #pragma once
 
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <sys/stat.h>
+
+#include <wren.h>
+
 #include "base/base.h"
 
 #include "classes/cc.h"
@@ -11,9 +18,6 @@
 #include "classes/resources.h"
 
 #include "util.h"
-#include "wren/include/wren.h"
-#include <stdlib.h>
-#include <unistd.h>
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
 	WrenForeignMethodFn fn = unknown_foreign;
@@ -56,7 +60,7 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 }
 
 static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, char const* class) {
-	WrenForeignClassMethods meth = { NULL };
+	WrenForeignClassMethods meth = { 0 };
 
 	if (!strcmp(class, "CC")) {
 		meth.allocate = cc_new;

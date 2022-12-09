@@ -1,9 +1,10 @@
 #pragma once
 
-#include "../util.h"
-
-#include <sys/unistd.h>
 #include <unistd.h>
+
+#include <sys/stat.h>
+
+#include "../util.h"
 
 typedef struct {
 	bool debug;
@@ -225,7 +226,7 @@ static void cc_compile(WrenVM* vm) {
 
 	// if the source file is newer than the output, compile
 
-	size_t out_mtime = sb.st_mtime;
+	time_t out_mtime = sb.st_mtime;
 
 	if (stat(path, &sb) < 0) {
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
