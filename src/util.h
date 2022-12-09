@@ -144,17 +144,15 @@ static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out)
 }
 
 static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
-	int pipe;
+	// make sure everything is as we expect it
 
-	if (save_out == EXEC_ARGS_STDOUT) {
-		pipe = self->pipe_out;
-	}
+	int pipe = self->pipe_out;
 
-	else if (save_out == EXEC_ARGS_STDERR) {
+	if (save_out == EXEC_ARGS_STDERR) {
 		pipe = self->pipe_err_out;
 	}
 
-	else {
+	else if (save_out != EXEC_ARGS_STDOUT) {
 		LOG_ERROR("exec_args_read_out: Unknown save output kind value %d", save_out)
 		return NULL;
 	}
@@ -163,6 +161,8 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out'?")
 		return NULL;
 	}
+
+	// start reading
 
 	char* out = strdup("");
 	size_t total = 0;
@@ -294,8 +294,8 @@ static pid_t execute_async(exec_args_t* self) {
 			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
 		}
 
-		self->pipe_in  = fd[0];
-		self->pipe_out = fd[1];
+		self->pipe_in  = fd[1];
+		self->pipe_out = fd[0];
 	}
 
 	if (self->save_out & EXEC_ARGS_STDERR) {
@@ -303,8 +303,8 @@ static pid_t execute_async(exec_args_t* self) {
 			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
 		}
 
-		self->pipe_err_in  = fd[0];
-		self->pipe_err_out = fd[1];
+		self->pipe_err_in  = fd[1];
+		self->pipe_err_out = fd[0];
 	}
 
 	// fork process
@@ -379,10 +379,12 @@ static pid_t execute_async(exec_args_t* self) {
 
 	if (self->save_out & EXEC_ARGS_STDOUT) {
 		close(self->pipe_in);
+		self->pipe_in = -1;
 	}
 
 	if (self->save_out & EXEC_ARGS_STDERR) {
 		close(self->pipe_err_in);
+		self->pipe_err_in = -1;
 	}
 
 	return pid;
