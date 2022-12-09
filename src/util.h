@@ -170,8 +170,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	char chunk[4096];
 	ssize_t bytes;
 
-	errno = 0;
-
 	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
