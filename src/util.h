@@ -306,7 +306,7 @@ static pid_t execute_async(exec_args_t* self) {
 		self->pipe_err_in  = fd[0];
 		self->pipe_err_out = fd[1];
 
-		printf("%d\n", self->pipe_err_out);
+		fprintf(stderr, "pipe_err_out %d\n", self->pipe_err_out);
 	}
 
 	// fork process
@@ -322,9 +322,19 @@ static pid_t execute_async(exec_args_t* self) {
 		// then, redirect stdout/stderr of process to pipe input
 
 		if (self->save_out & EXEC_ARGS_STDOUT) {
+			close(self->pipe_out);
+
+			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
+				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
+			}
 		}
 
 		if (self->save_out & EXEC_ARGS_STDERR) {
+			close(self->pipe_err_out);
+
+			if (dup2(self->pipe_err_in, STDERR_FILENO) < 0) {
+				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
+			}
 		}
 
 		// attempt first to execute at the path passed
@@ -368,6 +378,14 @@ static pid_t execute_async(exec_args_t* self) {
 
 	// we're the parent
 	// close the output side of the pipes if they exist, as we wanna receive input
+
+	if (self->save_out & EXEC_ARGS_STDOUT) {
+		close(self->pipe_in);
+	}
+
+	if (self->save_out & EXEC_ARGS_STDERR) {
+		close(self->pipe_err_in);
+	}
 
 	return pid;
 }
