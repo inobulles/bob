@@ -166,10 +166,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		return NULL;
 	}
 
-	// close pipe so we don't read endlessly (sends an EOF)
-
-	close(pipe_in);
-
 	// start reading
 
 	char* out = strdup("");
@@ -352,6 +348,9 @@ static pid_t execute_async(exec_args_t* self) {
 				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
 			}
 		}
+
+		fprintf(stderr, "error testing\n");
+		close(self->pipe_err_in);
 
 		// attempt first to execute at the path passed
 
