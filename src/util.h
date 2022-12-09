@@ -160,7 +160,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	}
 
 	if (pipe < 0) {
-		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out(self, true)'?")
+		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out'?")
 		return NULL;
 	}
 
