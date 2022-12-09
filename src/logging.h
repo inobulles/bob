@@ -1,8 +1,13 @@
-static bool colour_support = false;
+#pragma once
 
-static void logging_init(void) {
-	// TODO
-}
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void logging_init(void);
+
+__attribute__((__format__(__printf__, 3, 0)))
+void vlog(FILE* stream, char const* colour, char const* const fmt, ...);
 
 // kinda replicate the umber API
 
@@ -14,20 +19,6 @@ static void logging_init(void) {
 #define RED     "31m"
 #define YELLOW  "33m"
 #define GREEN   "32m"
-
-__attribute__((__format__(__printf__, 3, 0)))
-void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-
-	char* msg;
-	vasprintf(&msg, fmt, args);
-
-	va_end(args);
-
-	fprintf(stream, "%s%s%s\n", colour, msg, CLEAR);
-	free(msg);
-}
 
 #define LOG_FATAL(...)   vlog(stderr, "💀 " BOLD    PURPLE, __VA_ARGS__);
 #define LOG_ERROR(...)   vlog(stderr, "🔴 " BOLD    RED,    __VA_ARGS__);
