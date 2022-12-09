@@ -53,6 +53,14 @@ static bool __linker_wait_cc(linker_t* linker) {
 	cc_t* const cc = linker->cc;
 	bool error = false;
 
+	// if there are none, return successfully straight away
+
+	if (!cc->cc_procs_len) {
+		return false;
+	}
+
+	LOG_SUCCESS("Waiting for all %d compilation processes to finish - this will become a progress bar!", cc->cc_procs_len)
+
 	for (size_t i = 0; i < cc->cc_procs_len; i++) {
 		cc_proc_t* const cc_proc = &cc->cc_procs[i];
 		error |= !!wait_for_process(cc_proc->pid);
@@ -67,6 +75,13 @@ static bool __linker_wait_cc(linker_t* linker) {
 
 		exec_args_del(cc_proc->exec_args);
 	}
+
+	// clear the compiler processes list
+
+	free(cc->cc_procs);
+
+	cc->cc_procs = NULL;
+	cc->cc_procs_len = 0;
 
 	return error;
 }
