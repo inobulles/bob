@@ -56,6 +56,7 @@ static void usage(void) {
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;
+	logging_init();
 
 	// parse options
 
