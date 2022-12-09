@@ -172,6 +172,8 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	char chunk[4096];
 	ssize_t bytes;
 
+	errno = 0;
+
 	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
@@ -180,6 +182,8 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 
 		memcpy(out + total - bytes, chunk, bytes);
 	}
+
+	printf("write %zu\n", write(pipe, "testing", 4));
 
 	int r = fcntl(pipe, F_GETFD);
 	printf("fcntl %d %s\n", r, strerror(errno));
@@ -315,8 +319,6 @@ static pid_t execute_async(exec_args_t* self) {
 
 		self->pipe_err_in  = fd[0];
 		self->pipe_err_out = fd[1];
-
-		fprintf(stderr, "pipe_err_out %d\n", self->pipe_err_out);
 	}
 
 	// fork process
