@@ -1,3 +1,9 @@
+#define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
+
+#if __linux__
+   #define _GNU_SOURCE
+#endif
+
 #include <err.h>
 #include <errno.h>
 #include <stdbool.h>
