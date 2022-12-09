@@ -189,7 +189,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
-	/*
 	int r = fcntl(pipe, F_GETFD);
 	printf("fcntl %d %s\n", r, strerror(errno));
 
@@ -197,7 +196,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	asprintf(&cmd, "ls /proc/%d/fd", getpid());
 	system(cmd);
 	free(cmd);
-	*/
 
 	if (bytes < 0) {
 		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
