@@ -185,14 +185,6 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
-	int r = fcntl(pipe_out, F_GETFD);
-	fprintf(stderr, "%p fcntl %d %s\n", self, r, strerror(errno));
-
-	char* cmd;
-	asprintf(&cmd, "ls /proc/%d/fd", getpid());
-	system(cmd);
-	free(cmd);
-
 	if (bytes < 0) {
 		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe_out, strerror(errno))
 	}
@@ -239,7 +231,6 @@ static void exec_args_print(exec_args_t* self) {
 }
 
 static void exec_args_del(exec_args_t* self) {
-	fprintf(stderr, "%p del\n", self);
 	for (size_t i = 0; i < self->len - 1 /* don't free NULL sentinel */; i++) {
 		char* const arg = self->args[i];
 
@@ -254,21 +245,21 @@ static void exec_args_del(exec_args_t* self) {
 		free(self->args);
 	}
 
-	// if (self->pipe_in >= 0) {
-	// 	close(self->pipe_in);
-	// }
+	if (self->pipe_in >= 0) {
+		close(self->pipe_in);
+	}
 
-	// if (self->pipe_out >= 0) {
-	// 	close(self->pipe_out);
-	// }
+	if (self->pipe_out >= 0) {
+		close(self->pipe_out);
+	}
 
-	// if (self->pipe_err_in >= 0) {
-	// 	close(self->pipe_err_in);
-	// }
+	if (self->pipe_err_in >= 0) {
+		close(self->pipe_err_in);
+	}
 
-	// if (self->pipe_err_out >= 0) {
-	// 	close(self->pipe_err_out);
-	// }
+	if (self->pipe_err_out >= 0) {
+		close(self->pipe_err_out);
+	}
 
 	free(self);
 }
@@ -394,10 +385,12 @@ static pid_t execute_async(exec_args_t* self) {
 
 	if (self->save_out & EXEC_ARGS_STDOUT) {
 		close(self->pipe_in);
+		self->pipe_in = -1;
 	}
 
 	if (self->save_out & EXEC_ARGS_STDERR) {
 		close(self->pipe_err_in);
+		self->pipe_err_in = -1;
 	}
 
 	return pid;
