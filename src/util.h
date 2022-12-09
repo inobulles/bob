@@ -146,17 +146,17 @@ static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out)
 #include <fcntl.h>
 
 static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
-	int pipe;
+	// make sure everything is as we expect it
 
-	if (save_out == EXEC_ARGS_STDOUT) {
-		pipe = self->pipe_out;
+	int pipe_in  = self->pipe_in;
+	int pipe_out = self->pipe_out;
+
+	if (save_out == EXEC_ARGS_STDERR) {
+		pipe_in  = self->pipe_err_in;
+		pipe_out = self->pipe_err_out;
 	}
 
-	else if (save_out == EXEC_ARGS_STDERR) {
-		pipe = self->pipe_err_out;
-	}
-
-	else {
+	else if (save_out != EXEC_ARGS_STDOUT) {
 		LOG_ERROR("exec_args_read_out: Unknown save output kind value %d", save_out)
 		return NULL;
 	}
@@ -166,6 +166,12 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		return NULL;
 	}
 
+	// close pipe so we don't read endlessly (sends an EOF)
+
+	close(pipe_in);
+
+	// start reading
+
 	char* out = strdup("");
 	size_t total = 0;
 
@@ -174,7 +180,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 
 	errno = 0;
 
-	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
+	while ((bytes = read(pipe_out, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
 		out = realloc(out, total + 1);
@@ -183,6 +189,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
+	/*
 	int r = fcntl(pipe, F_GETFD);
 	printf("fcntl %d %s\n", r, strerror(errno));
 
@@ -190,6 +197,7 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	asprintf(&cmd, "ls /proc/%d/fd", getpid());
 	system(cmd);
 	free(cmd);
+	*/
 
 	if (bytes < 0) {
 		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
