@@ -6,14 +6,13 @@
 
 #include <err.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "logging.h"
 
-static bool colour_support = false;
+bool colour_support = false;
 
 static bool supports_colour(void) {
 	// if we're forced to do colours, oblige 😞

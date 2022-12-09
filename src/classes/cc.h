@@ -346,6 +346,15 @@ compile: {}
 	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
+	exec_args_save_out(exec_args, EXEC_ARGS_STDERR); // both warning & errors go through stderr
+
+	// if we've got colour support, force it in the compiler
+	// we do this, because compiler output is piped
+
+	if (colour_support) {
+		exec_args_add(exec_args, "-fcolor-diagnostics");
+	}
+
 	fp = fopen(opts_path, "w");
 
 	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
