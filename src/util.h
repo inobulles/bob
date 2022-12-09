@@ -104,6 +104,11 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 
 // exec args stack object
 
+typedef enum {
+	EXEC_ARGS_STDOUT = 0b01,
+	EXEC_ARGS_STDERR = 0b10,
+} exec_args_save_out_t;
+
 typedef struct {
 	size_t len; // includes NULL sentinel
 	char** args;
@@ -111,7 +116,10 @@ typedef struct {
 	int pipe_in;
 	int pipe_out;
 
-	bool save_out;
+	int pipe_err_in;
+	int pipe_err_out;
+
+	exec_args_save_out_t save_out;
 } exec_args_t;
 
 static exec_args_t* exec_args_new(size_t len, ...) {
@@ -131,12 +139,27 @@ static exec_args_t* exec_args_new(size_t len, ...) {
 	return self;
 }
 
-static void exec_args_save_out(exec_args_t* self, bool save_out) {
+static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out) {
 	self->save_out = save_out;
 }
 
-static char* exec_args_read_out(exec_args_t* self) {
-	if (self->pipe_out < 0) {
+static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
+	int pipe;
+
+	if (save_out == EXEC_ARGS_STDOUT) {
+		pipe = self->pipe_out;
+	}
+
+	else if (save_out == EXEC_ARGS_STDERR) {
+		pipe = self->pipe_err_out;
+	}
+
+	else {
+		LOG_ERROR("exec_args_read_out: Unknown save output kind value %d", save_out)
+		return NULL;
+	}
+
+	if (pipe < 0) {
 		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out(self, true)'?")
 		return NULL;
 	}
@@ -147,7 +170,7 @@ static char* exec_args_read_out(exec_args_t* self) {
 	char chunk[4096];
 	ssize_t bytes;
 
-	while ((bytes = read(self->pipe_out, chunk, sizeof chunk)) > 0) {
+	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
 		out = realloc(out, total + 1);
@@ -157,7 +180,7 @@ static char* exec_args_read_out(exec_args_t* self) {
 	}
 
 	if (bytes < 0) {
-		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", self->pipe_out, strerror(errno))
+		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
 	}
 
 	out[total] = '\0';
@@ -224,6 +247,14 @@ static void exec_args_del(exec_args_t* self) {
 		close(self->pipe_out);
 	}
 
+	if (self->pipe_err_in >= 0) {
+		close(self->pipe_err_in);
+	}
+
+	if (self->pipe_err_out >= 0) {
+		close(self->pipe_err_out);
+	}
+
 	free(self);
 }
 
@@ -247,21 +278,33 @@ static int wait_for_process(pid_t pid) {
 static pid_t execute_async(exec_args_t* self) {
 	char** exec_args = self->args;
 
-	// create bi-directional pipe if we're asked to save output
+	// create bi-directional pipes if we're asked to save output
 	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
 
 	self->pipe_in  = -1;
 	self->pipe_out = -1;
 
-	if (self->save_out) {
-		int fd[2];
+	self->pipe_err_in  = -1;
+	self->pipe_err_out = -1;
 
+	int fd[2];
+
+	if (self->save_out & EXEC_ARGS_STDOUT) {
 		if (pipe(fd) < 0) {
 			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
 		}
 
 		self->pipe_in  = fd[0];
 		self->pipe_out = fd[1];
+	}
+
+	if (self->save_out & EXEC_ARGS_STDERR) {
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->pipe_err_in  = fd[0];
+		self->pipe_err_out = fd[1];
 	}
 
 	// fork process
@@ -274,15 +317,21 @@ static pid_t execute_async(exec_args_t* self) {
 
 	if (!pid) {
 		// close input side of pipe if it exists, as we wanna send output
+		// then, redirect stdout/stderr of process to pipe input
 
-		if (self->save_out) {
+		if (self->save_out & EXEC_ARGS_STDOUT) {
 			close(self->pipe_out);
-
-			// redirect stdout of process to pipe output
-			// don't redirect stderr, because we still wanna see a log of any child process errors ;)
 
 			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
 				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
+			}
+		}
+
+		if (self->save_out & EXEC_ARGS_STDERR) {
+			close(self->pipe_err_out);
+
+			if (dup2(self->pipe_err_in, STDERR_FILENO) < 0) {
+				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
 			}
 		}
 
@@ -326,10 +375,14 @@ static pid_t execute_async(exec_args_t* self) {
 	}
 
 	// we're the parent
-	// close the output side of the pipe if it exists, as we wanna receive input
+	// close the output side of the pipes if they exist, as we wanna receive input
 
-	if (self->save_out) {
+	if (self->save_out & EXEC_ARGS_STDOUT) {
 		close(self->pipe_in);
+	}
+
+	if (self->save_out & EXEC_ARGS_STDERR) {
+		close(self->pipe_err_in);
 	}
 
 	return pid;
