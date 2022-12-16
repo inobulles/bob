@@ -117,9 +117,9 @@ typedef struct {
 
 	int err_in;
 	int err_out;
-} pipe_set_t;
+} pipe_t;
 
-static void pipe_create(pipe_set_t* self) {
+static void pipe_create(pipe_t* self) {
 	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
 
 	self->in  = -1;
@@ -151,7 +151,7 @@ static void pipe_create(pipe_set_t* self) {
 	}
 }
 
-static void pipe_child(pipe_set_t* self) {
+static void pipe_child(pipe_t* self) {
 	// close input side of pipe if it exists, as we wanna send output
 	// then, redirect stdout/stderr of process to pipe input
 
@@ -172,7 +172,7 @@ static void pipe_child(pipe_set_t* self) {
 	}
 }
 
-static void pipe_parent(pipe_set_t* self) {
+static void pipe_parent(pipe_t* self) {
 	if (self->kind & PIPE_STDOUT) {
 		close(self->in);
 		self->in = -1;
@@ -184,7 +184,7 @@ static void pipe_parent(pipe_set_t* self) {
 	}
 }
 
-static char* pipe_read_out(pipe_set_t* self, pipe_kind_t kind) {
+static char* pipe_read_out(pipe_t* self, pipe_kind_t kind) {
 	// make sure everything is as we expect
 
 	int pipe = self->out;
@@ -228,7 +228,7 @@ static char* pipe_read_out(pipe_set_t* self, pipe_kind_t kind) {
 	return out;
 }
 
-static void pipe_free(pipe_set_t* self) {
+static void pipe_free(pipe_t* self) {
 	if (self->in >= 0) {
 		close(self->in);
 	}
@@ -252,7 +252,7 @@ typedef struct {
 	size_t len; // includes NULL sentinel
 	char** args;
 
-	pipe_set_t pipe;
+	pipe_t pipe;
 } exec_args_t;
 
 static exec_args_t* exec_args_new(size_t len, ...) {
