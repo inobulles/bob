@@ -100,8 +100,7 @@ static void file_exec(WrenVM* vm) {
 	int rv = execute(exec_args);
 
 	if (rv != EXIT_SUCCESS) {
-		LOG_WARN("'File.exec' failed execution with error code %d - here is the exec_args struct:", rv)
-		exec_args_print(exec_args);
+		LOG_WARN("'File.exec' failed execution with error code %d", rv)
 	}
 
 	exec_args_del(exec_args);
