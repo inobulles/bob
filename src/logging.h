@@ -9,12 +9,27 @@
 
 extern bool colour_support;
 
+// structs
+
+typedef struct {
+	float frac;
+} progress_t;
+
 // prototypes
 
 void logging_init(void);
 
 __attribute__((__format__(__printf__, 3, 0)))
 void vlog(FILE* stream, char const* colour, char const* const fmt, ...);
+
+progress_t* progress_new(void);
+void progress_del(progress_t* self);
+
+__attribute__((__format__(__printf__, 2, 0)))
+void progress_complete(progress_t* self, char const* fmt, ...);
+
+__attribute__((__format__(__printf__, 3, 0)))
+void progress_update(progress_t* self, float frac, char const* fmt, ...);
 
 // kinda replicate the umber API
 
@@ -26,6 +41,9 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...);
 #define RED     "31m"
 #define YELLOW  "33m"
 #define GREEN   "32m"
+#define BLUE    "34m"
+
+#define REPLACE_LINE "\33[2K\r"
 
 #define LOG_FATAL(...)   vlog(stderr, "💀 " BOLD    PURPLE, __VA_ARGS__);
 #define LOG_ERROR(...)   vlog(stderr, "🔴 " BOLD    RED,    __VA_ARGS__);

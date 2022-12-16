@@ -56,14 +56,19 @@ static bool __linker_wait_cc(linker_t* linker) {
 	// if there are none, return successfully straight away
 
 	if (!cc->cc_procs_len) {
+		LOG_SUCCESS("Nothing to compile")
 		return false;
 	}
 
-	LOG_SUCCESS("Waiting for all %d compilation processes to finish - this will become a progress bar!", cc->cc_procs_len)
+	progress_t* progress = progress_new();
 
 	for (size_t i = 0; i < cc->cc_procs_len; i++) {
 		cc_proc_t* const cc_proc = &cc->cc_procs[i];
+
+		progress_update(progress, (float) i / cc->cc_procs_len, "Compiling '%s' (%d of %d)", cc_proc->name, i + 1, cc->cc_procs_len);
 		error |= !!wait_for_process(cc_proc->pid);
+
+		sleep(1);
 
 		// print out stderr of the compilation process
 		// we don't only do this on error, because warnings are also printed to stderr
@@ -71,10 +76,14 @@ static bool __linker_wait_cc(linker_t* linker) {
 		char* const out = exec_args_read_out(cc_proc->exec_args, EXEC_ARGS_STDERR);
 		fprintf(stderr, "%s", out);
 
-		// then, free the 'cc_proc->exec_args' struct
+		// then, free the 'cc_proc' struct
 
+		free(cc_proc->name);
 		exec_args_del(cc_proc->exec_args);
 	}
+
+	progress_complete(progress, "Finished compiling");
+	progress_del(progress);
 
 	// clear the compiler processes list
 
