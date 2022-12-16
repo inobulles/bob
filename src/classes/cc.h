@@ -35,7 +35,7 @@ static void cc_internal_add_opt(cc_t* cc, char const* opt) {
 
 static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
-	exec_args_save_out(exec_args, EXEC_ARGS_STDOUT);
+	exec_args_save_out(exec_args, PIPE_STDOUT);
 
 	int rv = execute(exec_args);
 
@@ -43,7 +43,7 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 		goto err;
 	}
 
-	char* const orig_opts = exec_args_read_out(exec_args, EXEC_ARGS_STDOUT);
+	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
 	char* opts = orig_opts;
 
 	char* opt;
@@ -249,7 +249,7 @@ static void cc_compile(WrenVM* vm) {
 	// also see: https://wiki.sei.cmu.edu/confluence/display/c/STR06-C.+Do+not+assume+that+strtok%28%29+leaves+the+parse+string+unchanged
 
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
-	exec_args_save_out(exec_args, EXEC_ARGS_STDOUT | EXEC_ARGS_STDERR);
+	exec_args_save_out(exec_args, PIPE_STDOUT | PIPE_STDERR);
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		exec_args_add(exec_args, cc->opts[i]);
@@ -261,7 +261,7 @@ static void cc_compile(WrenVM* vm) {
 		goto done;
 	}
 
-	orig_headers = exec_args_read_out(exec_args, EXEC_ARGS_STDOUT);
+	orig_headers = exec_args_read_out(exec_args, PIPE_STDOUT);
 
 	if (!orig_headers) {
 		goto done;
@@ -346,7 +346,7 @@ compile: {}
 	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
-	exec_args_save_out(exec_args, EXEC_ARGS_STDERR); // both warning & errors go through stderr
+	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
 
 	// if we've got colour support, force it in the compiler
 	// we do this, because compiler output is piped

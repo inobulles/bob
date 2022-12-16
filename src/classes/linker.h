@@ -82,7 +82,7 @@ static bool __linker_wait_cc(linker_t* linker) {
 		// print out stderr of the compilation process
 		// we don't only do this on error, because warnings are also printed to stderr
 
-		char* const out = exec_args_read_out(cc_proc->exec_args, EXEC_ARGS_STDERR);
+		char* const out = exec_args_read_out(cc_proc->exec_args, PIPE_STDERR);
 		fprintf(stderr, "%s", out);
 
 		// then, free the 'cc_proc' struct

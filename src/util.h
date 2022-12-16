@@ -102,63 +102,104 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 	return hash;
 }
 
-// exec args stack object
+// pipe helpers
 
 typedef enum {
-	EXEC_ARGS_STDOUT = 0b01,
-	EXEC_ARGS_STDERR = 0b10,
-} exec_args_save_out_t;
+	PIPE_STDOUT = 0b01,
+	PIPE_STDERR = 0b10,
+} pipe_kind_t;
 
 typedef struct {
-	size_t len; // includes NULL sentinel
-	char** args;
+	pipe_kind_t kind;
 
-	int pipe_in;
-	int pipe_out;
+	int in;
+	int out;
 
-	int pipe_err_in;
-	int pipe_err_out;
+	int err_in;
+	int err_out;
+} pipe_set_t;
 
-	exec_args_save_out_t save_out;
-} exec_args_t;
+static void pipe_create(pipe_set_t* self) {
+	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
 
-static exec_args_t* exec_args_new(size_t len, ...) {
-	va_list va;
-	va_start(va, len);
+	self->in  = -1;
+	self->out = -1;
 
-	exec_args_t* self = calloc(1, sizeof *self);
+	self->err_in  = -1;
+	self->err_out = -1;
 
-	self->len = len + 1;
-	self->args = calloc(self->len, sizeof *self->args);
+	int fd[2];
 
-	for (size_t i = 0; i < len; i++) {
-		self->args[i] = strdup(va_arg(va, char*));
+	// yeah, not super good design to have arguments passed as structure members but whatever yo
+
+	if (self->kind & PIPE_STDOUT) {
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->in  = fd[1];
+		self->out = fd[0];
 	}
 
-	va_end(va);
-	return self;
+	if (self->kind & PIPE_STDERR) {
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->err_in  = fd[1];
+		self->err_out = fd[0];
+	}
 }
 
-static void exec_args_save_out(exec_args_t* self, exec_args_save_out_t save_out) {
-	self->save_out = save_out;
-}
+static void pipe_child(pipe_set_t* self) {
+	// close input side of pipe if it exists, as we wanna send output
+	// then, redirect stdout/stderr of process to pipe input
 
-static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out) {
-	// make sure everything is as we expect it
+	if (self->kind & PIPE_STDOUT) {
+		close(self->out);
 
-	int pipe = self->pipe_out;
-
-	if (save_out == EXEC_ARGS_STDERR) {
-		pipe = self->pipe_err_out;
+		if (dup2(self->in, STDOUT_FILENO) < 0) {
+			errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->in, strerror(errno));
+		}
 	}
 
-	else if (save_out != EXEC_ARGS_STDOUT) {
-		LOG_ERROR("exec_args_read_out: Unknown save output kind value %d", save_out)
+	if (self->kind & PIPE_STDERR) {
+		close(self->err_out);
+
+		if (dup2(self->err_in, STDERR_FILENO) < 0) {
+			errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->err_in, strerror(errno));
+		}
+	}
+}
+
+static void pipe_parent(pipe_set_t* self) {
+	if (self->kind & PIPE_STDOUT) {
+		close(self->in);
+		self->in = -1;
+	}
+
+	if (self->kind & PIPE_STDERR) {
+		close(self->err_in);
+		self->err_in = -1;
+	}
+}
+
+static char* pipe_read_out(pipe_set_t* self, pipe_kind_t kind) {
+	// make sure everything is as we expect
+
+	int pipe = self->out;
+
+	if (kind == PIPE_STDERR) {
+		pipe = self->err_out;
+	}
+
+	else if (kind != PIPE_STDOUT) {
+		LOG_ERROR("pipe_read_out: Unknown save output kind value %d", kind)
 		return NULL;
 	}
 
 	if (pipe < 0) {
-		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out'?")
+		LOG_ERROR("pipe_read_out: Trying to read from nonexistent pipe - did you run 'exec_kind'?")
 		return NULL;
 	}
 
@@ -180,12 +221,63 @@ static char* exec_args_read_out(exec_args_t* self, exec_args_save_out_t save_out
 	}
 
 	if (bytes < 0) {
-		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", pipe, strerror(errno))
+		LOG_WARN("pipe_read_out: Failed to read from %d: %s", pipe, strerror(errno))
 	}
 
 	out[total] = '\0';
-
 	return out;
+}
+
+static void pipe_free(pipe_set_t* self) {
+	if (self->in >= 0) {
+		close(self->in);
+	}
+
+	if (self->out >= 0) {
+		close(self->out);
+	}
+
+	if (self->err_in >= 0) {
+		close(self->err_in);
+	}
+
+	if (self->err_out >= 0) {
+		close(self->err_out);
+	}
+}
+
+// exec args stack object
+
+typedef struct {
+	size_t len; // includes NULL sentinel
+	char** args;
+
+	pipe_set_t pipe;
+} exec_args_t;
+
+static exec_args_t* exec_args_new(size_t len, ...) {
+	va_list va;
+	va_start(va, len);
+
+	exec_args_t* self = calloc(1, sizeof *self);
+
+	self->len = len + 1;
+	self->args = calloc(self->len, sizeof *self->args);
+
+	for (size_t i = 0; i < len; i++) {
+		self->args[i] = strdup(va_arg(va, char*));
+	}
+
+	va_end(va);
+	return self;
+}
+
+static void exec_args_save_out(exec_args_t* self, pipe_kind_t kind) {
+	self->pipe.kind = kind;
+}
+
+static char* exec_args_read_out(exec_args_t* self, pipe_kind_t kind) {
+	return pipe_read_out(&self->pipe, kind);
 }
 
 static void exec_args_add(exec_args_t* self, char const* arg) {
@@ -239,22 +331,7 @@ static void exec_args_del(exec_args_t* self) {
 		free(self->args);
 	}
 
-	if (self->pipe_in >= 0) {
-		close(self->pipe_in);
-	}
-
-	if (self->pipe_out >= 0) {
-		close(self->pipe_out);
-	}
-
-	if (self->pipe_err_in >= 0) {
-		close(self->pipe_err_in);
-	}
-
-	if (self->pipe_err_out >= 0) {
-		close(self->pipe_err_out);
-	}
-
+	pipe_free(&self->pipe);
 	free(self);
 }
 
@@ -277,35 +354,7 @@ static int wait_for_process(pid_t pid) {
 
 static pid_t execute_async(exec_args_t* self) {
 	char** exec_args = self->args;
-
-	// create bi-directional pipes if we're asked to save output
-	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
-
-	self->pipe_in  = -1;
-	self->pipe_out = -1;
-
-	self->pipe_err_in  = -1;
-	self->pipe_err_out = -1;
-
-	int fd[2];
-
-	if (self->save_out & EXEC_ARGS_STDOUT) {
-		if (pipe(fd) < 0) {
-			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
-		}
-
-		self->pipe_in  = fd[1];
-		self->pipe_out = fd[0];
-	}
-
-	if (self->save_out & EXEC_ARGS_STDERR) {
-		if (pipe(fd) < 0) {
-			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
-		}
-
-		self->pipe_err_in  = fd[1];
-		self->pipe_err_out = fd[0];
-	}
+	pipe_create(&self->pipe);
 
 	// fork process
 
@@ -316,24 +365,7 @@ static pid_t execute_async(exec_args_t* self) {
 	}
 
 	if (!pid) {
-		// close input side of pipe if it exists, as we wanna send output
-		// then, redirect stdout/stderr of process to pipe input
-
-		if (self->save_out & EXEC_ARGS_STDOUT) {
-			close(self->pipe_out);
-
-			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
-			}
-		}
-
-		if (self->save_out & EXEC_ARGS_STDERR) {
-			close(self->pipe_err_out);
-
-			if (dup2(self->pipe_err_in, STDERR_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->pipe_err_in, strerror(errno));
-			}
-		}
+		pipe_child(&self->pipe);
 
 		// attempt first to execute at the path passed
 
@@ -377,16 +409,7 @@ static pid_t execute_async(exec_args_t* self) {
 	// we're the parent
 	// close the output side of the pipes if they exist, as we wanna receive input
 
-	if (self->save_out & EXEC_ARGS_STDOUT) {
-		close(self->pipe_in);
-		self->pipe_in = -1;
-	}
-
-	if (self->save_out & EXEC_ARGS_STDERR) {
-		close(self->pipe_err_in);
-		self->pipe_err_in = -1;
-	}
-
+	pipe_parent(&self->pipe);
 	return pid;
 }
 
