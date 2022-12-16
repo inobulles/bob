@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
@@ -455,6 +456,8 @@ err:
 typedef struct {
 	char* name;
 	pid_t pid;
+
+	pipe_t pipe;
 } test_t;
 
 static int do_test(void) {
@@ -537,11 +540,18 @@ static int do_test(void) {
 
 		char const* const test_name = wrenGetSlotString(state.vm, 1);
 
+		// setup pipes
+
+		pipe_t pipe = { .kind = PIPE_STDOUT | PIPE_STDERR };
+		pipe_create(&pipe);
+
 		// actually run test
 
 		pid_t const pid = fork();
 
 		if (!pid) {
+			pipe_child(&pipe);
+
 			// in here, we don't care about freeing anything because the child process will die eventually anyway
 			// create testing environment by first creating the test directory
 
@@ -601,12 +611,15 @@ static int do_test(void) {
 			_exit(wren_call(&state, "Tests", signature, 0, NULL));
 		}
 
+		pipe_parent(&pipe);
+
 		// add to the tests list
 
 		test_t* test = malloc(sizeof *test);
 
 		test->name = strdup(test_name);
 		test->pid = pid;
+		test->pipe = pipe;
 
 		tests = realloc(tests, ++tests_len * sizeof *tests);
 		tests[tests_len - 1] = test;
@@ -626,6 +639,23 @@ static int do_test(void) {
 		if (result != EXIT_SUCCESS) {
 			failed_count++;
 		}
+	}
+
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	// print out test output
+
+	for (size_t i = 0; i < tests_len; i++) {
+		test_t* const test = tests[i];
+
+		char* const out = pipe_read_out(&test->pipe, PIPE_STDOUT);
+		fprintf(stdout, "%s", out);
+
+		char* const err = pipe_read_out(&test->pipe, PIPE_STDERR);
+		fprintf(stderr, "%s", err);
 
 		// free test because we won't be needing it anymore
 
@@ -633,15 +663,11 @@ static int do_test(void) {
 			free(test->name);
 		}
 
+		pipe_free(&test->pipe);
 		free(test);
 	}
 
 	free(tests);
-
-	// complete progress
-
-	progress_complete(progress);
-	progress_del(progress);
 
 	// show results
 
