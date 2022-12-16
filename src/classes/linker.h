@@ -60,12 +60,12 @@ static bool __linker_wait_cc(linker_t* linker) {
 		return false;
 	}
 
-	progress_t* progress = progress_new();
+	progress_t* const progress = progress_new();
 
 	for (size_t i = 0; i < cc->cc_procs_len; i++) {
 		cc_proc_t* const cc_proc = &cc->cc_procs[i];
 
-		progress_update(progress, (float) i / cc->cc_procs_len, "Compiling '%s' (%d of %d)", cc_proc->name, i + 1, cc->cc_procs_len);
+		progress_update(progress, (float) i / cc->cc_procs_len, "Compiling '%s' (%zu of %zu)", cc_proc->name, i + 1, cc->cc_procs_len);
 		error |= !!wait_for_process(cc_proc->pid);
 	}
 

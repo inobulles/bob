@@ -17,6 +17,7 @@
 #include "classes/meta.h"
 #include "classes/resources.h"
 
+#include "logging.h"
 #include "util.h"
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
@@ -613,18 +614,16 @@ static int do_test(void) {
 
 	// wait for all test processes to finish
 
+	progress_t* const progress = progress_new();
 	size_t failed_count = 0;
 
 	for (size_t i = 0; i < tests_len; i++) {
 		test_t* const test = tests[i];
+
+		progress_update(progress, (float) i / test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
 		int const result = wait_for_process(test->pid);
 
-		if (result == EXIT_SUCCESS) {
-			LOG_SUCCESS("Test '%s' passed", test->name)
-		}
-
-		else {
-			LOG_ERROR("Test '%s' failed (error code %d)", test->name, result)
+		if (result != EXIT_SUCCESS) {
 			failed_count++;
 		}
 
@@ -639,6 +638,11 @@ static int do_test(void) {
 
 	free(tests);
 
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
 	// show results
 
 	if (!tests_len) {
@@ -646,7 +650,7 @@ static int do_test(void) {
 	}
 
 	else if (!failed_count) {
-		LOG_SUCCESS("All %zu tests passed!", tests_len)
+		LOG_SUCCESS("All %zu tests passed", tests_len)
 	}
 
 	else {
