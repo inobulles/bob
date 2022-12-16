@@ -636,7 +636,6 @@ static int do_test(void) {
 
 		progress_update(progress, (float) i / test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
 		test->result = wait_for_process(test->pid);
-		sleep(1);
 
 		if (test->result != EXIT_SUCCESS) {
 			failed_count++;
