@@ -10,6 +10,7 @@ typedef struct {
 	pid_t pid;
 	char* name;
 
+	int result;
 	exec_args_t* exec_args;
 } cc_proc_t;
 
