@@ -430,8 +430,7 @@ static size_t file_get_size(FILE* fp) {
 static char* file_read_str(FILE* fp, size_t size) {
 	char* const str = malloc(size + 1);
 
-	if (fread(str, 1, size, fp))
-		;
+	if (fread(str, 1, size, fp)) {}
 
 	str[size] = 0;
 	return str;
