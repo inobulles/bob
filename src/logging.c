@@ -90,18 +90,11 @@ void progress_del(progress_t* self) {
 
 // TODO check terminal capabilities (and length if I want to eventually have a proper progress bar)
 
-void progress_complete(progress_t* self, char const* fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-
-	fflush(stdout);
-	printf(REPLACE_LINE);
-
-	vprintf(fmt, args);
-	printf("\n");
-
-	va_end(args);
+void progress_complete(progress_t* self) {
 	self->frac = 1;
+
+	printf(REPLACE_LINE);
+	fflush(stdout);
 }
 
 void progress_update(progress_t* self, float frac, char const* fmt, ...) {

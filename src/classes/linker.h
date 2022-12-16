@@ -69,6 +69,17 @@ static bool __linker_wait_cc(linker_t* linker) {
 		error |= !!wait_for_process(cc_proc->pid);
 
 		sleep(1);
+	}
+
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	// print out warning & error messages if there are any
+
+	for (size_t i = 0; i < cc->cc_procs_len; i++) {
+		cc_proc_t* const cc_proc = &cc->cc_procs[i];
 
 		// print out stderr of the compilation process
 		// we don't only do this on error, because warnings are also printed to stderr
@@ -82,8 +93,15 @@ static bool __linker_wait_cc(linker_t* linker) {
 		exec_args_del(cc_proc->exec_args);
 	}
 
-	progress_complete(progress, "Finished compiling");
-	progress_del(progress);
+	// print out final message
+
+	if (error) {
+		LOG_ERROR("Failed compilation")
+	}
+
+	else {
+		LOG_SUCCESS("Compilation complete")
+	}
 
 	// clear the compiler processes list
 

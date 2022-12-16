@@ -25,8 +25,7 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...);
 progress_t* progress_new(void);
 void progress_del(progress_t* self);
 
-__attribute__((__format__(__printf__, 2, 0)))
-void progress_complete(progress_t* self, char const* fmt, ...);
+void progress_complete(progress_t* self);
 
 __attribute__((__format__(__printf__, 3, 0)))
 void progress_update(progress_t* self, float frac, char const* fmt, ...);
