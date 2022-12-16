@@ -87,8 +87,6 @@ void progress_del(progress_t* self) {
 	free(self);
 }
 
-// TODO check terminal capabilities (and length if I want to eventually have a proper progress bar)
-
 void progress_complete(progress_t* self) {
 	self->frac = 1;
 
@@ -102,13 +100,13 @@ void progress_update(progress_t* self, float frac, char const* fmt, ...) {
 	self->frac = frac;
 
 	fflush(stdout);
-	printf(REPLACE_LINE BOLD BLUE "🚧 [");
+	printf(colour_support ? REPLACE_LINE BOLD BLUE "🚧 [" : "🚧 [");
 
 	for (size_t i = 0; i < BAR_SIZE; i++) {
 		printf(i < self->frac * (BAR_SIZE + 1) ? "=" : ".");
 	}
 
-	printf(" %3d%%] " REGULAR BLUE, (int) (self->frac * 100));
+	printf(colour_support ? " %3d%%] " REGULAR BLUE : " %3d%%] ", (int) (self->frac * 100));
 
 	va_list args;
 	va_start(args, fmt);
