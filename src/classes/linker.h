@@ -3,6 +3,7 @@
 #include "../util.h"
 
 #include "cc.h"
+#include <unistd.h>
 
 typedef struct {
 	cc_t* cc;
