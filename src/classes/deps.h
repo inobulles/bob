@@ -22,10 +22,9 @@ static void deps_git(WrenVM* vm) {
 	// hash url to know where to clone repository
 
 	uint64_t const hash = hash_str(url);
-	char* repo_path;
 
-	if (!asprintf(&repo_path, "%s/%lx.git", bin_path, hash))
-		;
+	char* repo_path;
+	if (!asprintf(&repo_path, "%s/%lx.git", bin_path, hash)) {}
 
 	// check that the repository has not already been cloned, and clone it
 	// e.g., a previous dependency could've already done that

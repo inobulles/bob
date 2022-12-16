@@ -388,9 +388,7 @@ static pid_t execute_async(exec_args_t* self) {
 
 		while ((tok = strsep(&search, ":"))) {
 			char* path;
-
-			if (asprintf(&path, "%s/%s", tok, query))
-				;
+			if (asprintf(&path, "%s/%s", tok, query)) {}
 
 			exec_args[0] = path;
 

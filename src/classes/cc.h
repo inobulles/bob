@@ -213,11 +213,8 @@ static void cc_compile(WrenVM* vm) {
 
 	uint64_t const hash = hash_str(path);
 
-	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash))
-		;
-
-	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash))
-		;
+	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash)) {}
+	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash)) {}
 
 	// if the output simply doesn't yet exist, don't bother doing anything, compile
 

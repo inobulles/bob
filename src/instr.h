@@ -21,41 +21,41 @@
 #include "logging.h"
 #include "util.h"
 
-static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
+static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* sig) {
 	WrenForeignMethodFn fn = unknown_foreign;
 
 	// object classes
 
 	if (!strcmp(class, "CC")) {
-		fn = cc_bind_foreign_method(static_, signature);
+		fn = cc_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Linker")) {
-		fn = linker_bind_foreign_method(static_, signature);
+		fn = linker_bind_foreign_method(static_, sig);
 	}
 
 	// static classes
 
 	else if (!strcmp(class, "Deps")) {
-		fn = deps_bind_foreign_method(static_, signature);
+		fn = deps_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "File")) {
-		fn = file_bind_foreign_method(static_, signature);
+		fn = file_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Meta")) {
-		fn = meta_bind_foreign_method(static_, signature);
+		fn = meta_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Resources")) {
-		fn = resources_bind_foreign_method(static_, signature);
+		fn = resources_bind_foreign_method(static_, sig);
 	}
 
 	// unknown
 
 	if (fn == unknown_foreign) {
-		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", signature, module, class)
+		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", sig, module, class)
 	}
 
 	return fn;
@@ -139,7 +139,7 @@ static int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
-static int wren_call(state_t* state, char const* class, char const* signature, int argc, char** argv) {
+static int wren_call(state_t* state, char const* class, char const* sig, int argc, char** argv) {
 	// get class handle
 
 	if (!wrenHasVariable(state->vm, "main", class)) {
@@ -153,7 +153,7 @@ static int wren_call(state_t* state, char const* class, char const* signature, i
 
 	// get method handle
 
-	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, signature);
+	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, sig);
 	wrenReleaseHandle(state->vm, class_handle);
 
 	// pass argument list as first argument (if there is one)
@@ -239,15 +239,13 @@ static void setup_env(char* working_dir) {
 		lib_path = strdup(bin_path);
 	}
 
-	else if (asprintf(&lib_path, "%s:%s", env_lib_path, bin_path))
-		;
+	else if (asprintf(&lib_path, "%s:%s", env_lib_path, bin_path)) {}
 
 	if (!env_bin_path) {
 		path = strdup(bin_path);
 	}
 
-	else if (asprintf(&path, "%s:%s", env_bin_path, bin_path))
-		;
+	else if (asprintf(&path, "%s:%s", env_bin_path, bin_path)) {}
 
 	// set environment variables
 
@@ -427,9 +425,7 @@ static int do_install(void) {
 		char const* const val = wrenGetSlotString(state.vm, 2);
 
 		char* src;
-
-		if (asprintf(&src, "%s/%s", bin_path, key))
-			;
+		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
 		if (copy_recursive(src, val) != EXIT_SUCCESS) {
 			LOG_WARN("Failed to install '%s' -> '%s'", key, val)
@@ -557,10 +553,9 @@ static int do_test(void) {
 			// create testing environment by first creating the test directory
 
 			uint64_t const hash = hash_str(test_name);
-			char* test_dir;
 
-			if (asprintf(&test_dir, "%s/%lx", bin_path, hash))
-				;
+			char* test_dir;
+			if (asprintf(&test_dir, "%s/%lx", bin_path, hash)) {}
 
 			// remove test directory if it already exists
 
@@ -571,9 +566,7 @@ static int do_test(void) {
 			// TODO don't hardcode the prefix - should be defined by a variable in the base configuration instead
 
 			char* test_files_dir;
-
-			if (asprintf(&test_files_dir, "tests/%s", test_name))
-				;
+			if (asprintf(&test_files_dir, "tests/%s", test_name)) {}
 
 			if (!access(test_files_dir, W_OK)) {
 				copy_recursive(test_files_dir, test_dir);
@@ -591,10 +584,9 @@ static int do_test(void) {
 
 			for (size_t i = 0; i < keys_len; i++) {
 				char* const key = keys[i];
-				char* src;
 
-				if (asprintf(&src, "%s/%s", bin_path, key))
-					;
+				char* src;
+				if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
 				copy_recursive(src, key);
 				free(src);
@@ -602,14 +594,12 @@ static int do_test(void) {
 
 			// create signature
 
-			char* signature;
-
-			if (asprintf(&signature, "%s", test_name))
-				;
+			char* sig;
+			if (asprintf(&sig, "%s", test_name)) {}
 
 			// call test function
 
-			_exit(wren_call(&state, "Tests", signature, 0, NULL));
+			_exit(wren_call(&state, "Tests", sig, 0, NULL));
 		}
 
 		pipe_parent(&pipe);
