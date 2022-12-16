@@ -67,8 +67,6 @@ static bool __linker_wait_cc(linker_t* linker) {
 
 		progress_update(progress, (float) i / cc->cc_procs_len, "Compiling '%s' (%d of %d)", cc_proc->name, i + 1, cc->cc_procs_len);
 		error |= !!wait_for_process(cc_proc->pid);
-
-		sleep(1);
 	}
 
 	// complete progress
