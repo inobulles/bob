@@ -84,6 +84,7 @@ static bool __linker_wait_cc(linker_t* linker) {
 
 		char* const out = exec_args_read_out(cc_proc->exec_args, PIPE_STDERR);
 		fprintf(stderr, "%s", out);
+		free(out);
 
 		// then, free the 'cc_proc' struct
 

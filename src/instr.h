@@ -457,6 +457,7 @@ typedef struct {
 	char* name;
 	pid_t pid;
 
+	int result;
 	pipe_t pipe;
 } test_t;
 
@@ -634,9 +635,9 @@ static int do_test(void) {
 		test_t* const test = tests[i];
 
 		progress_update(progress, (float) i / test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
-		int const result = wait_for_process(test->pid);
+		test->result = wait_for_process(test->pid);
 
-		if (result != EXIT_SUCCESS) {
+		if (test->result != EXIT_SUCCESS) {
 			failed_count++;
 		}
 	}
@@ -652,10 +653,25 @@ static int do_test(void) {
 		test_t* const test = tests[i];
 
 		char* const out = pipe_read_out(&test->pipe, PIPE_STDOUT);
-		fprintf(stdout, "%s", out);
-
 		char* const err = pipe_read_out(&test->pipe, PIPE_STDERR);
+
+		bool const has_out = *out || *err;
+
+		if (test->result == EXIT_SUCCESS) {
+			if (has_out) {
+				LOG_SUCCESS("Test '%s' succeeded with output:", test->name)
+			}
+		}
+
+		else {
+			LOG_ERROR("Test '%s' failed%s", test->name, has_out ? ":" : "")
+		}
+
+		fprintf(stdout, "%s", out);
 		fprintf(stderr, "%s", err);
+
+		free(out);
+		free(err);
 
 		// free test because we won't be needing it anymore
 
