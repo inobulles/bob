@@ -22,6 +22,8 @@ void logging_init(void);
 __attribute__((__format__(__printf__, 3, 0)))
 void vlog(FILE* stream, char const* colour, char const* const fmt, ...);
 
+// progress bar stuff
+
 progress_t* progress_new(void);
 void progress_del(progress_t* self);
 

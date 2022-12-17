@@ -375,7 +375,7 @@ compile: {}
 	cc_proc_t* cc_proc = &cc->cc_procs[cc->cc_procs_len - 1];
 
 	cc_proc->pid = pid;
-	cc_proc->name = strdup(path);
+	cc_proc->name = strdup(_path);
 
 	cc_proc->exec_args = exec_args;
 
