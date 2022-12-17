@@ -2,8 +2,10 @@
 
 #include <errno.h>
 #include <fts.h>
-#include <sys/unistd.h>
+#include <stdlib.h>
 #include <unistd.h>
+
+#include <sys/unistd.h>
 
 #include "../util.h"
 
@@ -98,8 +100,7 @@ static void file_exec(WrenVM* vm) {
 	int rv = execute(exec_args);
 
 	if (rv != EXIT_SUCCESS) {
-		LOG_WARN("'File.exec' failed execution with error code %d - here is the exec_args struct:", rv)
-		exec_args_print(exec_args);
+		LOG_WARN("'File.exec' failed execution with error code %d", rv)
 	}
 
 	exec_args_del(exec_args);
@@ -125,8 +126,6 @@ static void file_list(WrenVM* vm) {
 
 	char* const path_argv[] = { (char*) path, NULL };
 	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
-
-	size_t path_count = 0;
 
 	for (FTSENT* ent; (ent = fts_read(fts));) {
 		char* const path = ent->fts_path; // shadow parent scope's 'path'
@@ -162,7 +161,7 @@ static void file_list(WrenVM* vm) {
 		case FTS_DEFAULT:
 		default:
 
-			if (depth > 0 && ent->fts_level > depth) {
+			if (depth > 0 && (size_t) ent->fts_level > depth) {
 				continue;
 			}
 

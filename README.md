@@ -66,6 +66,7 @@ bob install
 - [ ] Can build in sandboxes (local CI in background truly continuously by watching source files instead of just on commits? integration with other CI providers, e.g. with Cirrus CI by Automatically generating `.cirrus.yml`?).
 - [ ] Proper documentation not only on how to use bob, but also on how to write a `build.wren` configuration.
 - [ ] Warn against two commands outputting to the same file.
+- [ ] Integration with `clangd`? Like we could automatically generate a `.clangd` file with the options passed to the C compiler & linker.
 
 ## Personal notes
 

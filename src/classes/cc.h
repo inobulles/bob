@@ -1,9 +1,18 @@
 #pragma once
 
+#include <unistd.h>
+
+#include <sys/stat.h>
+
 #include "../util.h"
 
-#include <sys/unistd.h>
-#include <unistd.h>
+typedef struct {
+	pid_t pid;
+	char* name;
+
+	int result;
+	exec_args_t* exec_args;
+} cc_proc_t;
 
 typedef struct {
 	bool debug;
@@ -14,8 +23,8 @@ typedef struct {
 	char** opts;
 	size_t opts_len;
 
-	pid_t* compilation_processes;
-	size_t compilation_processes_len;
+	cc_proc_t* cc_procs;
+	size_t cc_procs_len;
 } cc_t;
 
 // helpers
@@ -27,7 +36,7 @@ static void cc_internal_add_opt(cc_t* cc, char const* opt) {
 
 static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
-	exec_args_save_out(exec_args, true);
+	exec_args_save_out(exec_args, PIPE_STDOUT);
 
 	int rv = execute(exec_args);
 
@@ -35,7 +44,7 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 		goto err;
 	}
 
-	char* const orig_opts = exec_args_read_out(exec_args);
+	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
 	char* opts = orig_opts;
 
 	char* opt;
@@ -63,8 +72,8 @@ static void cc_init(cc_t* cc) {
 	cc->opts = NULL;
 	cc->opts_len = 0;
 
-	cc->compilation_processes = NULL;
-	cc->compilation_processes_len = 0;
+	cc->cc_procs = NULL;
+	cc->cc_procs_len = 0;
 
 	// this is very annoying and dumb so whatever just disable it for everyone
 
@@ -204,11 +213,8 @@ static void cc_compile(WrenVM* vm) {
 
 	uint64_t const hash = hash_str(path);
 
-	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash))
-		;
-
-	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash))
-		;
+	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash)) {}
+	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash)) {}
 
 	// if the output simply doesn't yet exist, don't bother doing anything, compile
 
@@ -225,7 +231,7 @@ static void cc_compile(WrenVM* vm) {
 
 	// if the source file is newer than the output, compile
 
-	size_t out_mtime = sb.st_mtime;
+	time_t out_mtime = sb.st_mtime;
 
 	if (stat(path, &sb) < 0) {
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
@@ -241,7 +247,7 @@ static void cc_compile(WrenVM* vm) {
 	// also see: https://wiki.sei.cmu.edu/confluence/display/c/STR06-C.+Do+not+assume+that+strtok%28%29+leaves+the+parse+string+unchanged
 
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
-	exec_args_save_out(exec_args, true);
+	exec_args_save_out(exec_args, PIPE_STDOUT | PIPE_STDERR);
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		exec_args_add(exec_args, cc->opts[i]);
@@ -253,7 +259,7 @@ static void cc_compile(WrenVM* vm) {
 		goto done;
 	}
 
-	orig_headers = exec_args_read_out(exec_args);
+	orig_headers = exec_args_read_out(exec_args, PIPE_STDOUT);
 
 	if (!orig_headers) {
 		goto done;
@@ -331,8 +337,6 @@ static void cc_compile(WrenVM* vm) {
 
 compile: {}
 
-	LOG_SUCCESS("Compiling %s", path);
-
 	// construct exec args
 
 	if (exec_args) {
@@ -340,6 +344,16 @@ compile: {}
 	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
+	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
+
+	// if we've got colour support, force it in the compiler
+	// we do this, because compiler output is piped
+	// '-fcolor-diagnostics' also works, but only on clang
+
+	if (colour_support) {
+		exec_args_add(exec_args, "-fdiagnostics-color=always");
+	}
+
 	fp = fopen(opts_path, "w");
 
 	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
@@ -357,16 +371,17 @@ compile: {}
 
 	// add pid to list of processes
 
-	cc->compilation_processes = realloc(cc->compilation_processes, ++cc->compilation_processes_len * sizeof *cc->compilation_processes);
-	cc->compilation_processes[cc->compilation_processes_len - 1] = pid;
+	cc->cc_procs = realloc(cc->cc_procs, ++cc->cc_procs_len * sizeof *cc->cc_procs);
+	cc_proc_t* cc_proc = &cc->cc_procs[cc->cc_procs_len - 1];
+
+	cc_proc->pid = pid;
+	cc_proc->name = strdup(_path);
+
+	cc_proc->exec_args = exec_args;
 
 	// clean up
 
 done:
-
-	if (exec_args) {
-		exec_args_del(exec_args);
-	}
 
 	if (fp) {
 		fclose(fp);

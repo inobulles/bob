@@ -22,13 +22,6 @@ static char* bin_path = NULL;
 static char const* init_name = "bob";
 static char const* curr_instr = NULL;
 
-#include "util.h"
-
-#include "classes/cc.h"
-#include "classes/deps.h"
-#include "classes/file.h"
-#include "classes/linker.h"
-
 #include "instr.h"
 
 static void usage(void) {
@@ -56,6 +49,7 @@ static void usage(void) {
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;
+	logging_init();
 
 	// parse options
 

@@ -1,5 +1,13 @@
 #pragma once
 
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/stat.h>
+
+#include <wren.h>
+
 #include "base/base.h"
 
 #include "classes/cc.h"
@@ -10,53 +18,51 @@
 #include "classes/meta.h"
 #include "classes/resources.h"
 
+#include "logging.h"
 #include "util.h"
-#include "wren/include/wren.h"
-#include <stdlib.h>
-#include <unistd.h>
 
-static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* signature) {
+static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* sig) {
 	WrenForeignMethodFn fn = unknown_foreign;
 
 	// object classes
 
 	if (!strcmp(class, "CC")) {
-		fn = cc_bind_foreign_method(static_, signature);
+		fn = cc_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Linker")) {
-		fn = linker_bind_foreign_method(static_, signature);
+		fn = linker_bind_foreign_method(static_, sig);
 	}
 
 	// static classes
 
 	else if (!strcmp(class, "Deps")) {
-		fn = deps_bind_foreign_method(static_, signature);
+		fn = deps_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "File")) {
-		fn = file_bind_foreign_method(static_, signature);
+		fn = file_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Meta")) {
-		fn = meta_bind_foreign_method(static_, signature);
+		fn = meta_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Resources")) {
-		fn = resources_bind_foreign_method(static_, signature);
+		fn = resources_bind_foreign_method(static_, sig);
 	}
 
 	// unknown
 
 	if (fn == unknown_foreign) {
-		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", signature, module, class)
+		LOG_WARN("Unknown%s foreign method '%s' in module '%s', class '%s'", static_ ? " static" : "", sig, module, class)
 	}
 
 	return fn;
 }
 
 static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, char const* class) {
-	WrenForeignClassMethods meth = { NULL };
+	WrenForeignClassMethods meth = { 0 };
 
 	if (!strcmp(class, "CC")) {
 		meth.allocate = cc_new;
@@ -133,7 +139,7 @@ static int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
-static int wren_call(state_t* state, char const* class, char const* signature, int argc, char** argv) {
+static int wren_call(state_t* state, char const* class, char const* sig, int argc, char** argv) {
 	// get class handle
 
 	if (!wrenHasVariable(state->vm, "main", class)) {
@@ -147,7 +153,7 @@ static int wren_call(state_t* state, char const* class, char const* signature, i
 
 	// get method handle
 
-	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, signature);
+	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, sig);
 	wrenReleaseHandle(state->vm, class_handle);
 
 	// pass argument list as first argument (if there is one)
@@ -233,15 +239,13 @@ static void setup_env(char* working_dir) {
 		lib_path = strdup(bin_path);
 	}
 
-	else if (asprintf(&lib_path, "%s:%s", env_lib_path, bin_path))
-		;
+	else if (asprintf(&lib_path, "%s:%s", env_lib_path, bin_path)) {}
 
 	if (!env_bin_path) {
 		path = strdup(bin_path);
 	}
 
-	else if (asprintf(&path, "%s:%s", env_bin_path, bin_path))
-		;
+	else if (asprintf(&path, "%s:%s", env_bin_path, bin_path)) {}
 
 	// set environment variables
 
@@ -390,6 +394,8 @@ static int do_install(void) {
 	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
 	wrenSetSlotHandle(state.vm, 3, map_handle);
 
+	progress_t* const progress = progress_new();
+
 	for (size_t i = 0; i < keys_len; i++) {
 		// get key
 
@@ -421,20 +427,27 @@ static int do_install(void) {
 		char const* const val = wrenGetSlotString(state.vm, 2);
 
 		char* src;
+		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
-		if (asprintf(&src, "%s/%s", bin_path, key))
-			;
+		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
 
 		if (copy_recursive(src, val) != EXIT_SUCCESS) {
-			LOG_WARN("Failed to install '%s' -> '%s'", key, val)
-		}
+			progress_complete(progress);
+			progress_del(progress);
 
-		else {
-			LOG_SUCCESS("Installed '%s' -> '%s'", key, val)
+			LOG_ERROR("Failed to install '%s' -> '%s'", key, val)
+
+			free(src);
+			goto err;
 		}
 
 		free(src);
 	}
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	LOG_SUCCESS("All %zu files installed", keys_len)
 
 err:
 
@@ -450,6 +463,9 @@ err:
 typedef struct {
 	char* name;
 	pid_t pid;
+
+	int result;
+	pipe_t pipe;
 } test_t;
 
 static int do_test(void) {
@@ -532,19 +548,25 @@ static int do_test(void) {
 
 		char const* const test_name = wrenGetSlotString(state.vm, 1);
 
+		// setup pipes
+
+		pipe_t pipe = { .kind = PIPE_STDOUT | PIPE_STDERR };
+		pipe_create(&pipe);
+
 		// actually run test
 
 		pid_t const pid = fork();
 
 		if (!pid) {
+			pipe_child(&pipe);
+
 			// in here, we don't care about freeing anything because the child process will die eventually anyway
 			// create testing environment by first creating the test directory
 
 			uint64_t const hash = hash_str(test_name);
-			char* test_dir;
 
-			if (asprintf(&test_dir, "%s/%lx", bin_path, hash))
-				;
+			char* test_dir;
+			if (asprintf(&test_dir, "%s/%lx", bin_path, hash)) {}
 
 			// remove test directory if it already exists
 
@@ -555,9 +577,7 @@ static int do_test(void) {
 			// TODO don't hardcode the prefix - should be defined by a variable in the base configuration instead
 
 			char* test_files_dir;
-
-			if (asprintf(&test_files_dir, "tests/%s", test_name))
-				;
+			if (asprintf(&test_files_dir, "tests/%s", test_name)) {}
 
 			if (!access(test_files_dir, W_OK)) {
 				copy_recursive(test_files_dir, test_dir);
@@ -575,10 +595,9 @@ static int do_test(void) {
 
 			for (size_t i = 0; i < keys_len; i++) {
 				char* const key = keys[i];
-				char* src;
 
-				if (asprintf(&src, "%s/%s", bin_path, key))
-					;
+				char* src;
+				if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
 				copy_recursive(src, key);
 				free(src);
@@ -586,15 +605,15 @@ static int do_test(void) {
 
 			// create signature
 
-			char* signature;
-
-			if (asprintf(&signature, "%s", test_name))
-				;
+			char* sig;
+			if (asprintf(&sig, "%s", test_name)) {}
 
 			// call test function
 
-			_exit(wren_call(&state, "Tests", signature, 0, NULL));
+			_exit(wren_call(&state, "Tests", sig, 0, NULL));
 		}
+
+		pipe_parent(&pipe);
 
 		// add to the tests list
 
@@ -602,6 +621,7 @@ static int do_test(void) {
 
 		test->name = strdup(test_name);
 		test->pid = pid;
+		test->pipe = pipe;
 
 		tests = realloc(tests, ++tests_len * sizeof *tests);
 		tests[tests_len - 1] = test;
@@ -609,20 +629,48 @@ static int do_test(void) {
 
 	// wait for all test processes to finish
 
+	progress_t* const progress = progress_new();
 	size_t failed_count = 0;
 
 	for (size_t i = 0; i < tests_len; i++) {
 		test_t* const test = tests[i];
-		int const result = wait_for_process(test->pid);
 
-		if (result == EXIT_SUCCESS) {
-			LOG_SUCCESS("Test '%s' passed", test->name)
-		}
+		progress_update(progress, i, test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
+		test->result = wait_for_process(test->pid);
 
-		else {
-			LOG_ERROR("Test '%s' failed (error code %d)", test->name, result)
+		if (test->result != EXIT_SUCCESS) {
 			failed_count++;
 		}
+	}
+
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	// print out test output
+
+	for (size_t i = 0; i < tests_len; i++) {
+		test_t* const test = tests[i];
+
+		if (test->result == EXIT_SUCCESS) {
+			goto succeeded;
+		}
+
+		char* const out = pipe_read_out(&test->pipe, PIPE_STDOUT);
+		char* const err = pipe_read_out(&test->pipe, PIPE_STDERR);
+
+		bool const has_out = *out || *err;
+
+		LOG_ERROR("Test '%s' failed%s", test->name, has_out ? ":" : "")
+
+		fprintf(stdout, "%s", out);
+		fprintf(stderr, "%s", err);
+
+		free(out);
+		free(err);
+
+	succeeded:
 
 		// free test because we won't be needing it anymore
 
@@ -630,6 +678,7 @@ static int do_test(void) {
 			free(test->name);
 		}
 
+		pipe_free(&test->pipe);
 		free(test);
 	}
 
@@ -642,7 +691,7 @@ static int do_test(void) {
 	}
 
 	else if (!failed_count) {
-		LOG_SUCCESS("All %zu tests passed!", tests_len)
+		LOG_SUCCESS("All %zu tests passed", tests_len)
 	}
 
 	else {

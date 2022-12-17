@@ -1,10 +1,30 @@
 #pragma once
 
-// useful macros
-
+#include <err.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
+
+#include <sys/wait.h>
+
+// XXX can't do this right now, because clangd doesn't know relative to where the '-Iwren/include' options is
+//     the solution will be to generate a 'clang_commands.json' file automatically I believe :)
+
+//#include <wren.h>
+#include "wren/include/wren.h"
+
+#include "logging.h"
+
+// global variables
+
+extern char* bin_path;
+extern char const* init_name;
+extern char const* curr_instr;
+
+// useful macros
 
 #define BIND_FOREIGN_METHOD(_static_, _signature, fn) \
 	if (static_ == (_static_) && !strcmp(signature, (_signature))) { \
@@ -20,9 +40,9 @@
 	\
 	/* be pessimistic and set return value to null right off the bat */ \
 	/* foreign values in slot 0 really come in to put a thorn in our side, but that's alright, we too cool for that to stop us 😎 */ \
-	/* getting the value of the foreign slot doesn't work when calling 'wrenSetSlotNewForeign' though, because we can't just read what's in 'classSlot', so we'll have to make an exception to 'new' functions */ \
+	/* getting the value of the foreign slot doesn't work when calling 'wrenSetSlotNewForeign' though, because we can't just read what's in 'classSlot', so we'll have to make an exception to '.new' methods */ \
 	\
-	void* foreign = NULL; \
+	__attribute__((unused)) void* foreign = NULL; \
 	\
 	if (strcmp(strrchr(__fn_name, '.'), ".new")) { \
 		if (wrenGetSlotType(vm, 0) == WREN_TYPE_FOREIGN) { \
@@ -49,36 +69,6 @@
 		LOG_WARN("'%s' argument " #i " is of incorrect type (expected '" #type "')", __fn_name) \
 		return; \
 	}
-
-// kinda replicate the umber API
-
-#define CLEAR   "\033[0m"
-#define REGULAR "\033[0;"
-#define BOLD    "\033[1;"
-
-#define PURPLE  "35m"
-#define RED     "31m"
-#define YELLOW  "33m"
-#define GREEN   "32m"
-
-__attribute__((__format__(__printf__, 3, 0)))
-void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-
-	char* msg;
-	vasprintf(&msg, fmt, args);
-
-	va_end(args);
-
-	fprintf(stream, "%s%s%s\n", colour, msg, CLEAR);
-	free(msg);
-}
-
-#define LOG_FATAL(...)   vlog(stderr, "💀 " BOLD    PURPLE, __VA_ARGS__);
-#define LOG_ERROR(...)   vlog(stderr, "🔴 " BOLD    RED,    __VA_ARGS__);
-#define LOG_WARN(...)    vlog(stderr, "⚠️  " REGULAR YELLOW, __VA_ARGS__);
-#define LOG_SUCCESS(...) vlog(stderr, "🟢 " REGULAR GREEN,  __VA_ARGS__);
 
 // wren functions
 
@@ -112,19 +102,160 @@ static uint64_t hash_str(char const* str) { // djb2 algorithm
 	return hash;
 }
 
+// pipe helpers
+
+typedef enum {
+	PIPE_STDOUT = 0b01,
+	PIPE_STDERR = 0b10,
+} pipe_kind_t;
+
+typedef struct {
+	pipe_kind_t kind;
+
+	int in;
+	int out;
+
+	int err_in;
+	int err_out;
+} pipe_t;
+
+static void pipe_create(pipe_t* self) {
+	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
+
+	self->in  = -1;
+	self->out = -1;
+
+	self->err_in  = -1;
+	self->err_out = -1;
+
+	int fd[2];
+
+	// yeah, not super good design to have arguments passed as structure members but whatever yo
+
+	if (self->kind & PIPE_STDOUT) {
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->in  = fd[1];
+		self->out = fd[0];
+	}
+
+	if (self->kind & PIPE_STDERR) {
+		if (pipe(fd) < 0) {
+			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		}
+
+		self->err_in  = fd[1];
+		self->err_out = fd[0];
+	}
+}
+
+static void pipe_child(pipe_t* self) {
+	// close input side of pipe if it exists, as we wanna send output
+	// then, redirect stdout/stderr of process to pipe input
+
+	if (self->kind & PIPE_STDOUT) {
+		close(self->out);
+
+		if (dup2(self->in, STDOUT_FILENO) < 0) {
+			errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->in, strerror(errno));
+		}
+	}
+
+	if (self->kind & PIPE_STDERR) {
+		close(self->err_out);
+
+		if (dup2(self->err_in, STDERR_FILENO) < 0) {
+			errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->err_in, strerror(errno));
+		}
+	}
+}
+
+static void pipe_parent(pipe_t* self) {
+	if (self->kind & PIPE_STDOUT) {
+		close(self->in);
+		self->in = -1;
+	}
+
+	if (self->kind & PIPE_STDERR) {
+		close(self->err_in);
+		self->err_in = -1;
+	}
+}
+
+static char* pipe_read_out(pipe_t* self, pipe_kind_t kind) {
+	// make sure everything is as we expect
+
+	int pipe = self->out;
+
+	if (kind == PIPE_STDERR) {
+		pipe = self->err_out;
+	}
+
+	else if (kind != PIPE_STDOUT) {
+		LOG_ERROR("pipe_read_out: Unknown save output kind value %d", kind)
+		return NULL;
+	}
+
+	if (pipe < 0) {
+		LOG_ERROR("pipe_read_out: Trying to read from nonexistent pipe - did you run 'exec_kind'?")
+		return NULL;
+	}
+
+	// start reading
+
+	char* out = strdup("");
+	size_t total = 0;
+
+	char chunk[4096];
+	ssize_t bytes;
+
+	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
+		total += bytes;
+
+		out = realloc(out, total + 1);
+		out[total] = '\0';
+
+		memcpy(out + total - bytes, chunk, bytes);
+	}
+
+	if (bytes < 0) {
+		LOG_WARN("pipe_read_out: Failed to read from %d: %s", pipe, strerror(errno))
+	}
+
+	out[total] = '\0';
+	return out;
+}
+
+static void pipe_free(pipe_t* self) {
+	if (self->in >= 0) {
+		close(self->in);
+	}
+
+	if (self->out >= 0) {
+		close(self->out);
+	}
+
+	if (self->err_in >= 0) {
+		close(self->err_in);
+	}
+
+	if (self->err_out >= 0) {
+		close(self->err_out);
+	}
+}
+
 // exec args stack object
 
 typedef struct {
 	size_t len; // includes NULL sentinel
 	char** args;
 
-	int pipe_in;
-	int pipe_out;
-
-	bool save_out;
+	pipe_t pipe;
 } exec_args_t;
 
-static exec_args_t* exec_args_new(int len, ...) {
+static exec_args_t* exec_args_new(size_t len, ...) {
 	va_list va;
 	va_start(va, len);
 
@@ -141,38 +272,12 @@ static exec_args_t* exec_args_new(int len, ...) {
 	return self;
 }
 
-static void exec_args_save_out(exec_args_t* self, bool save_out) {
-	self->save_out = save_out;
+static void exec_args_save_out(exec_args_t* self, pipe_kind_t kind) {
+	self->pipe.kind = kind;
 }
 
-static char* exec_args_read_out(exec_args_t* self) {
-	if (self->pipe_out < 0) {
-		LOG_ERROR("exec_args_read_out: Trying to read from nonexistent pipe - did you run 'exec_save_out(self, true)'?")
-		return NULL;
-	}
-
-	char* out = strdup("");
-	size_t total = 0;
-
-	char chunk[4096];
-	ssize_t bytes;
-
-	while ((bytes = read(self->pipe_out, chunk, sizeof chunk)) > 0) {
-		total += bytes;
-
-		out = realloc(out, total + 1);
-		out[total] = '\0';
-
-		memcpy(out + total - bytes, chunk, bytes);
-	}
-
-	if (bytes < 0) {
-		LOG_WARN("exec_args_read_out: Failed to read from %d: %s", self->pipe_out, strerror(errno))
-	}
-
-	out[total] = '\0';
-
-	return out;
+static char* exec_args_read_out(exec_args_t* self, pipe_kind_t kind) {
+	return pipe_read_out(&self->pipe, kind);
 }
 
 static void exec_args_add(exec_args_t* self, char const* arg) {
@@ -195,6 +300,7 @@ static void exec_args_fmt(exec_args_t* self, char const* fmt, ...) {
 	va_end(va);
 }
 
+__attribute__((unused))
 static void exec_args_print(exec_args_t* self) {
 	printf("exec_args(%p) = {\n", self);
 
@@ -226,14 +332,7 @@ static void exec_args_del(exec_args_t* self) {
 		free(self->args);
 	}
 
-	if (self->pipe_in >= 0) {
-		close(self->pipe_in);
-	}
-
-	if (self->pipe_out >= 0) {
-		close(self->pipe_out);
-	}
-
+	pipe_free(&self->pipe);
 	free(self);
 }
 
@@ -256,23 +355,7 @@ static int wait_for_process(pid_t pid) {
 
 static pid_t execute_async(exec_args_t* self) {
 	char** exec_args = self->args;
-
-	// create bi-directional pipe if we're asked to save output
-	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
-
-	self->pipe_in  = -1;
-	self->pipe_out = -1;
-
-	if (self->save_out) {
-		int fd[2];
-
-		if (pipe(fd) < 0) {
-			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
-		}
-
-		self->pipe_in  = fd[0];
-		self->pipe_out = fd[1];
-	}
+	pipe_create(&self->pipe);
 
 	// fork process
 
@@ -283,18 +366,7 @@ static pid_t execute_async(exec_args_t* self) {
 	}
 
 	if (!pid) {
-		// close input side of pipe if it exists, as we wanna send output
-
-		if (self->save_out) {
-			close(self->pipe_out);
-
-			// redirect stdout of process to pipe output
-			// don't redirect stderr, because we still wanna see a log of any child process errors ;)
-
-			if (dup2(self->pipe_in, STDOUT_FILENO) < 0) {
-				errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->pipe_in, strerror(errno));
-			}
-		}
+		pipe_child(&self->pipe);
 
 		// attempt first to execute at the path passed
 
@@ -316,9 +388,7 @@ static pid_t execute_async(exec_args_t* self) {
 
 		while ((tok = strsep(&search, ":"))) {
 			char* path;
-
-			if (asprintf(&path, "%s/%s", tok, query))
-				;
+			if (asprintf(&path, "%s/%s", tok, query)) {}
 
 			exec_args[0] = path;
 
@@ -336,12 +406,9 @@ static pid_t execute_async(exec_args_t* self) {
 	}
 
 	// we're the parent
-	// close the output side of the pipe if it exists, as we wanna receive input
+	// close the output side of the pipes if they exist, as we wanna receive input
 
-	if (self->save_out) {
-		close(self->pipe_in);
-	}
-
+	pipe_parent(&self->pipe);
 	return pid;
 }
 
@@ -363,8 +430,7 @@ static size_t file_get_size(FILE* fp) {
 static char* file_read_str(FILE* fp, size_t size) {
 	char* const str = malloc(size + 1);
 
-	if (fread(str, 1, size, fp))
-		;
+	if (fread(str, 1, size, fp)) {}
 
 	str[size] = 0;
 	return str;

@@ -3,10 +3,17 @@
 var cc = CC.new()
 
 cc.add_opt("-std=c99")
-cc.add_opt("-I/usr/local/include")
+cc.add_opt("-isystem=/usr/local/include")
 cc.add_opt("-Isrc/wren/include")
 cc.add_opt("-DWREN_OPT_META=0")
 cc.add_opt("-DWREN_OPT_RANDOM=0")
+cc.add_opt("-Wall")
+cc.add_opt("-Wextra")
+
+// disabling these warnings so we don't have to modify Wren too much
+
+cc.add_opt("-Wno-unused-parameter")
+cc.add_opt("-Wno-unused-variable")
 
 var src = File.list("src")
 	.where { |path| path.endsWith(".c") }

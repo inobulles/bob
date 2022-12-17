@@ -3,6 +3,8 @@
 #include "../util.h"
 
 #include "cc.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 typedef struct {
 	cc_t* cc;
@@ -53,10 +55,73 @@ static bool __linker_wait_cc(linker_t* linker) {
 	cc_t* const cc = linker->cc;
 	bool error = false;
 
-	for (size_t i = 0; i < cc->compilation_processes_len; i++) {
-		pid_t pid = cc->compilation_processes[i];
-		error |= !!wait_for_process(pid);
+	// if there are none, return successfully straight away
+
+	if (!cc->cc_procs_len) {
+		return false;
 	}
+
+	progress_t* const progress = progress_new();
+
+	for (size_t i = 0; i < cc->cc_procs_len; i++) {
+		cc_proc_t* const cc_proc = &cc->cc_procs[i];
+		progress_update(progress, i, cc->cc_procs_len, "Compiling '%s' (%zu of %zu)", cc_proc->name, i + 1, cc->cc_procs_len);
+
+		cc_proc->result = wait_for_process(cc_proc->pid);
+		error |= !!cc_proc->result;
+	}
+
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	// print out warning & error messages if there are any
+
+	for (size_t i = 0; i < cc->cc_procs_len; i++) {
+		cc_proc_t* const cc_proc = &cc->cc_procs[i];
+
+		// print out stderr of the compilation process
+		// we don't only do this on error, because warnings are also printed to stderr
+
+		char* const out = exec_args_read_out(cc_proc->exec_args, PIPE_STDERR);
+
+		if (*out) {
+			if (cc_proc->result == EXIT_SUCCESS) {
+				LOG_WARN("Compiling '%s' succeeded with warnings:", cc_proc->name)
+			}
+
+			else {
+				LOG_ERROR("Compiling '%s' failed with errors:", cc_proc->name)
+			}
+
+			fprintf(stderr, "%s", out);
+		}
+
+		free(out);
+
+		// then, free the 'cc_proc' struct
+
+		free(cc_proc->name);
+		exec_args_del(cc_proc->exec_args);
+	}
+
+	// print out final message
+
+	if (error) {
+		LOG_ERROR("Failed compilation")
+	}
+
+	else {
+		LOG_SUCCESS("All %zu source files compiled", cc->cc_procs_len)
+	}
+
+	// clear the compiler processes list
+
+	free(cc->cc_procs);
+
+	cc->cc_procs = NULL;
+	cc->cc_procs_len = 0;
 
 	return error;
 }
