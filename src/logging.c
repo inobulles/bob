@@ -96,8 +96,13 @@ void progress_complete(progress_t* self) {
 
 #define BAR_SIZE 16
 
-void progress_update(progress_t* self, float frac, char const* fmt, ...) {
-	self->frac = frac;
+void progress_update(progress_t* self, size_t numerator, size_t _denominator, char const* fmt, ...) {
+	float const denominator = (float) _denominator - 1;
+	self->frac = 0.5; // if something goes wrong (e.g. there's only one item in our progress bar), default to 50%
+
+	if (denominator > 0) {
+		self->frac = numerator / denominator;
+	}
 
 	printf(colour_support ? REPLACE_LINE BOLD BLUE "🚧 [" : "🚧 [");
 

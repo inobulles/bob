@@ -429,7 +429,7 @@ static int do_install(void) {
 		char* src;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
-		progress_update(progress, (float) i / keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
+		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
 
 		if (copy_recursive(src, val) != EXIT_SUCCESS) {
 			progress_complete(progress);
@@ -635,7 +635,7 @@ static int do_test(void) {
 	for (size_t i = 0; i < tests_len; i++) {
 		test_t* const test = tests[i];
 
-		progress_update(progress, (float) i / test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
+		progress_update(progress, i, test_list_len, "Running test '%s' (%zu of %zu, %zu failed)", test->name, i + 1, test_list_len, failed_count);
 		test->result = wait_for_process(test->pid);
 
 		if (test->result != EXIT_SUCCESS) {

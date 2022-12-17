@@ -29,8 +29,8 @@ void progress_del(progress_t* self);
 
 void progress_complete(progress_t* self);
 
-__attribute__((__format__(__printf__, 3, 0)))
-void progress_update(progress_t* self, float frac, char const* fmt, ...);
+__attribute__((__format__(__printf__, 4, 0)))
+void progress_update(progress_t* self, size_t numerator, size_t denominator, char const* fmt, ...);
 
 // kinda replicate the umber API
 

@@ -65,7 +65,7 @@ static bool __linker_wait_cc(linker_t* linker) {
 
 	for (size_t i = 0; i < cc->cc_procs_len; i++) {
 		cc_proc_t* const cc_proc = &cc->cc_procs[i];
-		progress_update(progress, (float) i / cc->cc_procs_len, "Compiling '%s' (%zu of %zu)", cc_proc->name, i + 1, cc->cc_procs_len);
+		progress_update(progress, i, cc->cc_procs_len, "Compiling '%s' (%zu of %zu)", cc_proc->name, i + 1, cc->cc_procs_len);
 
 		cc_proc->result = wait_for_process(cc_proc->pid);
 		error |= !!cc_proc->result;
