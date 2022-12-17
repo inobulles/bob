@@ -25,6 +25,7 @@ sh-bin/bob install
 ### Building
 
 Bob always loves to give a helping hand! 🤝
+
 To build a project with Bob, navigate to its root directory and run:
 
 ```console
@@ -34,6 +35,7 @@ bob build
 ### Running
 
 Bob's favourite pastime is running! 🏃
+
 To run a project with Bob, run:
 
 ```console
@@ -42,7 +44,8 @@ bob run
 
 ### Testing
 
-Bob is a true-to-life science guy in a labcoat! 🧪
+Bob is a bona fide science guy in a labcoat! 🧪
+
 To test a project with Bob, run:
 
 ```console
@@ -51,7 +54,8 @@ bob test
 
 ### Installing
 
-Bob always helps his grandma install Linux Mint on her computer! 👵
+Bob always helps his grandma install [Linux Mint](https://linuxmint.com/) on her computer! 👵
+
 To install a project with Bob, run:
 
 ```console
