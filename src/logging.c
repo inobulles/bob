@@ -76,8 +76,6 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 	free(msg);
 }
 
-// progress bar stuff
-
 progress_t* progress_new(void) {
 	progress_t* self = calloc(1, sizeof *self);
 	self->frac = 0;
@@ -101,7 +99,6 @@ void progress_complete(progress_t* self) {
 void progress_update(progress_t* self, float frac, char const* fmt, ...) {
 	self->frac = frac;
 
-	fflush(stdout);
 	printf(colour_support ? REPLACE_LINE BOLD BLUE "🚧 [" : "🚧 [");
 
 	for (size_t i = 0; i < BAR_SIZE; i++) {
@@ -115,6 +112,7 @@ void progress_update(progress_t* self, float frac, char const* fmt, ...) {
 
 	vprintf(fmt, args);
 	printf(CLEAR);
+	fflush(stdout);
 
 	va_end(args);
 }

@@ -58,7 +58,6 @@ static bool __linker_wait_cc(linker_t* linker) {
 	// if there are none, return successfully straight away
 
 	if (!cc->cc_procs_len) {
-		LOG_SUCCESS("Nothing to compile")
 		return false;
 	}
 
