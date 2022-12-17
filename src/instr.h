@@ -394,6 +394,8 @@ static int do_install(void) {
 	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
 	wrenSetSlotHandle(state.vm, 3, map_handle);
 
+	progress_t* const progress = progress_new();
+
 	for (size_t i = 0; i < keys_len; i++) {
 		// get key
 
@@ -427,16 +429,25 @@ static int do_install(void) {
 		char* src;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
-		if (copy_recursive(src, val) != EXIT_SUCCESS) {
-			LOG_WARN("Failed to install '%s' -> '%s'", key, val)
-		}
+		progress_update(progress, (float) i / keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
 
-		else {
-			LOG_SUCCESS("Installed '%s' -> '%s'", key, val)
+		if (copy_recursive(src, val) != EXIT_SUCCESS) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("Failed to install '%s' -> '%s'", key, val)
+
+			free(src);
+			goto err;
 		}
 
 		free(src);
 	}
+
+	progress_complete(progress);
+	progress_del(progress);
+
+	LOG_SUCCESS("All %zu files installed", keys_len)
 
 err:
 

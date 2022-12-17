@@ -113,7 +113,7 @@ static bool __linker_wait_cc(linker_t* linker) {
 	}
 
 	else {
-		LOG_SUCCESS("Compilation complete")
+		LOG_SUCCESS("All %zu source files compiled", cc->cc_procs_len)
 	}
 
 	// clear the compiler processes list
