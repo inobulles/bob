@@ -144,12 +144,20 @@ void linker_link(WrenVM* vm) {
 	char const* const out = wrenGetSlotString(vm, 3);
 	bool shared = has_shared ? wrenGetSlotBool(vm, 4) : false;
 
-	// read list elements & construct exec args
-
-	wrenEnsureSlots(vm, 6); // we just need a single extra slot for each list element
+	// construct exec args
 
 	exec_args_t* exec_args = exec_args_new(1, linker->path);
 	exec_args_fmt(exec_args, "-L%s", bin_path);
+
+	// start by adding all the C compiler options
+
+	for (size_t i = 0; i < linker->cc->opts_len; i++) {
+		exec_args_add(exec_args, linker->cc->opts[i]);
+	}
+
+	// then, read list elements
+
+	wrenEnsureSlots(vm, 6); // we just need a single extra slot for each list element
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 5);
