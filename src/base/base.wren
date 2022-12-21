@@ -48,25 +48,22 @@ class Deps {
 	foreign static git(url)
 	foreign static git(url, branch)
 
-	static git_inherit(url, branch) {
-		var path = git(url, branch)
-
+	static git_inherit_internal(path) {
 		if (path == null) {
 			return null
 		}
 
-		return File.bob(path, [Meta.instruction()])
-	}
+		var instruction = Meta.instruction()
 
-	static git_inherit(url) {
-		var path = git(url)
-
-		if (path == null) {
-			return null
+		if (instruction == "run") { // we obviously don't want to pass run instructions down to our dependencies
+			return 0
 		}
 
-		return File.bob(path, [Meta.instruction()])
+		return File.bob(path, [instruction])
 	}
+
+	static git_inherit(url, branch) { git_inherit_internal(git(url, branch)) }
+	static git_inherit(url)         { git_inherit_internal(git(url        )) }
 }
 
 class File {
