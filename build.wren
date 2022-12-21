@@ -29,9 +29,7 @@ linker.link(src.toList, ["m"], "bob")
 // running
 
 class Runner {
-	static run(args) {
-		return File.exec("bob", args)
-	}
+	static run(args) { File.exec("bob", args) }
 }
 
 // installation map

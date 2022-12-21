@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
@@ -78,6 +79,14 @@ static void cc_init(cc_t* cc) {
 	// this is very annoying and dumb so whatever just disable it for everyone
 
 	cc_internal_add_opt(cc, "-Wno-unused-command-line-argument");
+
+	// add the output directory as an include search path
+
+	char* opt;
+	if (asprintf(&opt, "-I%s", bin_path)) {}
+
+	cc_internal_add_opt(cc, opt);
+	free(opt);
 }
 
 // constructor/destructor
