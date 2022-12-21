@@ -231,12 +231,20 @@ void linker_archive(WrenVM* vm) {
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	char const* const out = wrenGetSlotString(vm, 2);
 
-	// read list elements & construct exec args
-
-	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
+	// construct exec args
 
 	exec_args_t* exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
 	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
+
+	// start by adding all the C compiler options
+
+	for (size_t i = 0; i < linker->cc->opts_len; i++) {
+		exec_args_add(exec_args, linker->cc->opts[i]);
+	}
+
+	// then, read list elements
+
+	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
