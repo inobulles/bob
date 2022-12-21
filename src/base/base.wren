@@ -56,7 +56,7 @@ class Deps {
 		var instruction = Meta.instruction()
 
 		if (instruction == "run") { // we obviously don't want to pass run instructions down to our dependencies
-			return 0
+			instruction = "build"
 		}
 
 		return File.bob(path, [instruction])
