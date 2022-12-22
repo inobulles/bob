@@ -71,8 +71,6 @@ static void file_chmod(WrenVM* vm) {
 	double const _bit = wrenGetSlotDouble(vm, 3);
 	mode_t const bit = _bit;
 
-	// TODO check that everything makes sense here
-
 	// get initial permissions first
 
 	struct stat sb;
