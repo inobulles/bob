@@ -3,6 +3,9 @@
 #include <errno.h>
 #include <fts.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/_stdint.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <sys/unistd.h>
@@ -49,6 +52,69 @@ static void file_bob(WrenVM* vm) {
 
 	exec_args_del(exec_args);
 	wrenSetSlotDouble(vm, 0, rv);
+}
+
+static void file_chmod(WrenVM* vm) {
+	CHECK_ARGC("File.chmod", 3, 3)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_NUM)
+	ASSERT_ARG_TYPE(3, WREN_TYPE_NUM)
+
+	char const* const path = wrenGetSlotString(vm, 1);
+
+	double const _mask = wrenGetSlotDouble(vm, 2);
+	mode_t const mask = _mask;
+
+	double const _bit = wrenGetSlotDouble(vm, 3);
+	mode_t const bit = _bit;
+
+	// TODO check that everything makes sense here
+
+	// get initial permissions first
+
+	struct stat sb;
+
+	if (stat(path, &sb) < 0) {
+		LOG_WARN("'File.chmod' can't change permissions of '%s': stat: %s", path, strerror(errno))
+		return;
+	}
+
+	mode_t mode = sb.st_mode;
+
+	// find new mode
+
+	mode_t const EXTRA = 07000;
+	mode_t const OWNER = 00700;
+	mode_t const GROUP = 00070;
+	mode_t const OTHER = 00007;
+
+	if (mask & EXTRA) {
+		mode &= ~EXTRA;
+		mode |= (bit << 9) & EXTRA;
+	}
+
+	if (mask & OWNER) {
+		mode &= ~OWNER;
+		mode |= (bit << 6) & OWNER;
+	}
+
+	if (mask & GROUP) {
+		mode &= ~GROUP;
+		mode |= (bit << 3) & GROUP;
+	}
+
+	if (mask & OTHER) {
+		mode &= ~OTHER;
+		mode |= (bit << 0) & OTHER;
+	}
+
+	// actually chmod
+
+	if (chmod(path, mode) < 0) {
+		LOG_WARN("'File.chmod' can't change permissions of '%s': chmod: %s", path, strerror(errno))
+		return;
+	}
 }
 
 static void file_exec(WrenVM* vm) {
@@ -114,6 +180,7 @@ static void file_list(WrenVM* vm) {
 	ASSERT_ARG_TYPE(2, WREN_TYPE_NUM)
 
 	char const* const path = wrenGetSlotString(vm, 1);
+
 	double const _depth = wrenGetSlotDouble(vm, 2);
 	size_t const depth = _depth;
 
@@ -230,6 +297,7 @@ static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* si
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
+	BIND_FOREIGN_METHOD(true, "chmod(_,_,_)", file_chmod)
 	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)

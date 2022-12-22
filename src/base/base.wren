@@ -67,7 +67,23 @@ class Deps {
 }
 
 class File {
+	static EXTRA { 07000 }
+	static OWNER { 00700 }
+	static GROUP { 00070 }
+	static OTHER { 00007 }
+
+	static READ   { 01 }
+	static WRITE  { 02 }
+	static EXEC   { 04 }
+	static RWX    { File.READ | File.WRITE | File.EXEC }
+
+	static STICKY { File.READ  }
+	static SETGID { File.WRITE }
+	static SETUID { File.EXEC  }
+
 	foreign static bob(path, args)
+
+	foreign static chmod(path, mask, bit)
 
 	foreign static exec(path)
 	foreign static exec(path, args)
