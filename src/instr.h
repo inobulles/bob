@@ -462,7 +462,17 @@ static int do_install(void) {
 		wrenEnsureSlots(state.vm, 2);
 		wrenSetSlotString(state.vm, 1, src);
 
-		wren_call(&state, "Installer", sig);
+		if (wren_call(&state, "Installer", sig) != EXIT_SUCCESS) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("Installation method for '%s' failed", key)
+
+			free(sig);
+			free(src);
+
+			goto err;
+		}
 
 		free(sig);
 		free(src);
