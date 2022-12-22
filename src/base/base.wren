@@ -84,6 +84,8 @@ class File {
 	foreign static bob(path, args)
 
 	foreign static chmod(path, mask, bit)
+	foreign static chown(path, user)
+	foreign static chown(path, user, group)
 
 	foreign static exec(path)
 	foreign static exec(path, args)

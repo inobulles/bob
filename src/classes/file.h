@@ -2,6 +2,8 @@
 
 #include <errno.h>
 #include <fts.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/_stdint.h>
@@ -113,6 +115,55 @@ static void file_chmod(WrenVM* vm) {
 
 	if (chmod(path, mode) < 0) {
 		LOG_WARN("'File.chmod' can't change permissions of '%s': chmod: %s", path, strerror(errno))
+		return;
+	}
+}
+
+static void file_chown(WrenVM* vm) {
+	CHECK_ARGC("File.chown", 2, 3)
+	bool const has_group = argc == 3;
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+
+	if (has_group) {
+		ASSERT_ARG_TYPE(3, WREN_TYPE_STRING)
+	}
+
+	char const* const path = wrenGetSlotString(vm, 1);
+	char const* const username = wrenGetSlotString(vm, 2);
+	char const* const groupname = has_group ? wrenGetSlotString(vm, 3) : NULL;
+
+	// get uid from username
+	// also get gid in the case we weren't passed a groupname
+
+	struct passwd* passwd = getpwnam(username);
+
+	if (!passwd) {
+		LOG_WARN("'File.chown' can't get UID from username '%s': getpwnam: %s", username, strerror(errno))
+		return;
+	}
+
+	uid_t const uid = passwd->pw_uid;
+	gid_t gid = passwd->pw_gid;
+
+	// get gid from groupname, if we have one
+
+	if (groupname) {
+		struct group* group = getgrnam(groupname);
+
+		if (!group) {
+			LOG_WARN("'File.chown' can't get GID from groupname '%s': getgrnam: %s", groupname, strerror(errno))
+			return;
+		}
+
+		gid = group->gr_gid;
+	}
+
+	// attempt to change ownership
+
+	if (chown(path, uid, gid) < 0) {
+		LOG_WARN("'File.chown' can't change ownership of '%s' to '%d:%d': chown: %s", path, uid, gid, strerror(errno))
 		return;
 	}
 }
@@ -298,6 +349,8 @@ static WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* si
 
 	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
 	BIND_FOREIGN_METHOD(true, "chmod(_,_,_)", file_chmod)
+	BIND_FOREIGN_METHOD(true, "chown(_,_)", file_chown)
+	BIND_FOREIGN_METHOD(true, "chown(_,_,_)", file_chown)
 	BIND_FOREIGN_METHOD(true, "exec(_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "exec(_,_)", file_exec)
 	BIND_FOREIGN_METHOD(true, "list(_,_)", file_list)
