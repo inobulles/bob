@@ -67,14 +67,16 @@ class Deps {
 }
 
 class File {
-	static EXTRA { 07000 }
-	static OWNER { 00700 }
-	static GROUP { 00070 }
-	static OTHER { 00007 }
+	// TODO binary/octal literals in Wren should really be a thing
 
-	static READ   { 01 }
-	static WRITE  { 02 }
-	static EXEC   { 04 }
+	static EXTRA { 0xE00 }
+	static OWNER { 0x1C0 }
+	static GROUP { 0x038 }
+	static OTHER { 0x007 }
+
+	static READ   { 0x1 }
+	static WRITE  { 0x2 }
+	static EXEC   { 0x4 }
 	static RWX    { File.READ | File.WRITE | File.EXEC }
 
 	static STICKY { File.READ  }

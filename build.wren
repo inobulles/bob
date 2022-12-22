@@ -66,8 +66,13 @@ var LOREM = "Lorem ipsum dolor sit amet"
 class Tests {
 	// unit tests
 
+	static file_chmod { // check if we can correctly modify the permissions of a file to make it executable
+		File.chmod("im-not-executable.sh", File.OWNER, File.RWX)
+		return File.exec("im-not-executable.sh", ["69"]) == 69
+	}
+
 	static file_exec_error { // check if we error correctly if file does not exist/is unexecutable
-		return File.exec("this-is-not-a-script") == null
+		return File.exec("this-is-not-a-script.sh") == null
 	}
 
 	static file_exec { // check if we process error codes of executed files correctly
@@ -146,7 +151,7 @@ class Tests {
 }
 
 var tests = [
-	"file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write",
+	"file_chmod", "file_exec_error", "file_exec", "file_list_error", "file_list", "file_list_depth", "file_read_error", "file_read", "file_write",
 	"meta_cwd", "meta_instruction", "meta_getenv_error", "meta_prefix", "meta_setenv", "meta_unsetenv",
 	"umber",
 ]
