@@ -1,7 +1,9 @@
 #pragma once
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/_stdarg.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
@@ -139,15 +141,17 @@ static int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
-static int wren_call(state_t* state, char const* class, char const* sig, int argc, char** argv) {
-	// get class handle
+static int wren_call(state_t* state, char const* class, char const* sig) {
+	// check class exists
 
 	if (!wrenHasVariable(state->vm, "main", class)) {
 		LOG_ERROR("No '%s' class", class)
 		return EXIT_FAILURE;
 	}
 
-	wrenEnsureSlots(state->vm, 3);
+	// get class handle
+
+	wrenEnsureSlots(state->vm, 1);
 	wrenGetVariable(state->vm, "main", class, 0);
 	WrenHandle* const class_handle = wrenGetSlotHandle(state->vm, 0);
 
@@ -155,18 +159,6 @@ static int wren_call(state_t* state, char const* class, char const* sig, int arg
 
 	WrenHandle* const method_handle = wrenMakeCallHandle(state->vm, sig);
 	wrenReleaseHandle(state->vm, class_handle);
-
-	// pass argument list as first argument (if there is one)
-	// don't check for argc, because that only tells us if the list is empty - argv tells us if it exists
-
-	if (argv) {
-		wrenSetSlotNewList(state->vm, 1);
-
-		while (argc --> 0) {
-			wrenSetSlotString(state->vm, 2, *argv++);
-			wrenInsertInList(state->vm, 1, -1, 2);
-		}
-	}
 
 	// actually call function
 
@@ -192,6 +184,22 @@ static int wren_call(state_t* state, char const* class, char const* sig, int arg
 
 	LOG_WARN("Expected number or boolean as a return value")
 	return EXIT_FAILURE;
+}
+
+static int wren_call_args(state_t* state, char const* class, char const* sig, int argc, char** argv) {
+	// pass argument list as first argument
+
+	wrenEnsureSlots(state->vm, 3);
+	wrenSetSlotNewList(state->vm, 1);
+
+	while (argc --> 0) {
+		wrenSetSlotString(state->vm, 2, *argv++);
+		wrenInsertInList(state->vm, 1, -1, 2);
+	}
+
+	// actually call
+
+	return wren_call(state, class, sig);
 }
 
 static void wren_clean_vm(state_t* state) {
@@ -279,7 +287,7 @@ static int do_run(int argc, char** argv) {
 
 	// call the run function
 
-	rv = wren_call(&state, "Runner", "run(_)", argc, argv);
+	rv = wren_call_args(&state, "Runner", "run(_)", argc, argv);
 
 	if (rv != EXIT_SUCCESS) {
 		goto err;
@@ -441,6 +449,22 @@ static int do_install(void) {
 			goto err;
 		}
 
+		// execute installer method if there is one
+
+		if (!wrenHasVariable(state.vm, "main", "Installer")) {
+			free(src);
+			continue;
+		}
+
+		char* sig;
+		if (asprintf(&sig, "%s(_)", key)) {}
+
+		wrenEnsureSlots(state.vm, 2);
+		wrenSetSlotString(state.vm, 1, src);
+
+		wren_call(&state, "Installer", sig);
+
+		free(sig);
 		free(src);
 	}
 
@@ -610,7 +634,7 @@ static int do_test(void) {
 
 			// call test function
 
-			_exit(wren_call(&state, "Tests", sig, 0, NULL));
+			_exit(wren_call(&state, "Tests", sig));
 		}
 
 		pipe_parent(&pipe);
