@@ -449,10 +449,11 @@ static int do_install(void) {
 			goto err;
 		}
 
+		free(src);
+
 		// execute installer method if there is one
 
 		if (!wrenHasVariable(state.vm, "main", "Installer")) {
-			free(src);
 			continue;
 		}
 
@@ -460,7 +461,7 @@ static int do_install(void) {
 		if (asprintf(&sig, "%s(_)", key)) {}
 
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotString(state.vm, 1, src);
+		wrenSetSlotString(state.vm, 1, val);
 
 		if (wren_call(&state, "Installer", sig) != EXIT_SUCCESS) {
 			progress_complete(progress);
@@ -469,13 +470,10 @@ static int do_install(void) {
 			LOG_ERROR("Installation method for '%s' failed", key)
 
 			free(sig);
-			free(src);
-
 			goto err;
 		}
 
 		free(sig);
-		free(src);
 	}
 
 	progress_complete(progress);
