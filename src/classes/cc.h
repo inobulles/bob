@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
@@ -365,13 +366,20 @@ compile: {}
 
 	fp = fopen(opts_path, "w");
 
+	if (!fp) {
+		LOG_WARN("fopen(\"%s\"): %s", opts_path, strerror(errno))
+	}
+
 	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
 		exec_args_add(exec_args, "-g");
 	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		exec_args_add(exec_args, cc->opts[i]);
-		fprintf(fp, "%s\n", cc->opts[i]);
+
+		if (fp) {
+			fprintf(fp, "%s\n", cc->opts[i]);
+		}
 	}
 
 	// finally, actually compile asynchronously
