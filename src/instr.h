@@ -141,7 +141,7 @@ static int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
-static int wren_call(state_t* state, char const* class, char const* sig) {
+static int wren_call(state_t* state, char const* class, char const* sig, char const** str_ref) {
 	// check class exists
 
 	if (!wrenHasVariable(state->vm, "main", class)) {
@@ -181,6 +181,13 @@ static int wren_call(state_t* state, char const* class, char const* sig) {
 		return !wrenGetSlotBool(state->vm, 0);
 	}
 
+	else if (str_ref && wrenGetSlotType(state->vm, 0) == WREN_TYPE_STRING) {
+		char const* const _str = wrenGetSlotString(state->vm, 0);
+		*str_ref = _str;
+
+		return _str ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+
 
 	LOG_WARN("Expected number or boolean as a return value")
 	return EXIT_FAILURE;
@@ -199,7 +206,7 @@ static int wren_call_args(state_t* state, char const* class, char const* sig, in
 
 	// actually call
 
-	return wren_call(state, class, sig);
+	return wren_call(state, class, sig, NULL);
 }
 
 static void wren_clean_vm(state_t* state) {
@@ -312,7 +319,7 @@ static int read_installation_map(state_t* state, WrenHandle** map_handle_ref, si
 		goto err;
 	}
 
-	wrenEnsureSlots(state->vm, 1); // first slot for the receiver (starts off as the installation map, ends up being the keys list)
+	wrenEnsureSlots(state->vm, 1); // for the receiver (starts off as the installation map, ends up being the keys list)
 	wrenGetVariable(state->vm, "main", "install", 0);
 
 	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_MAP) {
@@ -380,6 +387,7 @@ static int do_install(void) {
 	// declarations which must come before first goto
 
 	WrenHandle* map_handle = NULL;
+	WrenHandle* keys_handle = NULL;
 	size_t keys_len = 0;
 
 	// setup state
@@ -399,7 +407,9 @@ static int do_install(void) {
 
 	// read key/value pairs
 
-	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second slot for the key, third slot for the value, and last slot as a temporary working slot
+	keys_handle = wrenGetSlotHandle(state.vm, 0);
+
+	wrenEnsureSlots(state.vm, 4); // first slot for the keys list, second for the key, third slot for the value, last for map
 	wrenSetSlotHandle(state.vm, 3, map_handle);
 
 	progress_t* const progress = progress_new();
@@ -433,9 +443,55 @@ static int do_install(void) {
 		}
 
 		char const* const val = wrenGetSlotString(state.vm, 2);
+		char const* dest = val;
 
 		char* src;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
+
+		// execute installer method if there is one
+		// otherwise, just install
+
+		// check if there's an installer method we need to call
+
+		if (*val != ':') {
+			goto install;
+		}
+
+		if (!wrenHasVariable(state.vm, "main", "Installer")) {
+			LOG_WARN("'%s' is installed to '%s', which starts with a colon - this is normally used for installer methods, but module has no 'Installer' class", key, val)
+			goto install;
+		}
+
+		// call installer method
+
+		char* sig;
+		if (asprintf(&sig, "%s(_)", val + 1)) {}
+
+		wrenEnsureSlots(state.vm, 2);
+		wrenSetSlotString(state.vm, 1, val);
+
+		if (wren_call(&state, "Installer", sig, &dest) != EXIT_SUCCESS) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("Installation method for '%s' failed", key)
+
+			free(src);
+			free(sig);
+
+			goto err;
+		}
+
+		free(sig);
+
+		// reset slots from handles, because wren_call may have mangled all of this
+
+		wrenSetSlotHandle(state.vm, 0, keys_handle);
+		wrenSetSlotHandle(state.vm, 3, map_handle);
+
+		// install file
+
+	install:
 
 		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
 
@@ -443,38 +499,16 @@ static int do_install(void) {
 			progress_complete(progress);
 			progress_del(progress);
 
-			LOG_ERROR("Failed to install '%s' -> '%s'", key, val)
+			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
 
 			free(src);
 			goto err;
 		}
 
 		free(src);
-
-		// execute installer method if there is one
-
-		if (!wrenHasVariable(state.vm, "main", "Installer")) {
-			continue;
-		}
-
-		char* sig;
-		if (asprintf(&sig, "%s(_)", key)) {}
-
-		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotString(state.vm, 1, val);
-
-		if (wren_call(&state, "Installer", sig) != EXIT_SUCCESS) {
-			progress_complete(progress);
-			progress_del(progress);
-
-			LOG_ERROR("Installation method for '%s' failed", key)
-
-			free(sig);
-			goto err;
-		}
-
-		free(sig);
 	}
+
+	// finished!
 
 	progress_complete(progress);
 	progress_del(progress);
@@ -482,6 +516,10 @@ static int do_install(void) {
 	LOG_SUCCESS("All %zu files installed", keys_len)
 
 err:
+
+	if (keys_handle) {
+		wrenReleaseHandle(state.vm, keys_handle);
+	}
 
 	if (map_handle) {
 		wrenReleaseHandle(state.vm, map_handle);
@@ -642,7 +680,7 @@ static int do_test(void) {
 
 			// call test function
 
-			_exit(wren_call(&state, "Tests", sig));
+			_exit(wren_call(&state, "Tests", sig, NULL));
 		}
 
 		pipe_parent(&pipe);
