@@ -468,7 +468,7 @@ static int do_install(void) {
 		if (asprintf(&sig, "%s(_)", val + 1)) {}
 
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotString(state.vm, 1, val);
+		wrenSetSlotString(state.vm, 1, src);
 
 		if (wren_call(&state, "Installer", sig, &dest) != EXIT_SUCCESS) {
 			progress_complete(progress);
@@ -493,9 +493,9 @@ static int do_install(void) {
 
 	install:
 
-		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, val, i + 1, keys_len);
+		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, dest, i + 1, keys_len);
 
-		if (copy_recursive(src, val) != EXIT_SUCCESS) {
+		if (copy_recursive(src, dest) != EXIT_SUCCESS) {
 			progress_complete(progress);
 			progress_del(progress);
 
