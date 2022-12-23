@@ -23,6 +23,7 @@
 extern char* bin_path;
 extern char const* init_name;
 extern char const* curr_instr;
+extern char const* prefix;
 
 // useful macros
 
@@ -460,6 +461,10 @@ static int remove_recursive(char const* path) {
 // misc stuff
 
 static char const* install_prefix(void) {
+	if (prefix) {
+		return prefix;
+	}
+
 	// if on FreeBSD/aquaBSD (and, to be safe, anywhere else), the prefix will be '/usr/local'
 	// on Linux, it will simply be '/usr'
 

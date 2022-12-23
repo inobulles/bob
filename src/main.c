@@ -21,6 +21,7 @@
 static char* bin_path = NULL;
 static char const* init_name = "bob";
 static char const* curr_instr = NULL;
+static char const* prefix = NULL;
 
 #include "instr.h"
 
@@ -38,10 +39,10 @@ static void usage(void) {
 #endif
 
 	fprintf(stderr,
-		"usage: %1$s [-C project directory] [-o out directory] build\n"
-		"       %1$s [-C project directory] [-o out directory] run\n"
-		"       %1$s [-C project directory] [-o out directory] install\n"
-		"       %1$s [-C project directory] [-o out directory] test\n",
+		"usage: %1$s [-p prefix] [-C project directory] [-o out directory] build\n"
+		"       %1$s [-p prefix] [-C project directory] [-o out directory] run\n"
+		"       %1$s [-p prefix] [-C project directory] [-o out directory] install\n"
+		"       %1$s [-p prefix] [-C project directory] [-o out directory] test\n",
 	progname);
 
 	exit(EXIT_FAILURE);
@@ -58,13 +59,17 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:o:")) != -1) {
+	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
 		if (c == 'C') {
 			project_path = optarg;
 		}
 
 		else if (c == 'o') {
 			_bin_path = optarg;
+		}
+
+		else if (c == 'p') {
+			prefix = optarg;
 		}
 
 		else {
