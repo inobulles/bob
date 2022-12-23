@@ -6,7 +6,6 @@
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/_stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
