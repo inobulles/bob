@@ -142,7 +142,14 @@ void linker_link(WrenVM* vm) {
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	size_t const lib_list_len = wrenGetListCount(vm, 2);
 	char const* const out = wrenGetSlotString(vm, 3);
-	bool shared = has_shared ? wrenGetSlotBool(vm, 4) : false;
+	bool const shared = has_shared ? wrenGetSlotBool(vm, 4) : false;
+
+	// extra argument checks
+
+	if (!path_list_len) {
+		LOG_WARN("'%s' passed an empty list of paths", __fn_name)
+		return;
+	}
 
 	// construct exec args
 
@@ -230,6 +237,13 @@ void linker_archive(WrenVM* vm) {
 	linker_t* const linker = foreign;
 	size_t const path_list_len = wrenGetListCount(vm, 1);
 	char const* const out = wrenGetSlotString(vm, 2);
+
+	// extra argument checks
+
+	if (!path_list_len) {
+		LOG_WARN("'%s' passed an empty list of paths", __fn_name)
+		return;
+	}
 
 	// read list elements & construct exec args
 
