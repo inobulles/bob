@@ -22,6 +22,7 @@
 
 // global variables
 
+static char const* rel_bin_path;
 static char* bin_path;
 static char const* init_name;
 static char const* curr_instr;
@@ -605,6 +606,22 @@ static void navigate_project_path(void) {
 
 	if (project_path && chdir(project_path) < 0) {
 		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
+	}
+}
+
+static void ensure_out_path(void) {
+	// make sure output directory exists - create it if it doesn't
+
+	if (mkdir_recursive(rel_bin_path) < 0) {
+		errx(EXIT_FAILURE, "mkdir_recursive(\"%s\"): %s", rel_bin_path, strerror(errno));
+	}
+
+	// get absolute path of output directory so we don't ever get lost or confused
+
+	bin_path = realpath(rel_bin_path, NULL);
+
+	if (!bin_path) {
+		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", rel_bin_path, strerror(errno));
 	}
 }
 

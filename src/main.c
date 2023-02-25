@@ -18,6 +18,7 @@
 
 // global options go here so they're accessible by everyone
 
+static char const* rel_bin_path = "bin"; // default output path
 static char* bin_path = NULL;
 static char const* init_name = "bob";
 static char const* curr_instr = NULL;
@@ -57,8 +58,6 @@ int main(int argc, char* argv[]) {
 
 	// parse options
 
-	char* _bin_path = "bin"; // default output path
-
 	int c;
 
 	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
@@ -67,7 +66,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (c == 'o') {
-			_bin_path = optarg;
+			rel_bin_path = optarg;
 		}
 
 		else if (c == 'p') {
@@ -95,21 +94,6 @@ int main(int argc, char* argv[]) {
 
 	if (abs_init_name) {
 		init_name = abs_init_name;
-	}
-
-	// make sure output directory exists
-	// create it if it doesn't
-
-	if (mkdir_recursive(_bin_path) < 0) {
-		errx(EXIT_FAILURE, "mkdir_recursive(\"%s\"): %s", _bin_path, strerror(errno));
-	}
-
-	// get absolute path of output directory so we don't ever get lost or confused
-
-	bin_path = realpath(_bin_path, NULL);
-
-	if (!bin_path) {
-		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", _bin_path, strerror(errno));
 	}
 
 	// parse instructions
