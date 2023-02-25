@@ -440,6 +440,12 @@ static char* file_read_str(FILE* fp, size_t size) {
 }
 
 static int mkdir_recursive(char const* _path) {
+	// we don't need to do anything if path is empty
+
+	if (!*_path) {
+		return 0;
+	}
+
 	// TODO what about '~' in paths?
 	// TODO proper error handling
 
