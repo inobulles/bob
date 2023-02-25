@@ -523,7 +523,7 @@ static int mkdir_recursive(char const* _path) {
 			goto no_mkdir;
 		}
 
-		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
+		if (mkdir(bit, 0755) < 0 && errno != EEXIST) {
 			LOG_ERROR("mkdir(\"%s\"): %s", bit, strerror(errno))
 			goto err_mkdir;
 		}
