@@ -488,22 +488,41 @@ static int do_install(void) {
 		wrenSetSlotHandle(state.vm, 0, keys_handle);
 		wrenSetSlotHandle(state.vm, 3, map_handle);
 
-		// install file
+		// install file/directory
 
 	install:
 
 		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, dest, i + 1, keys_len);
 
-		if (copy_recursive(src, dest) != EXIT_SUCCESS) {
+		// make sure the directory in which we'd like to install the file/directory exists
+		// then, copy the file/directory itself
+		// XXX what about using __attribute__((cleanup())) here?
+
+		char* const dest_parent = strdup(dest);
+		char* basename = strrchr(dest_parent, '/');
+
+		if (!basename) {
+			basename = dest_parent;
+		}
+
+		*basename = '\0';
+
+		if (
+			mkdir_recursive(dest_parent) < 0 ||
+			copy_recursive(src, dest) != EXIT_SUCCESS
+		) {
 			progress_complete(progress);
 			progress_del(progress);
 
 			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
 
+			free(dest_parent);
 			free(src);
+
 			goto err;
 		}
 
+		free(dest_parent);
 		free(src);
 	}
 
