@@ -78,6 +78,7 @@ bob install
 - [ ] Proper documentation not only on how to use bob, but also on how to write a `build.wren` configuration.
 - [ ] Warn against two commands outputting to the same file.
 - [ ] Integration with `clangd`? Like we could automatically generate a `.clangd` file with the options passed to the C compiler & linker.
+- [ ] If child execution fails from e.g. a segfault, say so (this is for `run`).
 
 ## Personal notes
 
