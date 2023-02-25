@@ -537,6 +537,12 @@ err:
 	return rv;
 }
 
+static int do_skeleton(char* name) {
+	// TODO
+
+	return EXIT_SUCCESS;
+}
+
 typedef struct {
 	char* name;
 	pid_t pid;

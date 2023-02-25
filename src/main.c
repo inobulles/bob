@@ -40,10 +40,11 @@ static void usage(void) {
 #endif
 
 	fprintf(stderr,
-		"usage: %1$s [-p prefix] [-C project directory] [-o out directory] build\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] run\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] install\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] test\n",
+		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
+		"       %1$s [-p prefix] [-o out_directory] skeleton skeleton_name\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] test\n",
 	progname);
 
 	exit(EXIT_FAILURE);
@@ -134,6 +135,11 @@ int main(int argc, char* argv[]) {
 
 		else if (!strcmp(curr_instr, "install")) {
 			rv = do_install();
+		}
+
+		else if (!strcmp(curr_instr, "skeleton")) {
+			argc--;
+			rv = do_skeleton(*argv++);
 		}
 
 		else if (!strcmp(curr_instr, "test")) {
