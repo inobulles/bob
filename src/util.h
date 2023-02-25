@@ -73,6 +73,18 @@ extern char const* prefix;
 		return; \
 	}
 
+// string stuff
+
+static void strfree(char* const* str_ref) {
+	char* const str = *str_ref;
+
+	if (!str) {
+		return;
+	}
+
+	free(str);
+}
+
 // wren functions
 
 static void wren_write_fn(WrenVM* vm, char const* msg) {
@@ -452,7 +464,7 @@ static int mkdir_recursive(char const* _path) {
 
 	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
 
-	char* const cwd = getcwd(NULL, 0);
+	char* const __attribute__((cleanup(strfree))) cwd = getcwd(NULL, 0);
 
 	if (!cwd) {
 		LOG_ERROR("getcwd: %s", strerror(errno))
@@ -524,7 +536,6 @@ err_mkdir:
 err_abs:
 
 	free(path);
-	free(cwd);
 
 err_cwd:
 
@@ -572,16 +583,6 @@ static int remove_recursive(char const* path) {
 }
 
 // misc stuff
-
-static void strfree(char* const* str_ref) {
-	char* const str = *str_ref;
-
-	if (!str) {
-		return;
-	}
-
-	free(str);
-}
 
 static char const* install_prefix(void) {
 	if (prefix) {
