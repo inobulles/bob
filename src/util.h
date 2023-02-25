@@ -452,15 +452,13 @@ static char* file_read_str(FILE* fp, size_t size) {
 }
 
 static int mkdir_recursive(char const* _path) {
+	int rv = -1;
+
 	// we don't need to do anything if path is empty
 
 	if (!*_path) {
 		return 0;
 	}
-
-	// TODO what about '~' in paths?
-
-	int rv = -1;
 
 	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
 
@@ -473,15 +471,28 @@ static int mkdir_recursive(char const* _path) {
 
 	char* path = strdup(_path);
 
+	// if we're dealing with a path relative to $HOME, chdir to $HOME first
+
+	if (*path == '~') {
+		char* const home = getenv("HOME");
+
+		// if $HOME isn't set, treat as an absolute directory
+
+		if (!home) {
+			*path = '/';
+		}
+
+		else if (chdir(home) < 0) {
+			LOG_ERROR("chdir($HOME): %s", strerror(errno))
+			goto err_home;
+		}
+	}
+
 	// if we're dealing with an absolute path, chdir to '/' and treat path as relative
 
-	if (*path == '/') {
-		while (*++path == '/'); // remove prepending slashes, however many there may be
-
-		if (chdir("/") < 0) {
-			LOG_ERROR("chdir(\"/\"): %s", strerror(errno))
-			goto err_abs;
-		}
+	if (*path == '/' && chdir("/") < 0) {
+		LOG_ERROR("chdir(\"/\"): %s", strerror(errno))
+		goto err_abs;
 	}
 
 	// parse the path itself
@@ -534,6 +545,7 @@ err_mkdir:
 	}
 
 err_abs:
+err_home:
 
 	free(path);
 
