@@ -563,6 +563,16 @@ static int remove_recursive(char const* path) {
 
 // misc stuff
 
+static void strfree(char* const* str_ref) {
+	char* const str = *str_ref;
+
+	if (!str) {
+		return;
+	}
+
+	free(str);
+}
+
 static char const* install_prefix(void) {
 	if (prefix) {
 		return prefix;

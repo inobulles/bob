@@ -414,6 +414,10 @@ static int do_install(void) {
 	progress_t* const progress = progress_new();
 
 	for (size_t i = 0; i < keys_len; i++) {
+		// this is declared all the way up here, because you can't jump over an __attribute__((cleanup)) declaration with goto
+
+		char* __attribute__((cleanup(strfree))) sig = NULL;
+
 		// get key
 
 		wrenGetListElement(state.vm, 0, i, 1);
@@ -444,7 +448,7 @@ static int do_install(void) {
 		char const* const val = wrenGetSlotString(state.vm, 2);
 		char const* dest = val;
 
-		char* src;
+		char* __attribute__((cleanup(strfree))) src = NULL;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
 		// execute installer method if there is one
@@ -463,7 +467,6 @@ static int do_install(void) {
 
 		// call installer method
 
-		char* sig;
 		if (asprintf(&sig, "%s(_)", val + 1)) {}
 
 		wrenEnsureSlots(state.vm, 2);
@@ -474,14 +477,8 @@ static int do_install(void) {
 			progress_del(progress);
 
 			LOG_ERROR("Installation method for '%s' failed", key)
-
-			free(src);
-			free(sig);
-
 			goto err;
 		}
-
-		free(sig);
 
 		// reset slots from handles, because wren_call may have mangled all of this
 
@@ -496,9 +493,8 @@ static int do_install(void) {
 
 		// make sure the directory in which we'd like to install the file/directory exists
 		// then, copy the file/directory itself
-		// XXX what about using __attribute__((cleanup())) here?
 
-		char* const dest_parent = strdup(dest);
+		char* const __attribute__((cleanup(strfree))) dest_parent = strdup(dest);
 		char* basename = strrchr(dest_parent, '/');
 
 		if (!basename) {
@@ -515,15 +511,8 @@ static int do_install(void) {
 			progress_del(progress);
 
 			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
-
-			free(dest_parent);
-			free(src);
-
 			goto err;
 		}
-
-		free(dest_parent);
-		free(src);
 	}
 
 	// finished!
