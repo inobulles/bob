@@ -1,3 +1,4 @@
+#include "util.h"
 #define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
 
 #if __linux__
@@ -18,10 +19,10 @@
 
 // global options go here so they're accessible by everyone
 
-static char* bin_path = NULL;
-static char const* init_name = "bob";
-static char const* curr_instr = NULL;
-static char const* prefix = NULL;
+char* bin_path = NULL;
+char const* init_name = "bob";
+char const* curr_instr = NULL;
+char const* prefix = NULL;
 
 #include "instr.h"
 
@@ -104,58 +105,8 @@ int main(int argc, char* argv[]) {
 	// make sure output directory exists
 	// create it if it doesn't
 
-	char* cwd = getcwd(NULL, 0);
-
-	if (!cwd) {
-		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
-	}
-
-	bin_path = strdup(_bin_path); // don't care about freeing this
-
-	if (*bin_path == '/') { // absolute path
-		while (*++bin_path == '/'); // remove prepending slashes
-
-		if (chdir("/") < 0) {
-			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
-		}
-	}
-
-	char* bit;
-
-	while ((bit = strsep(&bin_path, "/"))) {
-		// ignore if the bit is empty
-
-		if (!bit || !*bit) {
-			continue;
-		}
-
-		// ignore if the bit refers to the current directory
-
-		if (!strcmp(bit, ".")) {
-			continue;
-		}
-
-		// don't attempt to mkdir if we're going backwards, only chdir
-
-		if (!strcmp(bit, "..")) {
-			goto no_mkdir;
-		}
-
-		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
-			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
-		}
-
-	no_mkdir:
-
-		if (chdir(bit) < 0) {
-			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
-		}
-	}
-
-	// move back to current directory once we're sure the output directory exists
-
-	if (chdir(cwd) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
+	if (mkdir_recursive(_bin_path) < 0) {
+		errx(EXIT_FAILURE, "mkdir_recursive(\"%s\"): %s", _bin_path, strerror(errno));
 	}
 
 	// get absolute path of output directory so we don't ever get lost or confused

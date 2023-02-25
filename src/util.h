@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <sys/wait.h>
@@ -435,6 +437,82 @@ static char* file_read_str(FILE* fp, size_t size) {
 
 	str[size] = 0;
 	return str;
+}
+
+static int mkdir_recursive(char const* _path) {
+	// TODO what about '~' in paths?
+	// TODO proper error handling
+
+	int rv = -1;
+
+	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
+
+	char* const cwd = getcwd(NULL, 0);
+
+	if (!cwd) {
+		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
+	}
+
+	char* path = strdup(_path);
+
+	// if we're dealing with an absolute path, chdir to '/' and treat path as relative
+
+	if (*path == '/') {
+		while (*++path == '/'); // remove prepending slashes, however many there may be
+
+		if (chdir("/") < 0) {
+			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
+		}
+	}
+
+	// parse the path itself
+
+	char* bit;
+
+	while ((bit = strsep(&path, "/"))) {
+		// ignore if the bit is empty
+
+		if (!bit || !*bit) {
+			continue;
+		}
+
+		// ignore if the bit refers to the current directory
+
+		if (!strcmp(bit, ".")) {
+			continue;
+		}
+
+		// don't attempt to mkdir if we're going backwards, only chdir
+
+		if (!strcmp(bit, "..")) {
+			goto no_mkdir;
+		}
+
+		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
+			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
+		}
+
+	no_mkdir:
+
+		if (chdir(bit) < 0) {
+			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
+		}
+	}
+
+	// move back to current directory once we're sure the output directory exists
+
+	if (chdir(cwd) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
+	}
+
+	// success
+
+	rv = 0;
+
+	free(path);
+	free(cwd);
+
+	return rv;
 }
 
 static int copy_recursive(char const* src, char const* dest) {
