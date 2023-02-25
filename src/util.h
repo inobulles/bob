@@ -515,13 +515,32 @@ static int mkdir_recursive(char const* _path) {
 	return rv;
 }
 
-static int copy_recursive(char const* src, char const* dest) {
+static int copy_recursive(char const* _src, char const* dest) {
 	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
 	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
+	// if 'src' is a directory, append a slash to it to override stupid cp(1) behaviour
+
+	struct stat sb;
+
+	if (stat(_src, &sb) < 0) {
+		LOG_ERROR("stat(\"%s\"): %s", _src, strerror(errno))
+		return EXIT_FAILURE;
+	}
+
+	bool const add_slash = S_ISDIR(sb.st_mode);
+	char* src = (void*) _src;
+
+	if (add_slash) {
+		if (asprintf(&src, "%s/", src)) {};
+	}
 
 	exec_args_t* exec_args = exec_args_new(4, "cp", "-RpP", src, dest);
 	int rv = execute(exec_args);
 	exec_args_del(exec_args);
+
+	if (add_slash) {
+		free(src);
+	}
 
 	return rv;
 }
