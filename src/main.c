@@ -22,6 +22,7 @@ static char* bin_path = NULL;
 static char const* init_name = "bob";
 static char const* curr_instr = NULL;
 static char const* prefix = NULL;
+static char const* project_path = NULL;
 
 static void usage(void) {
 #if defined(__FreeBSD__)
@@ -57,7 +58,6 @@ int main(int argc, char* argv[]) {
 	// parse options
 
 	char* _bin_path = "bin"; // default output path
-	char* project_path = NULL;
 
 	int c;
 
@@ -95,12 +95,6 @@ int main(int argc, char* argv[]) {
 
 	if (abs_init_name) {
 		init_name = abs_init_name;
-	}
-
-	// navigate into project directory, if one was specified
-
-	if (project_path && chdir(project_path) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
 	}
 
 	// make sure output directory exists

@@ -26,6 +26,8 @@ static char* bin_path;
 static char const* init_name;
 static char const* curr_instr;
 static char const* prefix;
+static char const* project_path;
+
 static void usage(void);
 
 // useful macros
@@ -37,6 +39,7 @@ static void usage(void);
 
 // this may be a contender for ugliest macro I've ever written
 // not sure though, I've written some pretty ugly macros in my time
+// yeah actually screw that, the '__UI_LOG' macro in 'aquabsd.alps.ui/private.h' is like 10 times worse
 
 #define CHECK_ARGC(fn_name, argc_little, argc_big) \
 	char const* const __fn_name = (fn_name); /* accessible by future macros */ \
@@ -596,6 +599,14 @@ static int remove_recursive(char const* path) {
 }
 
 // misc stuff
+
+static void navigate_project_path(void) {
+	// navigate into project directory, if one was specified
+
+	if (project_path && chdir(project_path) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
+	}
+}
 
 static char const* install_prefix(void) {
 	if (prefix) {

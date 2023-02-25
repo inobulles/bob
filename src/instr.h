@@ -223,6 +223,8 @@ static void wren_clean_vm(state_t* state) {
 }
 
 static int do_build(void) {
+	navigate_project_path();
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -279,6 +281,8 @@ static void setup_env(char* working_dir) {
 }
 
 static int do_run(int argc, char** argv) {
+	navigate_project_path();
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -383,6 +387,8 @@ err:
 }
 
 static int do_install(void) {
+	navigate_project_path();
+
 	// declarations which must come before first goto
 
 	WrenHandle* map_handle = NULL;
@@ -585,6 +591,8 @@ typedef struct {
 } test_t;
 
 static int do_test(void) {
+	navigate_project_path();
+
 	// declarations which must come before first goto
 
 	char** keys = NULL;
