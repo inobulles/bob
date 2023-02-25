@@ -16,12 +16,12 @@ src
 // link program
 
 var linker = Linker.new(cc)
-linker.link(src.toList, [], "@@@name@@@")
+linker.link(src.toList, [], "cmd")
 
 // running
 
 class Runner {
-	static run(args) { File.exec("@@@name@@@", args) }
+	static run(args) { File.exec("cmd", args) }
 }
 
 // testing
