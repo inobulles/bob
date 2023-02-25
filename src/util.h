@@ -447,7 +447,6 @@ static int mkdir_recursive(char const* _path) {
 	}
 
 	// TODO what about '~' in paths?
-	// TODO proper error handling
 
 	int rv = -1;
 
@@ -456,7 +455,8 @@ static int mkdir_recursive(char const* _path) {
 	char* const cwd = getcwd(NULL, 0);
 
 	if (!cwd) {
-		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
+		LOG_ERROR("getcwd: %s", strerror(errno))
+		goto err_cwd;
 	}
 
 	char* path = strdup(_path);
@@ -467,7 +467,8 @@ static int mkdir_recursive(char const* _path) {
 		while (*++path == '/'); // remove prepending slashes, however many there may be
 
 		if (chdir("/") < 0) {
-			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
+			LOG_ERROR("chdir(\"/\"): %s", strerror(errno))
+			goto err_abs;
 		}
 	}
 
@@ -495,28 +496,37 @@ static int mkdir_recursive(char const* _path) {
 		}
 
 		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
-			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
+			LOG_ERROR("mkdir(\"%s\"): %s", bit, strerror(errno))
+			goto err_mkdir;
 		}
 
 	no_mkdir:
 
 		if (chdir(bit) < 0) {
-			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
+			LOG_ERROR("chdir(\"%s\"): %s", bit, strerror(errno))
+			goto err_chdir;
 		}
-	}
-
-	// move back to current directory once we're sure the output directory exists
-
-	if (chdir(cwd) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
 	}
 
 	// success
 
 	rv = 0;
 
+err_chdir:
+err_mkdir:
+
+	// move back to current directory once we're sure the output directory exists (or there's an error)
+
+	if (chdir(cwd) < 0) {
+		LOG_ERROR("chdir(\"%s\"): %s", cwd, strerror(errno))
+	}
+
+err_abs:
+
 	free(path);
 	free(cwd);
+
+err_cwd:
 
 	return rv;
 }
