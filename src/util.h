@@ -22,10 +22,11 @@
 
 // global variables
 
-extern char* bin_path;
-extern char const* init_name;
-extern char const* curr_instr;
-extern char const* prefix;
+static char* bin_path;
+static char const* init_name;
+static char const* curr_instr;
+static char const* prefix;
+static void usage(void);
 
 // useful macros
 

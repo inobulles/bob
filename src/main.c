@@ -18,13 +18,10 @@
 
 // global options go here so they're accessible by everyone
 
-char* bin_path = NULL;
-char const* init_name = "bob";
-char const* curr_instr = NULL;
-char const* prefix = NULL;
-
-#include "util.h"
-#include "instr.h"
+static char* bin_path = NULL;
+static char const* init_name = "bob";
+static char const* curr_instr = NULL;
+static char const* prefix = NULL;
 
 static void usage(void) {
 #if defined(__FreeBSD__)
@@ -43,12 +40,15 @@ static void usage(void) {
 		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] build\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
-		"       %1$s [-p prefix] [-o out_directory] skeleton skeleton_name\n"
+		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] test\n",
 	progname);
 
 	exit(EXIT_FAILURE);
 }
+
+#include "util.h"
+#include "instr.h"
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (!strcmp(curr_instr, "run")) {
-			// everything stops if we run the 'run' command
+			// everything stops if we run the 'run' command, because we don't know how many arguments there'll still be
 			return do_run(argc, argv);
 		}
 
@@ -138,8 +138,8 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (!strcmp(curr_instr, "skeleton")) {
-			argc--;
-			rv = do_skeleton(*argv++);
+			// everything stops if we run the 'skeleton' command, because I don't wanna deal how the output/project paths should best be handled for subsequent commands
+			return do_skeleton(argc, argv);
 		}
 
 		else if (!strcmp(curr_instr, "test")) {
