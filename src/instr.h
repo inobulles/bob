@@ -223,6 +223,9 @@ static void wren_clean_vm(state_t* state) {
 }
 
 static int do_build(void) {
+	navigate_project_path();
+	ensure_out_path();
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -279,6 +282,9 @@ static void setup_env(char* working_dir) {
 }
 
 static int do_run(int argc, char** argv) {
+	navigate_project_path();
+	ensure_out_path();
+
 	state_t state = { 0 };
 	int rv = wren_setup_vm(&state);
 
@@ -383,6 +389,9 @@ err:
 }
 
 static int do_install(void) {
+	navigate_project_path();
+	ensure_out_path();
+
 	// declarations which must come before first goto
 
 	WrenHandle* map_handle = NULL;
@@ -414,6 +423,10 @@ static int do_install(void) {
 	progress_t* const progress = progress_new();
 
 	for (size_t i = 0; i < keys_len; i++) {
+		// this is declared all the way up here, because you can't jump over an __attribute__((cleanup)) declaration with goto
+
+		char* __attribute__((cleanup(strfree))) sig = NULL;
+
 		// get key
 
 		wrenGetListElement(state.vm, 0, i, 1);
@@ -444,7 +457,7 @@ static int do_install(void) {
 		char const* const val = wrenGetSlotString(state.vm, 2);
 		char const* dest = val;
 
-		char* src;
+		char* __attribute__((cleanup(strfree))) src = NULL;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
 		// execute installer method if there is one
@@ -463,7 +476,6 @@ static int do_install(void) {
 
 		// call installer method
 
-		char* sig;
 		if (asprintf(&sig, "%s(_)", val + 1)) {}
 
 		wrenEnsureSlots(state.vm, 2);
@@ -474,37 +486,42 @@ static int do_install(void) {
 			progress_del(progress);
 
 			LOG_ERROR("Installation method for '%s' failed", key)
-
-			free(src);
-			free(sig);
-
 			goto err;
 		}
-
-		free(sig);
 
 		// reset slots from handles, because wren_call may have mangled all of this
 
 		wrenSetSlotHandle(state.vm, 0, keys_handle);
 		wrenSetSlotHandle(state.vm, 3, map_handle);
 
-		// install file
+		// install file/directory
 
 	install:
 
 		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, dest, i + 1, keys_len);
 
-		if (copy_recursive(src, dest) != EXIT_SUCCESS) {
+		// make sure the directory in which we'd like to install the file/directory exists
+		// then, copy the file/directory itself
+
+		char* const __attribute__((cleanup(strfree))) dest_parent = strdup(dest);
+		char* basename = strrchr(dest_parent, '/');
+
+		if (!basename) {
+			basename = dest_parent;
+		}
+
+		*basename = '\0';
+
+		if (
+			mkdir_recursive(dest_parent) < 0 ||
+			copy_recursive(src, dest) != EXIT_SUCCESS
+		) {
 			progress_complete(progress);
 			progress_del(progress);
 
 			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
-
-			free(src);
 			goto err;
 		}
-
-		free(src);
 	}
 
 	// finished!
@@ -529,6 +546,45 @@ err:
 	return rv;
 }
 
+static int do_skeleton(int argc, char** argv) {
+	if (argc != 1 && argc != 2) {
+		usage();
+	}
+
+	char* const name = argv[0];
+	char* const out = argv[1] ? argv[1] : name;
+
+	// make sure output directory doesn't yet exist - we wouldn't wanna overwrite anything!
+
+	if (!access(out, F_OK)) {
+		LOG_FATAL("Output directory '%s' already exists", out)
+		return EXIT_FAILURE;
+	}
+
+	// make output directory
+
+	if (mkdir_recursive(out) < 0) {
+		LOG_FATAL("Failed to create output directory '%s'", out)
+		return EXIT_FAILURE;
+	}
+
+	// build skeleton path
+	// XXX instead of hardcoding this format string, maybe there's a better way by passing installation directories at compile time
+	// XXX also, how does this work for when bob isn't yet installed to the system?
+
+	char* __attribute__((cleanup(strfree))) skeleton_path = NULL;
+	if (asprintf(&skeleton_path, "%s/share/bob/skeletons/%s", install_prefix(), name)) {};
+
+	// copy over skeleton files
+
+	if (copy_recursive(skeleton_path, out) < 0) {
+		LOG_FATAL("Failed to copy skeleton '%s' to output directory '%s'", skeleton_path, out)
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
 typedef struct {
 	char* name;
 	pid_t pid;
@@ -538,6 +594,9 @@ typedef struct {
 } test_t;
 
 static int do_test(void) {
+	navigate_project_path();
+	ensure_out_path();
+
 	// declarations which must come before first goto
 
 	char** keys = NULL;

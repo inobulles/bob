@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <sys/wait.h>
@@ -20,10 +22,14 @@
 
 // global variables
 
-extern char* bin_path;
-extern char const* init_name;
-extern char const* curr_instr;
-extern char const* prefix;
+static char const* rel_bin_path;
+static char* bin_path;
+static char const* init_name;
+static char const* curr_instr;
+static char const* prefix;
+static char const* project_path;
+
+static void usage(void);
 
 // useful macros
 
@@ -34,6 +40,7 @@ extern char const* prefix;
 
 // this may be a contender for ugliest macro I've ever written
 // not sure though, I've written some pretty ugly macros in my time
+// yeah actually screw that, the '__UI_LOG' macro in 'aquabsd.alps.ui/private.h' is like 10 times worse
 
 #define CHECK_ARGC(fn_name, argc_little, argc_big) \
 	char const* const __fn_name = (fn_name); /* accessible by future macros */ \
@@ -70,6 +77,18 @@ extern char const* prefix;
 		LOG_WARN("'%s' argument " #i " is of incorrect type (expected '" #type "')", __fn_name) \
 		return; \
 	}
+
+// string stuff
+
+static void strfree(char* const* str_ref) {
+	char* const str = *str_ref;
+
+	if (!str) {
+		return;
+	}
+
+	free(str);
+}
 
 // wren functions
 
@@ -437,13 +456,135 @@ static char* file_read_str(FILE* fp, size_t size) {
 	return str;
 }
 
-static int copy_recursive(char const* src, char const* dest) {
+static int mkdir_recursive(char const* _path) {
+	int rv = -1;
+
+	// we don't need to do anything if path is empty
+
+	if (!*_path) {
+		return 0;
+	}
+
+	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
+
+	char* const __attribute__((cleanup(strfree))) cwd = getcwd(NULL, 0);
+
+	if (!cwd) {
+		LOG_ERROR("getcwd: %s", strerror(errno))
+		goto err_cwd;
+	}
+
+	char* path = strdup(_path);
+
+	// if we're dealing with a path relative to $HOME, chdir to $HOME first
+
+	if (*path == '~') {
+		char* const home = getenv("HOME");
+
+		// if $HOME isn't set, treat as an absolute directory
+
+		if (!home) {
+			*path = '/';
+		}
+
+		else if (chdir(home) < 0) {
+			LOG_ERROR("chdir($HOME): %s", strerror(errno))
+			goto err_home;
+		}
+	}
+
+	// if we're dealing with an absolute path, chdir to '/' and treat path as relative
+
+	if (*path == '/' && chdir("/") < 0) {
+		LOG_ERROR("chdir(\"/\"): %s", strerror(errno))
+		goto err_abs;
+	}
+
+	// parse the path itself
+
+	char* bit;
+
+	while ((bit = strsep(&path, "/"))) {
+		// ignore if the bit is empty
+
+		if (!bit || !*bit) {
+			continue;
+		}
+
+		// ignore if the bit refers to the current directory
+
+		if (!strcmp(bit, ".")) {
+			continue;
+		}
+
+		// don't attempt to mkdir if we're going backwards, only chdir
+
+		if (!strcmp(bit, "..")) {
+			goto no_mkdir;
+		}
+
+		if (mkdir(bit, 0755) < 0 && errno != EEXIST) {
+			LOG_ERROR("mkdir(\"%s\"): %s", bit, strerror(errno))
+			goto err_mkdir;
+		}
+
+	no_mkdir:
+
+		if (chdir(bit) < 0) {
+			LOG_ERROR("chdir(\"%s\"): %s", bit, strerror(errno))
+			goto err_chdir;
+		}
+	}
+
+	// success
+
+	rv = 0;
+
+err_chdir:
+err_mkdir:
+
+	// move back to current directory once we're sure the output directory exists (or there's an error)
+
+	if (chdir(cwd) < 0) {
+		LOG_ERROR("chdir(\"%s\"): %s", cwd, strerror(errno))
+	}
+
+err_abs:
+err_home:
+
+	free(path);
+
+err_cwd:
+
+	return rv;
+}
+
+static int copy_recursive(char const* _src, char const* dest) {
 	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
 	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
+	// if 'src' is a directory, append a slash to it to override stupid cp(1) behaviour
+
+	struct stat sb;
+
+	if (stat(_src, &sb) < 0) {
+		LOG_ERROR("stat(\"%s\"): %s", _src, strerror(errno))
+		return EXIT_FAILURE;
+	}
+
+	bool const add_slash = S_ISDIR(sb.st_mode);
+	char* src = (void*) _src;
+
+	if (add_slash) {
+		if (asprintf(&src, "%s/", src)) {};
+	}
 
 	exec_args_t* exec_args = exec_args_new(4, "cp", "-RpP", src, dest);
 	int rv = execute(exec_args);
 	exec_args_del(exec_args);
+
+	if (add_slash) {
+		free(src);
+	}
 
 	return rv;
 }
@@ -459,6 +600,30 @@ static int remove_recursive(char const* path) {
 }
 
 // misc stuff
+
+static void navigate_project_path(void) {
+	// navigate into project directory, if one was specified
+
+	if (project_path && chdir(project_path) < 0) {
+		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
+	}
+}
+
+static void ensure_out_path(void) {
+	// make sure output directory exists - create it if it doesn't
+
+	if (mkdir_recursive(rel_bin_path) < 0) {
+		errx(EXIT_FAILURE, "mkdir_recursive(\"%s\"): %s", rel_bin_path, strerror(errno));
+	}
+
+	// get absolute path of output directory so we don't ever get lost or confused
+
+	bin_path = realpath(rel_bin_path, NULL);
+
+	if (!bin_path) {
+		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", rel_bin_path, strerror(errno));
+	}
+}
 
 static char const* install_prefix(void) {
 	if (prefix) {
