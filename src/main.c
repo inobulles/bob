@@ -18,12 +18,12 @@
 
 // global options go here so they're accessible by everyone
 
+static char const* rel_bin_path = "bin"; // default output path
 static char* bin_path = NULL;
 static char const* init_name = "bob";
 static char const* curr_instr = NULL;
 static char const* prefix = NULL;
-
-#include "instr.h"
+static char const* project_path = NULL;
 
 static void usage(void) {
 #if defined(__FreeBSD__)
@@ -39,23 +39,24 @@ static void usage(void) {
 #endif
 
 	fprintf(stderr,
-		"usage: %1$s [-p prefix] [-C project directory] [-o out directory] build\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] run\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] install\n"
-		"       %1$s [-p prefix] [-C project directory] [-o out directory] test\n",
+		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
+		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] test\n",
 	progname);
 
 	exit(EXIT_FAILURE);
 }
+
+#include "util.h"
+#include "instr.h"
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;
 	logging_init();
 
 	// parse options
-
-	char* _bin_path = "bin"; // default output path
-	char* project_path = NULL;
 
 	int c;
 
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (c == 'o') {
-			_bin_path = optarg;
+			rel_bin_path = optarg;
 		}
 
 		else if (c == 'p') {
@@ -95,77 +96,6 @@ int main(int argc, char* argv[]) {
 		init_name = abs_init_name;
 	}
 
-	// navigate into project directory, if one was specified
-
-	if (project_path && chdir(project_path) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
-	}
-
-	// make sure output directory exists
-	// create it if it doesn't
-
-	char* cwd = getcwd(NULL, 0);
-
-	if (!cwd) {
-		errx(EXIT_FAILURE, "getcwd: %s", strerror(errno));
-	}
-
-	bin_path = strdup(_bin_path); // don't care about freeing this
-
-	if (*bin_path == '/') { // absolute path
-		while (*++bin_path == '/'); // remove prepending slashes
-
-		if (chdir("/") < 0) {
-			errx(EXIT_FAILURE, "chdir(\"/\"): %s", strerror(errno));
-		}
-	}
-
-	char* bit;
-
-	while ((bit = strsep(&bin_path, "/"))) {
-		// ignore if the bit is empty
-
-		if (!bit || !*bit) {
-			continue;
-		}
-
-		// ignore if the bit refers to the current directory
-
-		if (!strcmp(bit, ".")) {
-			continue;
-		}
-
-		// don't attempt to mkdir if we're going backwards, only chdir
-
-		if (!strcmp(bit, "..")) {
-			goto no_mkdir;
-		}
-
-		if (mkdir(bit, 0700) < 0 && errno != EEXIST) {
-			errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", bit, strerror(errno));
-		}
-
-	no_mkdir:
-
-		if (chdir(bit) < 0) {
-			errx(EXIT_FAILURE, "chdir(\"%s\"): %s", bit, strerror(errno));
-		}
-	}
-
-	// move back to current directory once we're sure the output directory exists
-
-	if (chdir(cwd) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", cwd, strerror(errno));
-	}
-
-	// get absolute path of output directory so we don't ever get lost or confused
-
-	bin_path = realpath(_bin_path, NULL);
-
-	if (!bin_path) {
-		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", _bin_path, strerror(errno));
-	}
-
 	// parse instructions
 
 	while (argc --> 0) {
@@ -177,12 +107,17 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (!strcmp(curr_instr, "run")) {
-			// everything stops if we run the 'run' command
+			// everything stops if we run the 'run' command, because we don't know how many arguments there'll still be
 			return do_run(argc, argv);
 		}
 
 		else if (!strcmp(curr_instr, "install")) {
 			rv = do_install();
+		}
+
+		else if (!strcmp(curr_instr, "skeleton")) {
+			// everything stops if we run the 'skeleton' command, because I don't wanna deal how the output/project paths should best be handled for subsequent commands
+			return do_skeleton(argc, argv);
 		}
 
 		else if (!strcmp(curr_instr, "test")) {

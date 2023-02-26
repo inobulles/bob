@@ -62,6 +62,18 @@ To install a project with Bob, run:
 bob install
 ```
 
+### Creating a new project
+
+Bob is eternal... 💀
+
+To create and run a new project from a skeleton, run:
+
+```console
+bob skeleton c project
+cd project
+bob run
+```
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
@@ -70,7 +82,7 @@ bob install
 - [x] Centralised system for building, testing, and installing.
 - [ ] Logging class (like with `Log.error`, `Log.warn`) to provide feedback from within build configurations.
 - [ ] Works with AQUA, i.e. AQUA projects may be built and run just as easily as any other project using Bob.
-- [ ] Easy method for building out a project skeleton from a template (serves the same purpose as [`aqua-manager`](https://github.com/inobulles/aqua-manager) did).
+- [x] Easy method for building out a project skeleton from a template (serves the same purpose as [`aqua-manager`](https://github.com/inobulles/aqua-manager) did).
 - [ ] Packaging (AQUA ZPK & FreeBSD PKG formats).
 - [ ] Understands other popular buildsystems (simple makefile, cmake, autoconf, qmake, setup.py, &c) to eliminate tmw you have to google stuff when you just want something to compile 🤪
 - [ ] Watch source files to automatically rebuild them.

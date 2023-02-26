@@ -26,6 +26,10 @@ src
 var linker = Linker.new(cc)
 linker.link(src.toList, ["m"], "bob")
 
+// copy over skeletons
+
+Resources.install("skeletons")
+
 // running
 
 class Runner {
@@ -36,6 +40,7 @@ class Runner {
 
 var install = {
 	"bob": "%(Meta.prefix())/bin/bob",
+	"skeletons": "%(Meta.prefix())/share/bob/skeletons",
 }
 
 // testing
