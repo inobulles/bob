@@ -2,10 +2,12 @@ task:
   timeout_in: 5m
   container:
     image: gcc:latest
+  env:
+    CLICOLOR_FORCE:
   build_script:
     - sh build.sh
   test_script:
-    - CLICOLOR_FORCE= $(realpath sh-bin/bob) test install
+    - $(realpath sh-bin/bob) test install
   amd64_artifacts:
     path: "bin/bob"
 
@@ -13,9 +15,11 @@ task:
   timeout_in: 5m
   arm_container:
     image: gcc:latest
+  env:
+    CLICOLOR_FORCE:
   build_script:
     - sh build.sh
   test_script:
-    - CLICOLOR_FORCE= $(realpath sh-bin/bob) test install
+    - $(realpath sh-bin/bob) test install
   arm64_artifacts:
     path: "bin/bob"
