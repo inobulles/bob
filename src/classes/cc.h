@@ -42,9 +42,8 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 
 	int rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS) {
+	if (rv != EXIT_SUCCESS)
 		goto err;
-	}
 
 	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
 	char* opts = orig_opts;
@@ -52,9 +51,8 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	char* opt;
 
 	while ((opt = strsep(&opts, " "))) {
-		if (*opt == '\n') {
+		if (*opt == '\n')
 			continue;
-		}
 
 		cc_internal_add_opt(cc, opt);
 	}
@@ -102,23 +100,20 @@ static void cc_new(WrenVM* vm) {
 static void cc_del(void* _cc) {
 	cc_t* const cc = _cc;
 
-	if (cc->path) {
+	if (cc->path)
 		free(cc->path);
-	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		char* const opt = cc->opts[i];
 
-		if (!opt) {
+		if (!opt)
 			continue;
-		}
 
 		free(opt);
 	}
 
-	if (cc->opts) {
+	if (cc->opts)
 		free(cc->opts);
-	}
 }
 
 // getters
@@ -158,9 +153,8 @@ static void cc_set_path(WrenVM* vm) {
 	cc_t* const cc = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
-	if (cc->path) {
+	if (cc->path)
 		free(cc->path);
-	}
 
 	cc->path = strdup(path);
 }
@@ -177,9 +171,8 @@ static void cc_add_lib(WrenVM* vm) {
 
 	int rv = cc_internal_add_lib(cc, lib);
 
-	if (rv) {
+	if (rv)
 		LOG_WARN("'CC.add_lib' failed to add '%s' (error code is %d)", lib, rv);
-	}
 }
 
 static void cc_add_opt(WrenVM* vm) {
@@ -231,9 +224,8 @@ static void cc_compile(WrenVM* vm) {
 	struct stat sb;
 
 	if (stat(out_path, &sb) < 0) {
-		if (errno == ENOENT) {
+		if (errno == ENOENT)
 			goto compile;
-		}
 
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
 		goto done;
@@ -243,13 +235,11 @@ static void cc_compile(WrenVM* vm) {
 
 	time_t out_mtime = sb.st_mtime;
 
-	if (stat(path, &sb) < 0) {
+	if (stat(path, &sb) < 0)
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
-	}
 
-	if (sb.st_mtime >= out_mtime) {
+	if (sb.st_mtime >= out_mtime)
 		goto compile;
-	}
 
 	// if one of the dependencies (i.e. included headers) of the source file is more recent than the output, compile
 	// for this, parse the makefile rule output by the preprocessor
@@ -259,35 +249,30 @@ static void cc_compile(WrenVM* vm) {
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
 	exec_args_save_out(exec_args, PIPE_STDOUT | PIPE_STDERR);
 
-	for (size_t i = 0; i < cc->opts_len; i++) {
+	for (size_t i = 0; i < cc->opts_len; i++)
 		exec_args_add(exec_args, cc->opts[i]);
-	}
 
 	int rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS) {
+	if (rv != EXIT_SUCCESS)
 		goto done;
-	}
 
 	orig_headers = exec_args_read_out(exec_args, PIPE_STDOUT);
 
-	if (!orig_headers) {
+	if (!orig_headers)
 		goto done;
-	}
 
 	char* headers = orig_headers;
 	char* header;
 
 	while ((header = strsep(&headers, " "))) {
-		if (*header == ':' || *header == '\\' || !*header) {
+		if (*header == ':' || *header == '\\' || !*header)
 			continue;
-		}
 
 		size_t const len = strlen(header);
 
-		if (header[len - 1] == '\n') {
+		if (header[len - 1] == '\n')
 			header[len - 1] = '\0';
-		}
 
 		// if header is more recent than the output, compile
 
@@ -296,9 +281,8 @@ static void cc_compile(WrenVM* vm) {
 			continue;
 		}
 
-		if (sb.st_mtime >= out_mtime) {
+		if (sb.st_mtime >= out_mtime)
 			goto compile;
-		}
 	}
 
 	// if one of the options changed, compile
@@ -306,9 +290,8 @@ static void cc_compile(WrenVM* vm) {
 
 	fp = fopen(opts_path, "r");
 
-	if (!fp) {
+	if (!fp)
 		goto compile;
-	}
 
 	orig_prev = file_read_str(fp, file_get_size(fp));
 	char* prev = orig_prev;
@@ -321,9 +304,8 @@ static void cc_compile(WrenVM* vm) {
 		bool const prev_done = !prev_opt || !*prev_opt || *prev_opt == '\n';
 		bool const opts_done = i == cc->opts_len;
 
-		if (opts_done && prev_done) {
+		if (opts_done && prev_done)
 			break;
-		}
 
 		if (prev_done != opts_done) {
 			fclose(fp);
@@ -349,9 +331,8 @@ compile: {}
 
 	// construct exec args
 
-	if (exec_args) {
+	if (exec_args)
 		exec_args_del(exec_args);
-	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
@@ -360,26 +341,22 @@ compile: {}
 	// we do this, because compiler output is piped
 	// '-fcolor-diagnostics' also works, but only on clang
 
-	if (colour_support) {
+	if (colour_support)
 		exec_args_add(exec_args, "-fdiagnostics-color=always");
-	}
 
 	fp = fopen(opts_path, "w");
 
-	if (!fp) {
+	if (!fp)
 		LOG_WARN("fopen(\"%s\"): %s", opts_path, strerror(errno))
-	}
 
-	if (cc->debug) { // TODO I don't like how this is its separate thing... put it in cc->opts
+	if (cc->debug) // TODO I don't like how this is its separate thing... put it in cc->opts
 		exec_args_add(exec_args, "-g");
-	}
 
 	for (size_t i = 0; i < cc->opts_len; i++) {
 		exec_args_add(exec_args, cc->opts[i]);
 
-		if (fp) {
+		if (fp)
 			fprintf(fp, "%s\n", cc->opts[i]);
-		}
 	}
 
 	// finally, actually compile asynchronously
@@ -400,29 +377,23 @@ compile: {}
 
 done:
 
-	if (fp) {
+	if (fp)
 		fclose(fp);
-	}
 
-	if (orig_headers) {
+	if (orig_headers)
 		free(orig_headers);
-	}
 
-	if (orig_prev) {
+	if (orig_prev)
 		free(orig_prev);
-	}
 
-	if (out_path) {
+	if (out_path)
 		free(out_path);
-	}
 
-	if (opts_path) {
+	if (opts_path)
 		free(opts_path);
-	}
 
-	if (path) {
+	if (path)
 		free(path);
-	}
 }
 
 // foreign method binding
