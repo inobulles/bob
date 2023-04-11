@@ -65,13 +65,13 @@ void usage(void);
 		return; \
 	}
 
-// wren functions
+// wren stuff
 
 void wren_write_fn(WrenVM* vm, char const* msg);
 void wren_error_fn(WrenVM* vm, WrenErrorType type, char const* module, int line, char const* msg);
 void unknown_foreign(WrenVM* vm);
 
-// pipe helpers
+// pipe stuff
 
 typedef enum {
 	PIPE_STDOUT = 0b01,
@@ -94,7 +94,7 @@ void pipe_parent(pipe_t* self);
 char* pipe_read_out(pipe_t* self, pipe_kind_t kind);
 void pipe_free(pipe_t* self);
 
-// exec args stack object
+// exec args stack object stuff
 
 typedef struct {
 	size_t len; // includes NULL sentinel
@@ -116,13 +116,34 @@ void exec_args_print(exec_args_t* self);
 
 void exec_args_del(exec_args_t* self);
 
-// process manipulation functions
+// process manipulation stuff
 
 int wait_for_process(pid_t pid);
 pid_t execute_async(exec_args_t* self);
 int execute(exec_args_t* _exec_args);
 
-// filesystem functions
+// task manipulation stuff
+
+typedef enum {
+	TASK_KIND_GENERIC,
+	TASK_KIND_COMPILE,
+} task_kind_t;
+
+typedef struct {
+	bool completed;
+	task_kind_t kind;
+
+	pid_t pid;
+	char* name;
+
+	int result;
+	exec_args_t* exec_args;
+} task_t;
+
+task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args);
+size_t wait_for_tasks(task_kind_t kind);
+
+// filesystem stuff
 
 size_t file_get_size(FILE* fp);
 char* file_read_str(FILE* fp, size_t size);
