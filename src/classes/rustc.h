@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../util.h"
+#include <errno.h>
+#include <sys/stat.h>
+#include <util.h>
 
 typedef struct {
 	pid_t pid;

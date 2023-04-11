@@ -6,12 +6,10 @@ foreign class CC {
 
 	// getters
 
-	foreign debug()
 	foreign path()
 
 	// setters
 
-	foreign debug=(x)
 	foreign path=(x)
 
 	// methods
@@ -23,7 +21,6 @@ foreign class CC {
 
 foreign class Linker {
 	construct new() {}
-	construct new(cc) {}
 
 	// getters
 

@@ -1,5 +1,7 @@
 #include <util.h>
 
+// XXX there is no way of making this list smaller once tasks have completed//     I don't think there's much need for anything as complicated anyway
+
 static task_t* tasks = NULL;
 static size_t task_count = 0;
 
