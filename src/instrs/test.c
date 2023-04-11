@@ -1,11 +1,11 @@
+#include <instr.h>
+
 #include <err.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/stat.h>
-
-#include <instr.h>
-#include <unistd.h>
 
 typedef struct {
 	char* name;

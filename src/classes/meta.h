@@ -1,11 +1,11 @@
 #pragma once
 
+#include <util.h>
+
 #include <err.h>
 #include <unistd.h>
 
 #include <sys/utsname.h>
-
-#include <util.h>
 
 // helpers
 

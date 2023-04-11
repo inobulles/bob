@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../util.h"
+#include <util.h>
 
-#include "cc.h"
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <classes/cc.h>
 
 typedef struct {
 	cc_t* cc;

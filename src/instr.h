@@ -1,11 +1,11 @@
 #pragma once
 
+#include <common.h>
+
 #include <stdio.h>
 
-#include <wren.h>
-
 #include <util.h>
-#include <logging.h>
+#include <wren.h>
 
 // Wren-related functions
 // TODO should this even be here??

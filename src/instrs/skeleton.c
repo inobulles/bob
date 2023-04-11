@@ -1,6 +1,6 @@
-#include <unistd.h>
-
 #include <instr.h>
+
+#include <unistd.h>
 
 int do_skeleton(int argc, char** argv) {
 	if (argc != 1 && argc != 2)

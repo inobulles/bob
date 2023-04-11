@@ -1,7 +1,7 @@
+#include <instr.h>
+
 #include <string.h>
 #include <unistd.h>
-
-#include <instr.h>
 
 // global options go here so they're accessible by everyone
 

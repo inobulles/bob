@@ -1,9 +1,9 @@
+#include <instr.h>
+
 #include <err.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-
-#include <instr.h>
 
 #define ENV_LD_LIBRARY_PATH "LD_LIBRARY_PATH"
 #define ENV_PATH "PATH"
