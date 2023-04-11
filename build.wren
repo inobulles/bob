@@ -24,7 +24,7 @@ src
 
 // linking
 
-var linker = Linker.new(cc)
+var linker = Linker.new()
 linker.link(src.toList, ["m"], "bob")
 
 // copy over skeletons
