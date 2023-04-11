@@ -19,6 +19,22 @@ foreign class CC {
 	foreign compile(path)
 }
 
+foreign class RustC {
+	construct new() {}
+
+	// getters
+
+	foreign path()
+
+	// setters
+
+	foreign path=(x)
+
+	// methods
+
+	foreign compile(path)
+}
+
 foreign class Linker {
 	construct new() {}
 

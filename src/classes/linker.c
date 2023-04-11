@@ -127,7 +127,7 @@ void linker_link(WrenVM* vm) {
 
 	// construct exec args
 
-	exec_args_t* exec_args = exec_args_new(1, linker->path);
+	exec_args_t* exec_args = exec_args_new(2, linker->path, "-L/usr/local/lib");
 	exec_args_fmt(exec_args, "-L%s", bin_path);
 
 	// then, read list elements

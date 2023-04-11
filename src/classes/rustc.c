@@ -133,8 +133,9 @@ void rustc_compile(WrenVM* vm) {
 compile: {}
 
 	// construct exec args
+	// see: https://medium.com/@squanderingtime/manually-linking-rust-binaries-to-support-out-of-tree-llvm-passes-8776b1d037a4
 
-	exec_args_t* const exec_args = exec_args_new(4, rustc->path, "--emit=obj", path, out_path);
+	exec_args_t* const exec_args = exec_args_new(5, rustc->path, "--emit=obj", path, "-o", out_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
 
 	// if we've got colour support, force it in the compiler
