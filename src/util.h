@@ -8,17 +8,16 @@
 
 #include "logging.h"
 
-// global variables
-// TODO find a better solution for this, yo
+// global variables/functions
 
-static char const* rel_bin_path;
-static char* bin_path;
-static char const* init_name;
-static char const* curr_instr;
-static char const* prefix;
-static char const* project_path;
+extern char const* rel_bin_path;
+extern char* bin_path;
+extern char const* init_name;
+extern char const* curr_instr;
+extern char const* prefix;
+extern char const* project_path;
 
-static void usage(void);
+void usage(void);
 
 // useful macros
 

@@ -4,28 +4,21 @@
 	#define _GNU_SOURCE
 #endif
 
-#include <err.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/stat.h>
-#include <sys/wait.h>
-
-#include <wren.h>
+#include <instr.h>
 
 // global options go here so they're accessible by everyone
 
-static char const* rel_bin_path = "bin"; // default output path
-static char* bin_path = NULL;
-static char const* init_name = "bob";
-static char const* curr_instr = NULL;
-static char const* prefix = NULL;
-static char const* project_path = NULL;
+char const* rel_bin_path = "bin"; // default output path
+char* bin_path = NULL;
+char const* init_name = "bob";
+char const* curr_instr = NULL;
+char const* prefix = NULL;
+char const* project_path = NULL;
 
-static void usage(void) {
+void usage(void) {
 #if defined(__FreeBSD__)
 	char const* const progname = getprogname();
 #elif defined(__Linux__)
@@ -48,9 +41,6 @@ static void usage(void) {
 
 	exit(EXIT_FAILURE);
 }
-
-#include "util.h"
-#include "instr.h"
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;

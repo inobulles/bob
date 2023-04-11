@@ -4,8 +4,8 @@ CompileFlags:
     - -std=c99
     - -Wall
     - -Wextra
-    - -I.
-    - -Iwren/include
+    - -I..
+    - -I../wren/include
     - -I/usr/local/include
 Diagnostics:
   UnusedIncludes: Strict
