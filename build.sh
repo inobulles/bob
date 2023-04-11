@@ -6,7 +6,7 @@ mkdir -p sh-bin # 'bin' reserved for when compiling bob with bob
 # compile all objects
 
 cc_flags="
-	-std=c99 -g -O0 -Isrc/wren/include
+	-std=c99 -g -O0 -Isrc/wren/include -Isrc
 	-isystem=/usr/local/include -L/usr/local/lib
 	-DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0
 	-Wno-unused-command-line-argument
