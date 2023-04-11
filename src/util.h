@@ -67,9 +67,26 @@ void usage(void);
 
 // wren stuff
 
-void wren_write_fn(WrenVM* vm, char const* msg);
-void wren_error_fn(WrenVM* vm, WrenErrorType type, char const* module, int line, char const* msg);
-void unknown_foreign(WrenVM* vm);
+typedef struct {
+	WrenConfiguration config;
+	WrenVM* vm;
+
+	// configuration file
+
+	FILE* fp;
+	char* src;
+} state_t;
+
+void wren_unknown_foreign(WrenVM* vm);
+
+WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* sig);
+WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, char const* class);
+
+int wren_setup_vm(state_t* state);
+void wren_clean_vm(state_t* state);
+
+int wren_call(state_t* state, char const* class, char const* sig, char const** str_ref);
+int wren_call_args(state_t* state, char const* class, char const* sig, int argc, char** argv);
 
 // pipe stuff
 

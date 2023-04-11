@@ -27,7 +27,7 @@ WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signatu
 
 	// unknown
 
-	return unknown_foreign;
+	return wren_unknown_foreign;
 }
 
 // constructor/destructor

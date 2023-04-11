@@ -33,7 +33,7 @@ WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* signature) 
 
 	// unknown
 
-	return unknown_foreign;
+	return wren_unknown_foreign;
 }
 
 // helpers

@@ -11,7 +11,7 @@ WrenForeignMethodFn resources_bind_foreign_method(bool static_, char const* sign
 
 	// unknown
 
-	return unknown_foreign;
+	return wren_unknown_foreign;
 }
 
 // methods

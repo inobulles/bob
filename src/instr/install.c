@@ -1,6 +1,6 @@
-#include <string.h>
-
 #include <instr.h>
+
+#include <string.h>
 
 int do_install(void) {
 	navigate_project_path();
