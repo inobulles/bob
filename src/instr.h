@@ -12,6 +12,7 @@
 #include "base/base.h"
 
 #include "classes/cc.h"
+#include "classes/rustc.h"
 #include "classes/linker.h"
 
 #include "classes/deps.h"
@@ -23,12 +24,18 @@
 #include "util.h"
 
 static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* sig) {
+	(void) vm;
+
 	WrenForeignMethodFn fn = unknown_foreign;
 
 	// object classes
 
 	if (!strcmp(class, "CC")) {
 		fn = cc_bind_foreign_method(static_, sig);
+	}
+
+	else if (!strcmp(class, "RustC")) {
+		fn = rustc_bind_foreign_method(static_, sig);
 	}
 
 	else if (!strcmp(class, "Linker")) {
@@ -63,11 +70,18 @@ static WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* modu
 }
 
 static WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, char const* class) {
+	(void) vm;
+
 	WrenForeignClassMethods meth = { 0 };
 
 	if (!strcmp(class, "CC")) {
 		meth.allocate = cc_new;
 		meth.finalize = cc_del;
+	}
+
+	else if (!strcmp(class, "RustC")) {
+		meth.allocate = rustc_new;
+		meth.finalize = rustc_del;
 	}
 
 	else if (!strcmp(class, "Linker")) {
