@@ -1,3 +1,5 @@
+#include <util.h>
+
 #include <err.h>
 #include <errno.h>
 #include <string.h>
@@ -6,9 +8,7 @@
 
 #include <sys/wait.h>
 
-#include "logging.h"
-
-#include "util.h"
+#include <logging.h>
 
 // wren functions
 
