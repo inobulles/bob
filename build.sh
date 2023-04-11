@@ -14,7 +14,9 @@ cc_flags="
 "
 
 for src in $(find src -name "*.c" -type f); do
-	obj=sh-bin/$(basename $src).o
+	mkdir -p sh-bin/$(dirname $src)
+
+	obj=sh-bin/$src.o
 	cc $cc_flags -c $src -o $obj &
 done
 

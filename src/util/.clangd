@@ -1,0 +1,15 @@
+CompileFlags:
+  Add:
+    - -xc
+    - -std=c99
+    - -Wall
+    - -Wextra
+    - -I..
+    - -I../wren/include
+    - -I/usr/local/include
+Diagnostics:
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add: modernize*
+InlayHints:
+  ParameterNames: No
