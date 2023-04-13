@@ -23,5 +23,6 @@ void linker_set_archiver_path(WrenVM* vm);
 
 // methods
 
+void linker_add_opt(WrenVM* vm);
 void linker_link(WrenVM* vm);
 void linker_archive(WrenVM* vm);

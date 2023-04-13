@@ -4,6 +4,8 @@
 typedef struct {
 	char* path;
 	char* archiver_path;
+
+	opts_t opts;
 } linker_t;
 
 // foreign method binding
@@ -21,6 +23,7 @@ WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signatu
 
 	// methods
 
+	BIND_FOREIGN_METHOD(false, "add_opt(_)", linker_add_opt)
 	BIND_FOREIGN_METHOD(false, "link(_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "link(_,_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "archive(_,_)", linker_archive)
@@ -101,6 +104,17 @@ void linker_set_archiver_path(WrenVM* vm) {
 
 // methods
 
+void linker_add_opt(WrenVM* vm) {
+	CHECK_ARGC("Linker.add_opt", 1, 1)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	linker_t* const linker = foreign;
+	char const* const opt = wrenGetSlotString(vm, 1);
+
+	opts_add(&linker->opts, opt);
+}
+
 void linker_link(WrenVM* vm) {
 	CHECK_ARGC("Linker.link", 3, 4)
 	bool const has_shared = argc == 4;
@@ -127,7 +141,8 @@ void linker_link(WrenVM* vm) {
 
 	// construct exec args
 
-	exec_args_t* exec_args = exec_args_new(2, linker->path, "-L/usr/local/lib");
+	exec_args_t* const exec_args = exec_args_new(2, linker->path, "-L/usr/local/lib");
+	exec_args_add_opts(exec_args, &linker->opts);
 	exec_args_fmt(exec_args, "-L%s", bin_path);
 
 	// then, read list elements
@@ -149,7 +164,7 @@ void linker_link(WrenVM* vm) {
 		//      another solution would be to initially stage in an empty directory, and if we want to reuse resources, we explicitly copy from a temporary backup of the old directory (in '/tmp/', whatever)
 		//      but that would mean bringing in libcopyfile as a dependency and meeeeeeh
 
-		char* const abs_path = realpath(src_path, NULL);
+		char* const __attribute__((cleanup(strfree))) abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
 			LOG_WARN("Could not find '%s' - skipping", src_path)
@@ -157,8 +172,6 @@ void linker_link(WrenVM* vm) {
 		}
 
 		uint64_t const hash = hash_str(abs_path);
-		free(abs_path);
-
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
 	}
 
@@ -216,7 +229,8 @@ void linker_archive(WrenVM* vm) {
 
 	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
-	exec_args_t* exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
+	exec_args_t* const exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
+	exec_args_add_opts(exec_args, &linker->opts);
 	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
 
 	for (size_t i = 0; i < path_list_len; i++) {
@@ -231,7 +245,7 @@ void linker_archive(WrenVM* vm) {
 
 		// TODO same comment as in 'linker_link'
 
-		char* const abs_path = realpath(src_path, NULL);
+		char* const __attribute__((cleanup(strfree))) abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
 			LOG_WARN("Could not find '%s' - skipping", src_path)
@@ -239,8 +253,6 @@ void linker_archive(WrenVM* vm) {
 		}
 
 		uint64_t const hash = hash_str(abs_path);
-		free(abs_path);
-
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
 	}
 
