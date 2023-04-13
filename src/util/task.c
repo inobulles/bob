@@ -36,6 +36,8 @@ static bool is_relevant(task_t* task, task_kind_t kind) {
 	return true;
 }
 
+// TODO realloc on POT's
+
 task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
 	tasks = realloc(tasks, ++task_count * sizeof *tasks);
 	task_t* const task = &tasks[task_count - 1];
@@ -44,7 +46,9 @@ task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
 	task->name = name;
 	task->exec_args = exec_args;
 
+	task->completed = false;
 	task->pid = execute_async(exec_args);
+
 	return task;
 } 
 
@@ -103,7 +107,7 @@ size_t wait_for_tasks(task_kind_t kind) {
 		// print out stderr of the compilation process
 		// we don't only do this on error, because warnings are also printed to stderr
 
-		char* const out = exec_args_read_out(exec_args, PIPE_STDERR);
+		char* const __attribute__((cleanup(strfree))) out = exec_args_read_out(exec_args, PIPE_STDERR);
 
 		if (*out) {
 			if (task->result == EXIT_SUCCESS)
@@ -114,8 +118,6 @@ size_t wait_for_tasks(task_kind_t kind) {
 
 			fprintf(stderr, "%s", out);
 		}
-
-		free(out);
 
 		// then, free the task struct and mark as completed
 
