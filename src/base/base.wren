@@ -6,12 +6,10 @@ foreign class CC {
 
 	// getters
 
-	foreign debug()
 	foreign path()
 
 	// setters
 
-	foreign debug=(x)
 	foreign path=(x)
 
 	// methods
@@ -21,9 +19,24 @@ foreign class CC {
 	foreign compile(path)
 }
 
+foreign class RustC {
+	construct new() {}
+
+	// getters
+
+	foreign path()
+
+	// setters
+
+	foreign path=(x)
+
+	// methods
+
+	foreign compile(path)
+}
+
 foreign class Linker {
 	construct new() {}
-	construct new(cc) {}
 
 	// getters
 
@@ -37,6 +50,7 @@ foreign class Linker {
 
 	// methods
 
+	foreign add_opt(opt)
 	foreign link(path_list, libs, out)
 	foreign link(path_list, libs, out, shared)
 	foreign archive(path_list, out)

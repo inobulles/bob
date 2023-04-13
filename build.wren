@@ -3,8 +3,9 @@
 var cc = CC.new()
 
 cc.add_opt("-std=c99")
-cc.add_opt("-isystem=/usr/local/include")
+cc.add_opt("-Isrc")
 cc.add_opt("-Isrc/wren/include")
+cc.add_opt("-isystem=/usr/local/include")
 cc.add_opt("-DWREN_OPT_META=0")
 cc.add_opt("-DWREN_OPT_RANDOM=0")
 cc.add_opt("-Wall")
@@ -23,7 +24,7 @@ src
 
 // linking
 
-var linker = Linker.new(cc)
+var linker = Linker.new()
 linker.link(src.toList, ["m"], "bob")
 
 // copy over skeletons

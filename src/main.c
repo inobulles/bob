@@ -1,39 +1,25 @@
-#define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
+#include <instr.h>
 
-#if __linux__
-	#define _GNU_SOURCE
-#endif
-
-#include <err.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/stat.h>
-#include <sys/wait.h>
-
-#include <wren.h>
-
 // global options go here so they're accessible by everyone
 
-static char const* rel_bin_path = "bin"; // default output path
-static char* bin_path = NULL;
-static char const* init_name = "bob";
-static char const* curr_instr = NULL;
-static char const* prefix = NULL;
-static char const* project_path = NULL;
+char const* rel_bin_path = "bin"; // default output path
+char* bin_path = NULL;
+char const* init_name = "bob";
+char const* curr_instr = NULL;
+char const* prefix = NULL;
+char const* project_path = NULL;
 
-static void usage(void) {
+void usage(void) {
 #if defined(__FreeBSD__)
 	char const* const progname = getprogname();
 #elif defined(__Linux__)
 	char progname[16];
 
-	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
+	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0)
 		errx("prctl(PR_GET_NAME): %s", strerror(errno));
-	}
 #else
 	char const* const progname = init_name;
 #endif
@@ -49,9 +35,6 @@ static void usage(void) {
 	exit(EXIT_FAILURE);
 }
 
-#include "util.h"
-#include "instr.h"
-
 int main(int argc, char* argv[]) {
 	init_name = *argv;
 	logging_init();
@@ -61,21 +44,17 @@ int main(int argc, char* argv[]) {
 	int c;
 
 	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
-		if (c == 'C') {
+		if (c == 'C')
 			project_path = optarg;
-		}
 
-		else if (c == 'o') {
+		else if (c == 'o')
 			rel_bin_path = optarg;
-		}
 
-		else if (c == 'p') {
+		else if (c == 'p')
 			prefix = optarg;
-		}
 
-		else {
+		else
 			usage();
-		}
 	}
 
 	argc -= optind;
@@ -83,18 +62,16 @@ int main(int argc, char* argv[]) {
 
 	// need to run at least one instruction
 
-	if (!argc) {
+	if (!argc)
 		usage();
-	}
 
 	// make 'init_name' absolute
 	// no biggie if we can't make it absolute, it's probably being run as a standalone command, in which case 'execute_async' can find it for us later by searching through 'PATH'
 
 	char const* const abs_init_name = realpath(init_name, NULL);
 
-	if (abs_init_name) {
+	if (abs_init_name)
 		init_name = abs_init_name;
-	}
 
 	// parse instructions
 
@@ -102,37 +79,32 @@ int main(int argc, char* argv[]) {
 		curr_instr = *argv++;
 		int rv = EXIT_FAILURE; // I'm a pessimist
 
-		if (!strcmp(curr_instr, "build")) {
+		if (!strcmp(curr_instr, "build"))
 			rv = do_build();
-		}
 
-		else if (!strcmp(curr_instr, "run")) {
-			// everything stops if we run the 'run' command, because we don't know how many arguments there'll still be
+		// everything stops if we run the 'run' command, because we don't know how many arguments there'll still be
+
+		else if (!strcmp(curr_instr, "run"))
 			return do_run(argc, argv);
-		}
 
-		else if (!strcmp(curr_instr, "install")) {
+		else if (!strcmp(curr_instr, "install"))
 			rv = do_install();
-		}
 
-		else if (!strcmp(curr_instr, "skeleton")) {
-			// everything stops if we run the 'skeleton' command, because I don't wanna deal how the output/project paths should best be handled for subsequent commands
+		// everything stops if we run the 'skeleton' command, because I don't wanna deal how the output/project paths should best be handled for subsequent commands
+
+		else if (!strcmp(curr_instr, "skeleton"))
 			return do_skeleton(argc, argv);
-		}
 
-		else if (!strcmp(curr_instr, "test")) {
+		else if (!strcmp(curr_instr, "test"))
 			rv = do_test();
-		}
 
-		else {
+		else
 			usage();
-		}
 
 		// stop here if there was an error in the execution of an instruction
 
-		if (rv != EXIT_SUCCESS) {
+		if (rv != EXIT_SUCCESS)
 			return rv;
-		}
 	}
 
 	// if all went well, we may rest peacefully
