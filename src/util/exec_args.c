@@ -26,11 +26,18 @@ char* exec_args_read_out(exec_args_t* self, pipe_kind_t kind) {
 	return pipe_read_out(&self->pipe, kind);
 }
 
+// TODO realloc on POT's
+
 void exec_args_add(exec_args_t* self, char const* arg) {
 	self->args = realloc(self->args, ++self->len * sizeof *self->args);
 
 	self->args[self->len - 2] = strdup(arg);
 	self->args[self->len - 1] = NULL;
+}
+
+void exec_args_add_opts(exec_args_t* self, opts_t* opts) {
+	for (size_t i = 0; i < opts->count; i++)
+		exec_args_add(self, opts->opts[i]);
 }
 
 __attribute__((__format__(__printf__, 2, 3)))

@@ -7,11 +7,7 @@
 
 typedef struct {
 	char* path;
-
-	// TODO make this a hashset
-
-	char** opts;
-	size_t opts_len;
+	opts_t opts;
 } cc_t;
 
 // foreign method binding
@@ -38,11 +34,6 @@ WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* signature) 
 
 // helpers
 
-static void cc_internal_add_opt(cc_t* cc, char const* opt) {
-	cc->opts = realloc(cc->opts, ++cc->opts_len * sizeof *cc->opts);
-	cc->opts[cc->opts_len - 1] = strdup(opt);
-}
-
 static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
 	exec_args_save_out(exec_args, PIPE_STDOUT);
@@ -61,7 +52,7 @@ static int cc_internal_add_lib(cc_t* cc, char const* lib) {
 		if (*opt == '\n')
 			continue;
 
-		cc_internal_add_opt(cc, opt);
+		opts_add(&cc->opts, opt);
 	}
 
 	free(orig_opts);
@@ -74,20 +65,18 @@ err:
 
 static void cc_init(cc_t* cc) {
 	cc->path = strdup("cc");
-
-	cc->opts = NULL;
-	cc->opts_len = 0;
+	opts_init(&cc->opts);
 
 	// this is very annoying and dumb so whatever just disable it for everyone
 
-	cc_internal_add_opt(cc, "-Wno-unused-command-line-argument");
+	opts_add(&cc->opts, "-Wno-unused-command-line-argument");
 
 	// add the output directory as an include search path
 
 	char* opt;
 	if (asprintf(&opt, "-I%s", bin_path)) {}
 
-	cc_internal_add_opt(cc, opt);
+	opts_add(&cc->opts, opt);
 	free(opt);
 }
 
@@ -106,17 +95,7 @@ void cc_del(void* _cc) {
 	if (cc->path)
 		free(cc->path);
 
-	for (size_t i = 0; i < cc->opts_len; i++) {
-		char* const opt = cc->opts[i];
-
-		if (!opt)
-			continue;
-
-		free(opt);
-	}
-
-	if (cc->opts)
-		free(cc->opts);
+	opts_free(&cc->opts);
 }
 
 // getters
@@ -168,7 +147,7 @@ void cc_add_opt(WrenVM* vm) {
 	cc_t* const cc = foreign;
 	char const* const opt = wrenGetSlotString(vm, 1);
 
-	cc_internal_add_opt(cc, opt);
+	opts_add(&cc->opts, opt);
 }
 
 void cc_compile(WrenVM* vm) {
@@ -233,9 +212,7 @@ void cc_compile(WrenVM* vm) {
 
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
 	exec_args_save_out(exec_args, PIPE_STDOUT | PIPE_STDERR);
-
-	for (size_t i = 0; i < cc->opts_len; i++)
-		exec_args_add(exec_args, cc->opts[i]);
+	exec_args_add_opts(exec_args, &cc->opts);
 
 	int rv = execute(exec_args);
 
@@ -272,6 +249,9 @@ void cc_compile(WrenVM* vm) {
 
 	// if one of the options changed, compile
 	// if options file doesn't exist, compile
+	// TODO this really ought to be part of opts.c, so that others can rely on this
+	//      but maybe I'd like an even more complete system for dependencies?
+	//      because different classes have different dependencies, idk, something to think about
 
 	fp = fopen(opts_path, "r");
 
@@ -287,7 +267,7 @@ void cc_compile(WrenVM* vm) {
 		prev_opt = strsep(&prev, "\n");
 
 		bool const prev_done = !prev_opt || !*prev_opt || *prev_opt == '\n';
-		bool const opts_done = i == cc->opts_len;
+		bool const opts_done = i == cc->opts.count;
 
 		if (opts_done && prev_done)
 			break;
@@ -297,7 +277,7 @@ void cc_compile(WrenVM* vm) {
 			goto compile;
 		}
 
-		char* const opt = cc->opts[i];
+		char* const opt = cc->opts.opts[i];
 		prev_opt[strlen(prev_opt)] = '\0'; // remove newline
 
 		if (strcmp(opt, prev_opt)) {
@@ -334,11 +314,10 @@ compile: {}
 	if (!fp)
 		LOG_WARN("fopen(\"%s\"): %s", opts_path, strerror(errno))
 
-	for (size_t i = 0; i < cc->opts_len; i++) {
-		exec_args_add(exec_args, cc->opts[i]);
+	exec_args_add_opts(exec_args, &cc->opts);
 
-		if (fp)
-			fprintf(fp, "%s\n", cc->opts[i]);
+	for (size_t i = 0; fp && i < cc->opts.count; i++) {
+		fprintf(fp, "%s\n", cc->opts.opts[i]);
 	}
 
 	// finally, add task to compile asynchronously

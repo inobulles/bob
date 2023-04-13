@@ -111,6 +111,20 @@ void pipe_parent(pipe_t* self);
 char* pipe_read_out(pipe_t* self, pipe_kind_t kind);
 void pipe_free(pipe_t* self);
 
+// options stuff
+
+typedef struct {
+	// TODO make this a hashset
+
+	char** opts;
+	size_t count;
+} opts_t;
+
+void opts_init(opts_t* opts);
+void opts_free(opts_t* opts);
+
+void opts_add(opts_t* opts, char const* opt);
+
 // exec args stack object stuff
 
 typedef struct {
@@ -124,6 +138,7 @@ exec_args_t* exec_args_new(size_t len, ...);
 void exec_args_save_out(exec_args_t* self, pipe_kind_t kind);
 char* exec_args_read_out(exec_args_t* self, pipe_kind_t kind);
 void exec_args_add(exec_args_t* self, char const* arg);
+void exec_args_add_opts(exec_args_t* self, opts_t* opts);
 
 __attribute__((__format__(__printf__, 2, 3)))
 void exec_args_fmt(exec_args_t* self, char const* fmt, ...);
