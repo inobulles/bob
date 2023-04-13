@@ -63,7 +63,13 @@ err:
 	return rv;
 }
 
-static void cc_init(cc_t* cc) {
+// constructor/destructor
+
+void cc_new(WrenVM* vm) {
+	CHECK_ARGC("CC.new", 0, 0)
+
+	cc_t* const cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
+
 	cc->path = strdup("cc");
 	opts_init(&cc->opts);
 
@@ -73,20 +79,10 @@ static void cc_init(cc_t* cc) {
 
 	// add the output directory as an include search path
 
-	char* opt;
+	char* __attribute__((cleanup(strfree))) opt = NULL;
 	if (asprintf(&opt, "-I%s", bin_path)) {}
 
 	opts_add(&cc->opts, opt);
-	free(opt);
-}
-
-// constructor/destructor
-
-void cc_new(WrenVM* vm) {
-	CHECK_ARGC("CC.new", 0, 0)
-
-	cc_t* const cc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *cc);
-	cc_init(cc);
 }
 
 void cc_del(void* _cc) {
@@ -163,15 +159,15 @@ void cc_compile(WrenVM* vm) {
 	exec_args_t* exec_args = NULL;
 	FILE* fp = NULL;
 
-	char* orig_headers = NULL;
-	char* orig_prev = NULL;
+	char* __attribute__((cleanup(strfree))) orig_headers = NULL;
+	char* __attribute__((cleanup(strfree))) orig_prev = NULL;
 
-	char* out_path = NULL;
-	char* opts_path = NULL;
+	char* __attribute__((cleanup(strfree))) out_path = NULL;
+	char* __attribute__((cleanup(strfree))) opts_path = NULL;
 
 	// get absolute path or source file, hashing it, and getting output path
 
-	char* const path = realpath(_path, NULL);
+	char* const __attribute__((cleanup(strfree))) path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
@@ -330,19 +326,4 @@ done:
 
 	if (fp)
 		fclose(fp);
-
-	if (orig_headers)
-		free(orig_headers);
-
-	if (orig_prev)
-		free(orig_prev);
-
-	if (out_path)
-		free(out_path);
-
-	if (opts_path)
-		free(opts_path);
-
-	if (path)
-		free(path);
 }
