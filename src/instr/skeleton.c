@@ -3,6 +3,8 @@
 #include <unistd.h>
 
 int do_skeleton(int argc, char** argv) {
+	// parse arguments
+
 	if (argc != 1 && argc != 2)
 		usage();
 

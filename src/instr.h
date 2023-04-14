@@ -19,3 +19,4 @@ int do_run(int argc, char** argv);
 int do_install(void);
 int do_skeleton(int argc, char** argv);
 int do_test(void);
+int do_package(int argc, char** argv);
