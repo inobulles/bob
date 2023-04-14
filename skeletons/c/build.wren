@@ -24,6 +24,12 @@ class Runner {
 	static run(args) { File.exec("cmd", args) }
 }
 
+// installation map
+
+var install = {
+	"cmd": "%(Meta.prefix())/bin/bob-skeleton-c",
+}
+
 // testing
 
 class Tests {
