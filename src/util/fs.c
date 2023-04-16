@@ -24,6 +24,23 @@ char* file_read_str(FILE* fp, size_t size) {
 	return str;
 }
 
+int path_write_str(char* path, char* str) {
+	if (!str)
+		return 0;
+
+	FILE* const fp = fopen(path, "wb");
+
+	if (!fp) {
+		LOG_ERROR("fopen(\"%s\", wb): %s", path, strerror(errno))
+		return -1;
+	}
+
+	fprintf(fp, "%s\n", str);
+	fclose(fp);
+
+	return 0;
+}
+
 int mkdir_recursive(char const* _path) {
 	int rv = -1;
 

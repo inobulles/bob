@@ -5,6 +5,7 @@
 #include <errno.h>
 
 #include <sys/stat.h>
+#include <unistd.h>
 
 // for ZPK packages:
 // - read installation map
@@ -26,24 +27,41 @@ typedef enum {
 	FORMAT_FBSD,
 } format_t;
 
-typedef int (*stage_populate_fn_t) (char* path);
+typedef int (*stage_populate_fn_t) (package_t* package);
 
-static int stage_populate_unsupported(char* path) {
-	LOG_FATAL("Unsupported packaging format (staging path is \"%s\")", path)
+static int stage_populate_unsupported(package_t* package) {
+	LOG_FATAL("Unsupported packaging format (package '%s')", package->name)
 	return -1;
 }
 
-static int stage_populate_zpk(char* path) {
-	(void) path;
+static int stage_populate_zpk(package_t* package) {
+	// properties necessary for the app to function
+
+	path_write_str("start", "native");
+	path_write_str("entry", package->entry);
+
+	// metadata properties
+
+	path_write_str("name", package->name);
+	path_write_str("description", package->description);
+	path_write_str("version", package->version);
+
+	path_write_str("author", package->author);
+	path_write_str("organization", package->organization);
+
+	// truly optional metadata properties
+
+	path_write_str("www", package->www);
+
 	return 0;
 }
 
-static int stage_populate_fbsd(char* path) {
-	LOG_FATAL("FreeBSD packages are not yet supported (staging path is \"%s\")", path)
+static int stage_populate_fbsd(package_t* package) {
+	LOG_FATAL("FreeBSD packages are not yet supported (package '%s')", package->name)
 	return -1;
 }
 
-static stage_populate_fn_t stage_populate_fns[] = {
+static stage_populate_fn_t const STAGE_POPULATE_LUT[] = {
 	stage_populate_unsupported,
 	stage_populate_zpk,
 	stage_populate_fbsd,
@@ -92,6 +110,7 @@ int do_package(int argc, char** argv) {
 	size_t package_keys_len = 0;
 
 	char* __attribute__((cleanup(strfree))) staging_path = NULL;
+	char* __attribute__((cleanup(strfree))) cwd = NULL;
 
 	WrenHandle* install_map_handle = NULL;
 	WrenHandle* install_keys_handle = NULL;
@@ -162,34 +181,61 @@ found:
 
 	package_t* const package = wrenGetSlotForeign(state.vm, 2);
 
-	printf("Found package '%s'\n", package->name);
-
 	// create package staging directory
 
 	if (asprintf(&staging_path, "%s/%s", bin_path, out)) {}
 
-	if (mkdir(staging_path, 0660) < 0 && errno != EEXIST) {
+	if (mkdir(staging_path, 0770) < 0 && errno != EEXIST) {
 		LOG_FATAL("Can't create package staging path: mkdir(\"%s\"): %s", staging_path, strerror(errno))
 		goto err;
 	}
 
-	// format specific population
+	// remember previous working directory
 
-	size_t const fn_count = sizeof(stage_populate_fns) / sizeof(*stage_populate_fns);
+	cwd = getcwd(NULL, 0);
+
+	if (!cwd) {
+		LOG_FATAL("getcwd: %s", strerror(errno))
+		goto err;
+	}
+
+	// change to package staging directory
+
+	if (chdir(staging_path) < 0) {
+		LOG_FATAL("chdir(\"%s\"): %s", staging_path, strerror(errno))
+		goto err;
+	}
+
+	// format specific stage population
+
+	size_t const fn_count = sizeof(STAGE_POPULATE_LUT) / sizeof(*STAGE_POPULATE_LUT);
 
 	if ((size_t) format > fn_count) {
 		LOG_FATAL("Sanity check failed: there are %zu stage population functions, but format is %d", fn_count, format)
 		goto err;
 	}
 
-	if (stage_populate_fns[format](staging_path) < 0)
+	if (STAGE_POPULATE_LUT[format](package) < 0)
 		goto err;
+
+	// change back to working directory
+
+	if (chdir(cwd) < 0) {
+		LOG_FATAL("chdir(\"%s\"): %s", cwd, strerror(errno))
+		goto err;
+	}
+
+	free(cwd);
+	cwd = NULL; // so that we don't attempt to change back into directory
 
 	// TODO read install map key/value pairs
 
 	(void) install_keys_len;
 
 err:
+
+	if (cwd)
+		chdir(cwd);
 
 	if (package_keys_handle)
 		wrenReleaseHandle(state.vm, package_keys_handle);
