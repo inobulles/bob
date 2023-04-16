@@ -40,7 +40,7 @@ int do_test(void) {
 	WrenHandle* map_handle = NULL;
 	size_t keys_len = 0;
 
-	rv = read_installation_map(&state, &map_handle, &keys_len);
+	rv = read_map(&state, INSTALL_MAP, &map_handle, &keys_len);
 
 	if (rv != EXIT_SUCCESS)
 		goto err;

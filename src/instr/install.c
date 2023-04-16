@@ -20,7 +20,7 @@ int do_install(void) {
 	if (rv != EXIT_SUCCESS)
 		goto err;
 
-	rv = read_installation_map(&state, &map_handle, &keys_len);
+	rv = read_map(&state, INSTALL_MAP, &map_handle, &keys_len);
 
 	if (rv != EXIT_SUCCESS)
 		goto err;

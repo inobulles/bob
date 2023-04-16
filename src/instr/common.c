@@ -41,29 +41,29 @@ void setup_env(char* working_dir) {
 		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", working_dir, strerror(errno));
 }
 
-int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* keys_len_ref) {
+int read_map(state_t* state, char const* name, WrenHandle** map_handle_ref, size_t* keys_len_ref) {
 	int rv = EXIT_SUCCESS;
 
 	// read installation map
 
-	if (!wrenHasVariable(state->vm, "main", "install")) {
-		LOG_ERROR("No installation map")
+	if (!wrenHasVariable(state->vm, "main", name)) {
+		LOG_ERROR("No '%s' map", name)
 
 		rv = EXIT_FAILURE;
 		goto err;
 	}
 
-	wrenEnsureSlots(state->vm, 1); // for the receiver (starts off as the installation map, ends up being the keys list)
-	wrenGetVariable(state->vm, "main", "install", 0);
+	wrenEnsureSlots(state->vm, 1); // for the receiver (starts off as the map, ends up being the keys list)
+	wrenGetVariable(state->vm, "main", name, 0);
 
 	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_MAP) {
-		LOG_ERROR("'install' variable is not a map")
+		LOG_ERROR("'%s' variable is not a map", name)
 
 		rv = EXIT_FAILURE;
 		goto err;
 	}
 
-	size_t const installation_map_len = wrenGetMapCount(state->vm, 0);
+	size_t const map_len = wrenGetMapCount(state->vm, 0);
 
 	// keep handle to installation map
 
@@ -77,7 +77,7 @@ int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* k
 	wrenReleaseHandle(state->vm, keys_handle);
 
 	if (keys_result != WREN_RESULT_SUCCESS) {
-		LOG_ERROR("Something went wrong running the 'keys' method on the installation map")
+		LOG_ERROR("Something went wrong running the 'keys' method on the '%s' map", name)
 
 		rv = EXIT_FAILURE;
 		goto err;
@@ -90,7 +90,7 @@ int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* k
 	wrenReleaseHandle(state->vm, to_list_handle);
 
 	if (to_list_result != WREN_RESULT_SUCCESS) {
-		LOG_ERROR("Something went wrong running the 'toList' method on the installation map keys' 'MapKeySequence'")
+		LOG_ERROR("Something went wrong running the 'toList' method on the '%s' map keys' 'MapKeySequence'", name)
 
 		rv = EXIT_FAILURE;
 		goto err;
@@ -100,8 +100,8 @@ int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* k
 
 	size_t const keys_len = wrenGetListCount(state->vm, 0);
 
-	if (installation_map_len != keys_len) {
-		LOG_ERROR("Installation map is not the same size as converted keys list (%zu vs %zu)", installation_map_len, keys_len)
+	if (map_len != keys_len) {
+		LOG_ERROR("'%s' map is not the same size as converted keys list (%zu vs %zu)", name, map_len, keys_len)
 
 		rv = EXIT_FAILURE;
 		goto err;
