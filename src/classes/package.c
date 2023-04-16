@@ -1,15 +1,20 @@
+// much of this mimics the behaviour of the old aqua-manager tool:
+// https://github.com/inobulles/aqua-manager
+
 #include <util.h>
 #include <classes/package.h>
+
+#include <pwd.h>
+#include <unistd.h>
 
 typedef struct {
 	char* entry;
 	char* name;
-	char* descr;
-	char* vers;
+	char* description;
+	char* version;
 	char* author;
-	char* org;
+	char* organization;
 	char* www;
-	char* icon;
 } package_t;
 
 // foreign method binding
@@ -18,22 +23,20 @@ WrenForeignMethodFn package_bind_foreign_method(bool static_, char const* signat
 	// getters
 
 	BIND_FOREIGN_METHOD(false, "name()", package_get_name)
-	BIND_FOREIGN_METHOD(false, "descr()", package_get_description)
-	BIND_FOREIGN_METHOD(false, "vers()", package_get_version)
+	BIND_FOREIGN_METHOD(false, "description()", package_get_description)
+	BIND_FOREIGN_METHOD(false, "version()", package_get_version)
 	BIND_FOREIGN_METHOD(false, "author()", package_get_author)
-	BIND_FOREIGN_METHOD(false, "org()", package_get_organization)
+	BIND_FOREIGN_METHOD(false, "organization()", package_get_organization)
 	BIND_FOREIGN_METHOD(false, "www()", package_get_www)
-	BIND_FOREIGN_METHOD(false, "icon()", package_get_icon)
 
 	// setters
 
 	BIND_FOREIGN_METHOD(false, "name=(_)", package_set_name)
-	BIND_FOREIGN_METHOD(false, "descr=(_)", package_set_description)
-	BIND_FOREIGN_METHOD(false, "vers=(_)", package_set_version)
+	BIND_FOREIGN_METHOD(false, "description=(_)", package_set_description)
+	BIND_FOREIGN_METHOD(false, "version=(_)", package_set_version)
 	BIND_FOREIGN_METHOD(false, "author=(_)", package_set_author)
-	BIND_FOREIGN_METHOD(false, "org=(_)", package_set_organization)
+	BIND_FOREIGN_METHOD(false, "organization=(_)", package_set_organization)
 	BIND_FOREIGN_METHOD(false, "www=(_)", package_set_www)
-	BIND_FOREIGN_METHOD(false, "icon=(_)", package_set_icon)
 
 	// unknown
 
@@ -51,28 +54,81 @@ void package_new(WrenVM* vm) {
 	char const* const entry = wrenGetSlotString(vm, 1);
 
 	package->entry = strdup(entry);
+
+	// defaults
+
+	package->name = strdup("Untitled Project");
+	package->description = strdup("Untitled project which has no title");
+	package->version = strdup("0.69.420");
+	package->www = strdup("https://youtu.be/dQw4w9WgXcQ");
+
+	// attempt to set the author to the username
+
+	uid_t const uid = getuid();
+	struct passwd* const passwd = getpwuid(uid);
+
+	package->author = strdup(passwd ?
+		passwd->pw_name :
+		"Anonymousia de Bergerac-Fleur");
+
+	// attempt to set the organization to the hostname
+
+	size_t const len = sysconf(_SC_HOST_NAME_MAX);
+	package->organization = calloc(1, len + 1);
+
+	if (gethostname(package->organization, len) < 0) {
+		free(package->organization);
+		package->organization = strdup("Knights of Can-A-Lot");
+	}
 }
 
 void package_del(void* _package) {
-	(void) _package;
+	package_t* const package = _package;
+
+	strfree(&package->entry);
+	strfree(&package->name);
+	strfree(&package->description);
+	strfree(&package->version);
+	strfree(&package->author);
+	strfree(&package->organization);
+	strfree(&package->www);
 }
 
 // getters
 
-void package_get_name(WrenVM* vm){ (void) vm; }
-void package_get_description(WrenVM* vm){ (void) vm; }
-void package_get_version(WrenVM* vm){ (void) vm; }
-void package_get_author(WrenVM* vm){ (void) vm; }
-void package_get_organization(WrenVM* vm){ (void) vm; }
-void package_get_www(WrenVM* vm){ (void) vm; }
-void package_get_icon(WrenVM* vm){ (void) vm; }
+#define GETTER(name) \
+	void package_get_##name(WrenVM* vm) { \
+		CHECK_ARGC("Package." #name, 0, 0) \
+		\
+		package_t* const package = foreign; \
+		wrenSetSlotString(vm, 0, package->name); \
+	}
+
+GETTER(name)
+GETTER(description)
+GETTER(version)
+GETTER(author)
+GETTER(organization)
+GETTER(www)
 
 // setters
 
-void package_set_name(WrenVM* vm){ (void) vm; }
-void package_set_description(WrenVM* vm){ (void) vm; }
-void package_set_version(WrenVM* vm){ (void) vm; }
-void package_set_author(WrenVM* vm){ (void) vm; }
-void package_set_organization(WrenVM* vm){ (void) vm; }
-void package_set_www(WrenVM* vm){ (void) vm; }
-void package_set_icon(WrenVM* vm){ (void) vm; }
+#define SETTER(name) \
+	void package_set_##name(WrenVM* vm) { \
+		CHECK_ARGC("Package." #name "=", 1, 1) \
+		\
+		ASSERT_ARG_TYPE(1, WREN_TYPE_STRING) \
+		\
+		package_t* const package = foreign; \
+		char const* const name = wrenGetSlotString(vm, 1); \
+		\
+		strfree(&package->name); \
+		package->name = strdup(name); \
+	}
+
+SETTER(name)
+SETTER(description)
+SETTER(version)
+SETTER(author)
+SETTER(organization)
+SETTER(www)

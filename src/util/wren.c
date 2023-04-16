@@ -3,6 +3,7 @@
 #include <classes/cc.h>
 #include <classes/rustc.h>
 #include <classes/linker.h>
+#include <classes/package.h>
 
 #include <classes/deps.h>
 #include <classes/file.h>
@@ -32,6 +33,9 @@ WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, cha
 
 	else if (!strcmp(class, "Linker"))
 		fn = linker_bind_foreign_method(static_, sig);
+
+	else if (!strcmp(class, "Package"))
+		fn = package_bind_foreign_method(static_, sig);
 
 	// static classes
 
@@ -74,6 +78,11 @@ WrenForeignClassMethods wren_bind_foreign_class(WrenVM* vm, char const* module, 
 	else if (!strcmp(class, "Linker")) {
 		meth.allocate = linker_new;
 		meth.finalize = linker_del;
+	}
+
+	else if (!strcmp(class, "Package")) {
+		meth.allocate = package_new;
+		meth.finalize = package_del;
 	}
 
 	else

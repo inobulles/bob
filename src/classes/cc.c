@@ -88,9 +88,7 @@ void cc_new(WrenVM* vm) {
 void cc_del(void* _cc) {
 	cc_t* const cc = _cc;
 
-	if (cc->path)
-		free(cc->path);
-
+	strfree(&cc->path);
 	opts_free(&cc->opts);
 }
 
@@ -113,9 +111,7 @@ void cc_set_path(WrenVM* vm) {
 	cc_t* const cc = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
-	if (cc->path)
-		free(cc->path);
-
+	strfree(&cc->path);
 	cc->path = strdup(path);
 }
 

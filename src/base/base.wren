@@ -56,35 +56,26 @@ foreign class Linker {
 	foreign archive(path_list, out)
 }
 
-class Package {
-	construct new(entry) {
-		_entry = entry
-
-		_name   = "Untitled Project"
-		_descr  = "Untitled project which has no title"
-		_vers   = "0.69.420"
-		_author = "Anonymousia de Bergerac-Fleur" // TODO make this the username
-		_org    = "Literally the CIA" // TODO make this the hostname
-		_www    = "https://youtu.be/dQw4w9WgXcQ"
-	}
+foreign class Package {
+	construct new(entry) {}
 
 	// getters
 
-	name         { _name   }
-	description  { _descr  }
-	version      { _vers   }
-	author       { _author }
-	organization { _org    }
-	www          { _www    }
+	foreign name        ()
+	foreign description ()
+	foreign version     ()
+	foreign author      ()
+	foreign organization()
+	foreign www         ()
 
 	// setters
 
-	name=        (name)   { _name   = name   }
-	description= (descr)  { _descr  = descr  }
-	version=     (vers)   { _vers   = vers   }
-	author=      (author) { _author = author }
-	organization=(org)    { _org    = org    }
-	www=         (www)    { _www    = www    }
+	foreign name=        (name)
+	foreign description= (description)
+	foreign version=     (version)
+	foreign author=      (author)
+	foreign organization=(organization)
+	foreign www=         (www)
 }
 
 // static classes

@@ -19,7 +19,6 @@ void package_get_version(WrenVM* vm);
 void package_get_author(WrenVM* vm);
 void package_get_organization(WrenVM* vm);
 void package_get_www(WrenVM* vm);
-void package_get_icon(WrenVM* vm);
 
 // setters
 
@@ -29,4 +28,3 @@ void package_set_version(WrenVM* vm);
 void package_set_author(WrenVM* vm);
 void package_set_organization(WrenVM* vm);
 void package_set_www(WrenVM* vm);
-void package_set_icon(WrenVM* vm);
