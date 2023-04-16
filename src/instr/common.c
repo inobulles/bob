@@ -102,13 +102,18 @@ int install(state_t* state) {
 		char* __attribute__((cleanup(strfree))) src = NULL;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
+		char* __attribute__((cleanup(strfree))) orig_dest_prefix = NULL;
+		if (asprintf(&orig_dest_prefix, "%s/%s", install_prefix(), dest)) {}
+
+		char* dest_prefix = orig_dest_prefix;
+
 		// execute installer method if there is one
 		// otherwise, just install
 
-		// check if there's an installer method we need to call
-
 		if (*val != ':')
 			goto install;
+
+		dest_prefix = NULL;
 
 		if (!wrenHasVariable(state->vm, "main", "Installer")) {
 			LOG_WARN("'%s' is installed to '%s', which starts with a colon - this is normally used for installer methods, but module has no 'Installer' class", INSTALL_MAP, key, val)
@@ -143,6 +148,9 @@ int install(state_t* state) {
 
 		// make sure the directory in which we'd like to install the file/directory exists
 		// then, copy the file/directory itself
+
+		if (dest_prefix)
+			dest = dest_prefix;
 
 		char* const __attribute__((cleanup(strfree))) dest_parent = strdup(dest);
 		char* basename = strrchr(dest_parent, '/');

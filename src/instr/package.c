@@ -128,10 +128,6 @@ int do_package(int argc, char** argv) {
 
 	char* __attribute__((cleanup(strfree))) cwd = NULL;
 
-	WrenHandle* install_map_handle = NULL;
-	WrenHandle* install_keys_handle = NULL;
-	size_t install_keys_len = 0;
-
 	// setup state
 
 	state_t state = { 0 };
@@ -246,8 +242,6 @@ found:
 
 	// TODO read install map key/value pairs
 
-	(void) install_keys_len;
-
 	rv = install(&state);
 
 	if (rv != EXIT_SUCCESS)
@@ -263,12 +257,6 @@ err:
 
 	if (package_map_handle)
 		wrenReleaseHandle(state.vm, package_map_handle);
-
-	if (install_keys_handle)
-		wrenReleaseHandle(state.vm, install_keys_handle);
-
-	if (install_map_handle)
-		wrenReleaseHandle(state.vm, install_map_handle);
 
 	wren_clean_vm(&state);
 

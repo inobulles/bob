@@ -49,6 +49,9 @@ int mkdir_recursive(char const* _path) {
 	if (!*_path)
 		return 0;
 
+	char* const __attribute__((cleanup(strfree))) orig_path = strdup(_path);
+	char* path = orig_path;
+
 	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
 
 	char* const __attribute__((cleanup(strfree))) cwd = getcwd(NULL, 0);
@@ -57,8 +60,6 @@ int mkdir_recursive(char const* _path) {
 		LOG_ERROR("getcwd: %s", strerror(errno))
 		goto err_cwd;
 	}
-
-	char* path = strdup(_path);
 
 	// if we're dealing with a path relative to $HOME, chdir to $HOME first
 
@@ -130,9 +131,6 @@ err_mkdir:
 
 err_abs:
 err_home:
-
-	free(path);
-
 err_cwd:
 
 	return rv;

@@ -40,8 +40,8 @@ class Runner {
 // installation map
 
 var install = {
-	"bob": "%(Meta.prefix())/bin/bob",
-	"skeletons": "%(Meta.prefix())/share/bob/skeletons",
+	"bob": "bin/bob",
+	"skeletons": "share/bob/skeletons",
 }
 
 // testing
