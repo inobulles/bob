@@ -193,6 +193,10 @@ found:
 
 	package_t* const package = wrenGetSlotForeign(state.vm, 2);
 
+	// remove package staging directory if it still exists
+
+	remove_recursive(staging_path);
+
 	// create package staging directory
 
 	if (mkdir(staging_path, 0770) < 0 && errno != EEXIST) {
