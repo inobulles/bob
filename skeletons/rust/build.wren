@@ -11,7 +11,7 @@ src
 // link program
 
 var linker = Linker.new()
-linker.link(src.toList, ["std-66b716baf5a60e28"], "cmd")
+linker.link(src.toList, ["std-7c7f3bd22bdaa9dd"], "cmd")
 
 // running
 

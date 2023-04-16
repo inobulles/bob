@@ -84,6 +84,24 @@ To create a ZPK package, run:
 bob package zpk
 ```
 
+## Projects which use Bob
+
+Here's a list of projects which use Bob:
+
+- [Bob the Builder](https://github.com/inobulles/bob)
+- [IAR](https://github.com/inobulles/iar)
+- [Umber](https://github.com/inobulles/umber)
+- [aquaBSD Aquariums](https://github.com/inobulles/aquarium)
+- [`aqua-unix`](https://github.com/inobulles/aqua-unix)
+- [`aqua-kos`](https://github.com/inobulles/aqua-kos)
+- [`aqua-devices`](https://github.com/inobulles/aqua-devices)
+- [LLN Gamejam 2023](https://github.com/obiwac/lln-gamejam-2023)
+- [iface](https://github.com/inobulles/iface)
+- [`libmkfs_msdos`](https://github.com/inobulles/libmkfs_msdos)
+- [`libcopyfile`](https://github.com/inobulles/libcopyfile)
+
+I use this list to not forget to update them when I add a new feature to Bob!
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
