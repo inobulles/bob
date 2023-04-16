@@ -28,10 +28,14 @@ typedef enum {
 } format_t;
 
 typedef int (*stage_populate_fn_t) (package_t* package);
+typedef int (*stage_package_fn_t) (package_t* package, char* stage, char* out);
 
 typedef struct {
 	stage_populate_fn_t stage_populate;
+	stage_package_fn_t stage_package;
 } format_info_t;
+
+// stage population functions per package format
 
 static int stage_populate_unsupported(package_t* package) {
 	LOG_FATAL("Unsupported packaging format (package '%s')", package->name)
@@ -65,15 +69,53 @@ static int stage_populate_fbsd(package_t* package) {
 	return -1;
 }
 
+// stage packaging functions per package format
+
+static int stage_package_unsupported(package_t* package, char* stage, char* out) {
+	(void) out;
+	(void) stage;
+
+	LOG_FATAL("Unsupported packaging format (package '%s')", package->name)
+	return -1;
+}
+
+static int stage_package_zpk(package_t* package, char* stage, char* out) {
+	(void) package;
+
+	int rv = 0;
+
+	// much easier than using libiar, because it means it isn't a dependency
+
+	exec_args_t* const exec_args = exec_args_new(5, "iar", "--pack", stage, "--output", out);
+
+	if (execute(exec_args) == EXIT_FAILURE)
+		rv = -1;
+
+	exec_args_del(exec_args);
+
+	return rv;
+}
+
+static int stage_package_fbsd(package_t* package, char* stage, char* out) {
+	(void) out;
+	(void) stage;
+
+	LOG_FATAL("FreeBSD packages are not yet supported (package '%s')", package->name)
+	return -1;
+}
+
 static format_info_t const FORMAT_LUT[] = {
 	{
 		.stage_populate = stage_populate_unsupported,
+		.stage_package = stage_package_unsupported,
 	},
 	{
 		.stage_populate = stage_populate_zpk,
+		.stage_package = stage_package_zpk,
 	},
 	{
 		.stage_populate = stage_populate_fbsd,
+		.stage_package = stage_package_fbsd,
 	},
 };
 
@@ -220,7 +262,7 @@ found:
 		goto err;
 	}
 
-	// format specific stage population
+	// format specific functions structure
 
 	size_t const fn_count = sizeof(FORMAT_LUT) / sizeof(*FORMAT_LUT);
 
@@ -230,6 +272,8 @@ found:
 	}
 
 	format_info_t const* const info = &FORMAT_LUT[format];
+
+	// stage population
 
 	if (info->stage_populate(package) < 0)
 		goto err;
@@ -244,12 +288,21 @@ found:
 	free(cwd);
 	cwd = NULL; // so that we don't attempt to change back into directory
 
-	// TODO read install map key/value pairs
+	// install files to staging directory
 
 	rv = install(&state);
 
 	if (rv != EXIT_SUCCESS)
 		goto err;
+
+	// stage packaging
+
+	if (info->stage_package(package, staging_path, out) < 0)
+		goto err;
+
+	// success!
+
+	LOG_SUCCESS("Package created at '%s'", out)
 
 err:
 
