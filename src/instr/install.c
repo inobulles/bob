@@ -44,7 +44,7 @@ int do_install(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map element %zu key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("'%s' map element %zu key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, i)
 			continue;
 		}
 
@@ -53,7 +53,7 @@ int do_install(void) {
 		// sanity check - make sure map contains key
 
 		if (!wrenGetMapContainsKey(state.vm, 3, 1)) {
-			LOG_WARN("Installation map does not contain key '%s'", key)
+			LOG_WARN("'%s' map does not contain key '%s'", INSTALL_MAP, key)
 			continue;
 		}
 
@@ -62,7 +62,7 @@ int do_install(void) {
 		wrenGetMapValue(state.vm, 3, 1, 2);
 
 		if (wrenGetSlotType(state.vm, 2) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map element '%s' value is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", key)
+			LOG_WARN("'%s' map element '%s' value is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, key)
 			continue;
 		}
 
@@ -81,7 +81,7 @@ int do_install(void) {
 			goto install;
 
 		if (!wrenHasVariable(state.vm, "main", "Installer")) {
-			LOG_WARN("'%s' is installed to '%s', which starts with a colon - this is normally used for installer methods, but module has no 'Installer' class", key, val)
+			LOG_WARN("'%s' is installed to '%s', which starts with a colon - this is normally used for installer methods, but module has no 'Installer' class", INSTALL_MAP, key, val)
 			goto install;
 		}
 
@@ -96,7 +96,7 @@ int do_install(void) {
 			progress_complete(progress);
 			progress_del(progress);
 
-			LOG_ERROR("Installation method for '%s' failed", key)
+			LOG_ERROR("'%s' method for '%s' failed", INSTALL_MAP, key)
 			goto err;
 		}
 

@@ -52,7 +52,7 @@ int do_test(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map key %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("'%s' map key %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, i)
 			continue;
 		}
 
