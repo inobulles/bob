@@ -14,7 +14,6 @@
 // common stuff between instructions
 
 void setup_env(char* working_dir);
-int read_map(state_t* state, char const* name, WrenHandle** map_handle_ref, size_t* keys_len_ref);
 
 // actual instructions
 

@@ -147,6 +147,17 @@ int wren_setup_vm(state_t* state) {
 	return EXIT_SUCCESS;
 }
 
+void wren_clean_vm(state_t* state) {
+	if (state->vm)
+		wrenFreeVM(state->vm);
+
+	if (state->src)
+		free(state->src);
+
+	if (state->fp)
+		fclose(state->fp);
+}
+
 int wren_call(state_t* state, char const* class, char const* sig, char const** str_ref) {
 	// check class exists
 
@@ -214,13 +225,76 @@ int wren_call_args(state_t* state, char const* class, char const* sig, int argc,
 	return wren_call(state, class, sig, NULL);
 }
 
-void wren_clean_vm(state_t* state) {
-	if (state->vm)
-		wrenFreeVM(state->vm);
+int wren_read_map(state_t* state, char const* name, WrenHandle** map_handle_ref, size_t* keys_len_ref) {
+	int rv = EXIT_SUCCESS;
 
-	if (state->src)
-		free(state->src);
+	// read installation map
 
-	if (state->fp)
-		fclose(state->fp);
+	if (!wrenHasVariable(state->vm, "main", name)) {
+		LOG_ERROR("No '%s' map", name)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	wrenEnsureSlots(state->vm, 1); // for the receiver (starts off as the map, ends up being the keys list)
+	wrenGetVariable(state->vm, "main", name, 0);
+
+	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_MAP) {
+		LOG_ERROR("'%s' variable is not a map", name)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	size_t const map_len = wrenGetMapCount(state->vm, 0);
+
+	// keep handle to installation map
+
+	if (map_handle_ref)
+		*map_handle_ref = wrenGetSlotHandle(state->vm, 0);
+
+	// run the 'keys' method on the map
+
+	WrenHandle* const keys_handle = wrenMakeCallHandle(state->vm, "keys");
+	WrenInterpretResult const keys_result = wrenCall(state->vm, keys_handle); // no need to set receiver - it's already in slot 0
+	wrenReleaseHandle(state->vm, keys_handle);
+
+	if (keys_result != WREN_RESULT_SUCCESS) {
+		LOG_ERROR("Something went wrong running the 'keys' method on the '%s' map", name)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	// run the 'toList' method on the 'MapKeySequence' object
+
+	WrenHandle* const to_list_handle = wrenMakeCallHandle(state->vm, "toList");
+	WrenInterpretResult const to_list_result = wrenCall(state->vm, to_list_handle);
+	wrenReleaseHandle(state->vm, to_list_handle);
+
+	if (to_list_result != WREN_RESULT_SUCCESS) {
+		LOG_ERROR("Something went wrong running the 'toList' method on the '%s' map keys' 'MapKeySequence'", name)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	// small sanity check - is the converted keys list as big as the map?
+
+	size_t const keys_len = wrenGetListCount(state->vm, 0);
+
+	if (map_len != keys_len) {
+		LOG_ERROR("'%s' map is not the same size as converted keys list (%zu vs %zu)", name, map_len, keys_len)
+
+		rv = EXIT_FAILURE;
+		goto err;
+	}
+
+	if (keys_len_ref)
+		*keys_len_ref = keys_len;
+
+err:
+
+	return rv;
 }

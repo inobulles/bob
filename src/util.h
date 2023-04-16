@@ -88,6 +88,8 @@ void wren_clean_vm(state_t* state);
 int wren_call(state_t* state, char const* class, char const* sig, char const** str_ref);
 int wren_call_args(state_t* state, char const* class, char const* sig, int argc, char** argv);
 
+int wren_read_map(state_t* state, char const* name, WrenHandle** map_handle_ref, size_t* keys_len_ref);
+
 // pipe stuff
 
 typedef enum {

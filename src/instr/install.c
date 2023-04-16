@@ -20,7 +20,7 @@ int do_install(void) {
 	if (rv != EXIT_SUCCESS)
 		goto err;
 
-	rv = read_map(&state, INSTALL_MAP, &map_handle, &keys_len);
+	rv = wren_read_map(&state, INSTALL_MAP, &map_handle, &keys_len);
 
 	if (rv != EXIT_SUCCESS)
 		goto err;
