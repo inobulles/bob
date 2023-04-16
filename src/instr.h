@@ -10,6 +10,7 @@
 // macros
 
 #define INSTALL_MAP "install"
+#define PACKAGE_MAP "packages"
 
 // common stuff between instructions
 

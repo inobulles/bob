@@ -2,20 +2,12 @@
 // https://github.com/inobulles/aqua-manager
 
 #include <util.h>
+
 #include <classes/package.h>
+#include <classes/package_t.h>
 
 #include <pwd.h>
 #include <unistd.h>
-
-typedef struct {
-	char* entry;
-	char* name;
-	char* description;
-	char* version;
-	char* author;
-	char* organization;
-	char* www;
-} package_t;
 
 // foreign method binding
 
