@@ -74,6 +74,16 @@ cd project
 bob run
 ```
 
+### Packaging
+
+Bob used to work at an Amazon distribution centre! 📦
+
+To create a ZPK package, run:
+
+```console
+bob package zpk
+```
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
@@ -83,7 +93,7 @@ bob run
 - [ ] Logging class (like with `Log.error`, `Log.warn`) to provide feedback from within build configurations.
 - [ ] Works with AQUA, i.e. AQUA projects may be built and run just as easily as any other project using Bob.
 - [x] Easy method for building out a project skeleton from a template (serves the same purpose as [`aqua-manager`](https://github.com/inobulles/aqua-manager) did).
-- [ ] Packaging (AQUA ZPK & FreeBSD PKG formats).
+- [x] Packaging (AQUA ZPK & FreeBSD PKG formats).
 - [ ] Understands other popular buildsystems (simple makefile, cmake, autoconf, qmake, setup.py, &c) to eliminate tmw you have to google stuff when you just want something to compile 🤪
 - [ ] Watch source files to automatically rebuild them.
 - [ ] Can build in sandboxes (local CI in background truly continuously by watching source files instead of just on commits? integration with other CI providers, e.g. with Cirrus CI by Automatically generating `.cirrus.yml`?).
