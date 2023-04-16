@@ -89,7 +89,7 @@ bob package zpk
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
 - [x] Automatically installs (certain) dependencies.
 - [x] Uses [Wren](https://wren.io/) as a dynamic configuration language because regular configuration files sucks.
-- [x] Centralised system for building, testing, and installing.
+- [x] Centralized system for building, testing, and installing.
 - [ ] Logging class (like with `Log.error`, `Log.warn`) to provide feedback from within build configurations.
 - [ ] Works with AQUA, i.e. AQUA projects may be built and run just as easily as any other project using Bob.
 - [x] Easy method for building out a project skeleton from a template (serves the same purpose as [`aqua-manager`](https://github.com/inobulles/aqua-manager) did).
