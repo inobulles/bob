@@ -88,6 +88,8 @@ void wren_clean_vm(state_t* state);
 int wren_call(state_t* state, char const* class, char const* sig, char const** str_ref);
 int wren_call_args(state_t* state, char const* class, char const* sig, int argc, char** argv);
 
+int wren_read_map(state_t* state, char const* name, WrenHandle** map_handle_ref, size_t* keys_len_ref);
+
 // pipe stuff
 
 typedef enum {
@@ -179,6 +181,7 @@ size_t wait_for_tasks(task_kind_t kind);
 
 size_t file_get_size(FILE* fp);
 char* file_read_str(FILE* fp, size_t size);
+int path_write_str(char* path, char* str);
 int mkdir_recursive(char const* _path);
 int copy_recursive(char const* _src, char const* dest);
 int remove_recursive(char const* path);

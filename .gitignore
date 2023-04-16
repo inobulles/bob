@@ -2,3 +2,4 @@ bin
 sh-bin
 *.sw[op]
 *.core
+*.zpk

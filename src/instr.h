@@ -7,10 +7,15 @@
 #include <util.h>
 #include <wren.h>
 
-// stuff in common between instructions
+// macros
+
+#define INSTALL_MAP "install"
+#define PACKAGE_MAP "packages"
+
+// common stuff between instructions
 
 void setup_env(char* working_dir);
-int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* keys_len_ref);
+int install(state_t* state);
 
 // actual instructions
 
@@ -19,3 +24,4 @@ int do_run(int argc, char** argv);
 int do_install(void);
 int do_skeleton(int argc, char** argv);
 int do_test(void);
+int do_package(int argc, char** argv);

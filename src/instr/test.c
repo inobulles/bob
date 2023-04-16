@@ -40,7 +40,7 @@ int do_test(void) {
 	WrenHandle* map_handle = NULL;
 	size_t keys_len = 0;
 
-	rv = read_installation_map(&state, &map_handle, &keys_len);
+	rv = wren_read_map(&state, INSTALL_MAP, &map_handle, &keys_len);
 
 	if (rv != EXIT_SUCCESS)
 		goto err;
@@ -52,7 +52,7 @@ int do_test(void) {
 		wrenGetListElement(state.vm, 0, i, 1);
 
 		if (wrenGetSlotType(state.vm, 1) != WREN_TYPE_STRING) {
-			LOG_WARN("Installation map key %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			LOG_WARN("'%s' map key %zu is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, i)
 			continue;
 		}
 

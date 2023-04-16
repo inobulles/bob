@@ -56,6 +56,28 @@ foreign class Linker {
 	foreign archive(path_list, out)
 }
 
+foreign class Package {
+	construct new(entry) {}
+
+	// getters
+
+	foreign name        ()
+	foreign description ()
+	foreign version     ()
+	foreign author      ()
+	foreign organization()
+	foreign www         ()
+
+	// setters
+
+	foreign name=        (name)
+	foreign description= (description)
+	foreign version=     (version)
+	foreign author=      (author)
+	foreign organization=(organization)
+	foreign www=         (www)
+}
+
 // static classes
 
 class Deps {

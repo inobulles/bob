@@ -24,6 +24,23 @@ char* file_read_str(FILE* fp, size_t size) {
 	return str;
 }
 
+int path_write_str(char* path, char* str) {
+	if (!str)
+		return 0;
+
+	FILE* const fp = fopen(path, "wb");
+
+	if (!fp) {
+		LOG_ERROR("fopen(\"%s\", wb): %s", path, strerror(errno))
+		return -1;
+	}
+
+	fprintf(fp, "%s\n", str);
+	fclose(fp);
+
+	return 0;
+}
+
 int mkdir_recursive(char const* _path) {
 	int rv = -1;
 
@@ -31,6 +48,9 @@ int mkdir_recursive(char const* _path) {
 
 	if (!*_path)
 		return 0;
+
+	char* const __attribute__((cleanup(strfree))) orig_path = strdup(_path);
+	char* path = orig_path;
 
 	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
 
@@ -40,8 +60,6 @@ int mkdir_recursive(char const* _path) {
 		LOG_ERROR("getcwd: %s", strerror(errno))
 		goto err_cwd;
 	}
-
-	char* path = strdup(_path);
 
 	// if we're dealing with a path relative to $HOME, chdir to $HOME first
 
@@ -113,9 +131,6 @@ err_mkdir:
 
 err_abs:
 err_home:
-
-	free(path);
-
 err_cwd:
 
 	return rv;

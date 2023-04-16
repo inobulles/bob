@@ -41,76 +41,151 @@ void setup_env(char* working_dir) {
 		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", working_dir, strerror(errno));
 }
 
-int read_installation_map(state_t* state, WrenHandle** map_handle_ref, size_t* keys_len_ref) {
-	int rv = EXIT_SUCCESS;
+int install(state_t* state) {
+	// declarations which must come before first goto
+
+	WrenHandle* map_handle = NULL;
+	WrenHandle* keys_handle = NULL;
+	size_t keys_len = 0;
 
 	// read installation map
 
-	if (!wrenHasVariable(state->vm, "main", "install")) {
-		LOG_ERROR("No installation map")
+	int rv = wren_read_map(state, INSTALL_MAP, &map_handle, &keys_len);
 
-		rv = EXIT_FAILURE;
+	if (rv != EXIT_SUCCESS)
 		goto err;
+
+	// read key/value pairs
+
+	keys_handle = wrenGetSlotHandle(state->vm, 0);
+
+	wrenEnsureSlots(state->vm, 4); // first slot for the keys list, second for the key, third slot for the value, last for map
+	wrenSetSlotHandle(state->vm, 3, map_handle);
+
+	progress_t* const progress = progress_new();
+
+	for (size_t i = 0; i < keys_len; i++) {
+		// this is declared all the way up here, because you can't jump over an __attribute__((cleanup)) declaration with goto
+
+		char* __attribute__((cleanup(strfree))) sig = NULL;
+
+		// get key
+
+		wrenGetListElement(state->vm, 0, i, 1);
+
+		if (wrenGetSlotType(state->vm, 1) != WREN_TYPE_STRING) {
+			LOG_WARN("'%s' map element %zu key is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, i)
+			continue;
+		}
+
+		char const* const key = wrenGetSlotString(state->vm, 1);
+
+		// sanity check - make sure map contains key
+
+		if (!wrenGetMapContainsKey(state->vm, 3, 1)) {
+			LOG_WARN("'%s' map does not contain key '%s'", INSTALL_MAP, key)
+			continue;
+		}
+
+		// get value
+
+		wrenGetMapValue(state->vm, 3, 1, 2);
+
+		if (wrenGetSlotType(state->vm, 2) != WREN_TYPE_STRING) {
+			LOG_WARN("'%s' map element '%s' value is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", INSTALL_MAP, key)
+			continue;
+		}
+
+		char const* const val = wrenGetSlotString(state->vm, 2);
+		char const* dest = val;
+
+		char* __attribute__((cleanup(strfree))) src = NULL;
+		if (asprintf(&src, "%s/%s", bin_path, key)) {}
+
+		char* __attribute__((cleanup(strfree))) orig_dest_prefix = NULL;
+		if (asprintf(&orig_dest_prefix, "%s/%s", install_prefix(), dest)) {}
+
+		char* dest_prefix = orig_dest_prefix;
+
+		// execute installer method if there is one
+		// otherwise, just install
+
+		if (*val != ':')
+			goto install;
+
+		dest_prefix = NULL;
+
+		if (!wrenHasVariable(state->vm, "main", "Installer")) {
+			LOG_WARN("'%s' is installed to '%s', which starts with a colon - this is normally used for installer methods, but module has no 'Installer' class", INSTALL_MAP, key, val)
+			goto install;
+		}
+
+		// call installer method
+
+		if (asprintf(&sig, "%s(_)", val + 1)) {}
+
+		wrenEnsureSlots(state->vm, 2);
+		wrenSetSlotString(state->vm, 1, src);
+
+		if (wren_call(state, "Installer", sig, &dest) != EXIT_SUCCESS) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("'%s' method for '%s' failed", INSTALL_MAP, key)
+			goto err;
+		}
+
+		// reset slots from handles, because wren_call may have mangled all of this
+
+		wrenSetSlotHandle(state->vm, 0, keys_handle);
+		wrenSetSlotHandle(state->vm, 3, map_handle);
+
+		// install file/directory
+
+	install:
+
+		progress_update(progress, i, keys_len, "Installing '%s' to '%s' (%d of %d)", key, dest, i + 1, keys_len);
+
+		// make sure the directory in which we'd like to install the file/directory exists
+		// then, copy the file/directory itself
+
+		if (dest_prefix)
+			dest = dest_prefix;
+
+		char* const __attribute__((cleanup(strfree))) dest_parent = strdup(dest);
+		char* basename = strrchr(dest_parent, '/');
+
+		if (!basename)
+			basename = dest_parent;
+
+		*basename = '\0';
+
+		if (
+			mkdir_recursive(dest_parent) < 0 ||
+			copy_recursive(src, dest) != EXIT_SUCCESS
+		) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
+			goto err;
+		}
 	}
 
-	wrenEnsureSlots(state->vm, 1); // for the receiver (starts off as the installation map, ends up being the keys list)
-	wrenGetVariable(state->vm, "main", "install", 0);
+	// finished!
 
-	if (wrenGetSlotType(state->vm, 0) != WREN_TYPE_MAP) {
-		LOG_ERROR("'install' variable is not a map")
+	progress_complete(progress);
+	progress_del(progress);
 
-		rv = EXIT_FAILURE;
-		goto err;
-	}
-
-	size_t const installation_map_len = wrenGetMapCount(state->vm, 0);
-
-	// keep handle to installation map
-
-	if (map_handle_ref)
-		*map_handle_ref = wrenGetSlotHandle(state->vm, 0);
-
-	// run the 'keys' method on the map
-
-	WrenHandle* const keys_handle = wrenMakeCallHandle(state->vm, "keys");
-	WrenInterpretResult const keys_result = wrenCall(state->vm, keys_handle); // no need to set receiver - it's already in slot 0
-	wrenReleaseHandle(state->vm, keys_handle);
-
-	if (keys_result != WREN_RESULT_SUCCESS) {
-		LOG_ERROR("Something went wrong running the 'keys' method on the installation map")
-
-		rv = EXIT_FAILURE;
-		goto err;
-	}
-
-	// run the 'toList' method on the 'MapKeySequence' object
-
-	WrenHandle* const to_list_handle = wrenMakeCallHandle(state->vm, "toList");
-	WrenInterpretResult const to_list_result = wrenCall(state->vm, to_list_handle);
-	wrenReleaseHandle(state->vm, to_list_handle);
-
-	if (to_list_result != WREN_RESULT_SUCCESS) {
-		LOG_ERROR("Something went wrong running the 'toList' method on the installation map keys' 'MapKeySequence'")
-
-		rv = EXIT_FAILURE;
-		goto err;
-	}
-
-	// small sanity check - is the converted keys list as big as the map?
-
-	size_t const keys_len = wrenGetListCount(state->vm, 0);
-
-	if (installation_map_len != keys_len) {
-		LOG_ERROR("Installation map is not the same size as converted keys list (%zu vs %zu)", installation_map_len, keys_len)
-
-		rv = EXIT_FAILURE;
-		goto err;
-	}
-
-	if (keys_len_ref)
-		*keys_len_ref = keys_len;
+	LOG_SUCCESS("All %zu files installed", keys_len)
 
 err:
+
+	if (keys_handle)
+		wrenReleaseHandle(state->vm, keys_handle);
+
+	if (map_handle)
+		wrenReleaseHandle(state->vm, map_handle);
 
 	return rv;
 }

@@ -29,6 +29,7 @@ void usage(void) {
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
 		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] package format [name] [out_file]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] test\n",
 	progname);
 
@@ -82,7 +83,8 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(curr_instr, "build"))
 			rv = do_build();
 
-		// everything stops if we run the 'run' command, because we don't know how many arguments there'll still be
+		// everything stops if we run the 'run' command
+		// we don't know how many arguments there'll still be
 
 		else if (!strcmp(curr_instr, "run"))
 			return do_run(argc, argv);
@@ -90,10 +92,17 @@ int main(int argc, char* argv[]) {
 		else if (!strcmp(curr_instr, "install"))
 			rv = do_install();
 
-		// everything stops if we run the 'skeleton' command, because I don't wanna deal how the output/project paths should best be handled for subsequent commands
+		// everything stops if we run the 'skeleton' command
+		// I don't wanna deal with how the output/project paths should best be handled for subsequent commands
 
 		else if (!strcmp(curr_instr, "skeleton"))
 			return do_skeleton(argc, argv);
+
+		// everything stops if we run the 'package' command
+		// the last argument is optional, so it would introduce ambiguity
+
+		else if (!strcmp(curr_instr, "package"))
+			return do_package(argc, argv);
 
 		else if (!strcmp(curr_instr, "test"))
 			rv = do_test();

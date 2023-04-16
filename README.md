@@ -74,16 +74,44 @@ cd project
 bob run
 ```
 
+### Packaging
+
+Bob used to work at an Amazon distribution centre! 📦
+
+To create a ZPK package, run:
+
+```console
+bob package zpk
+```
+
+## Projects which use Bob
+
+Here's a list of projects which use Bob:
+
+- [Bob the Builder](https://github.com/inobulles/bob)
+- [IAR](https://github.com/inobulles/iar)
+- [Umber](https://github.com/inobulles/umber)
+- [aquaBSD Aquariums](https://github.com/inobulles/aquarium)
+- [`aqua-unix`](https://github.com/inobulles/aqua-unix)
+- [`aqua-kos`](https://github.com/inobulles/aqua-kos)
+- [`aqua-devices`](https://github.com/inobulles/aqua-devices)
+- [LLN Gamejam 2023](https://github.com/obiwac/lln-gamejam-2023)
+- [iface](https://github.com/inobulles/iface)
+- [`libmkfs_msdos`](https://github.com/inobulles/libmkfs_msdos)
+- [`libcopyfile`](https://github.com/inobulles/libcopyfile)
+
+I use this list to not forget to update them when I add a new feature to Bob!
+
 ## Features
 
 - [x] Written in C and with a very basic project structure, so can easily be bootstrapped.
 - [x] Automatically installs (certain) dependencies.
 - [x] Uses [Wren](https://wren.io/) as a dynamic configuration language because regular configuration files sucks.
-- [x] Centralised system for building, testing, and installing.
+- [x] Centralized system for building, testing, and installing.
 - [ ] Logging class (like with `Log.error`, `Log.warn`) to provide feedback from within build configurations.
 - [ ] Works with AQUA, i.e. AQUA projects may be built and run just as easily as any other project using Bob.
 - [x] Easy method for building out a project skeleton from a template (serves the same purpose as [`aqua-manager`](https://github.com/inobulles/aqua-manager) did).
-- [ ] Packaging (AQUA ZPK & FreeBSD PKG formats).
+- [x] Packaging (AQUA ZPK & FreeBSD PKG formats).
 - [ ] Understands other popular buildsystems (simple makefile, cmake, autoconf, qmake, setup.py, &c) to eliminate tmw you have to google stuff when you just want something to compile 🤪
 - [ ] Watch source files to automatically rebuild them.
 - [ ] Can build in sandboxes (local CI in background truly continuously by watching source files instead of just on commits? integration with other CI providers, e.g. with Cirrus CI by Automatically generating `.cirrus.yml`?).
