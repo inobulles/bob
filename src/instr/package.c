@@ -2,6 +2,10 @@
 
 #include <classes/package_t.h>
 
+#include <errno.h>
+
+#include <sys/stat.h>
+
 // for ZPK packages:
 // - read installation map
 // - copy over relevant files
@@ -16,13 +20,43 @@
 // - add metadata to manifest
 // - package (libpkg? or is it gun be easier to just 'pkg-create(8)'?)
 
-static bool is_supported(char* format) {
-	bool supported = false;
+typedef enum {
+	FORMAT_UNSUPPORTED,
+	FORMAT_ZPK,
+	FORMAT_FBSD,
+} format_t;
 
-	supported |= !strcmp(format, "zpk");
-	// supported |= !strcmp(format, "fbsd");
+typedef int (*stage_populate_fn_t) (char* path);
 
-	return supported;
+static int stage_populate_unsupported(char* path) {
+	LOG_FATAL("Unsupported packaging format (staging path is \"%s\")", path)
+	return -1;
+}
+
+static int stage_populate_zpk(char* path) {
+	(void) path;
+	return 0;
+}
+
+static int stage_populate_fbsd(char* path) {
+	LOG_FATAL("FreeBSD packages are not yet supported (staging path is \"%s\")", path)
+	return -1;
+}
+
+static stage_populate_fn_t stage_populate_fns[] = {
+	stage_populate_unsupported,
+	stage_populate_zpk,
+	stage_populate_fbsd,
+};
+
+static format_t get_format(char* format) {
+	if (!strcmp(format, "zpk"))
+		return FORMAT_ZPK;
+
+	// if (!strcmp(format, "fbsd"))
+	// 	return FORMAT_FBSD;
+
+	return FORMAT_UNSUPPORTED;
 }
 
 int do_package(int argc, char** argv) {
@@ -31,9 +65,10 @@ int do_package(int argc, char** argv) {
 	if (argc < 1 || argc > 3)
 		usage();
 
-	char* const format = argv[0];
+	char* const format_str = argv[0];
+	format_t const format = get_format(format_str);
 
-	if (!is_supported(format))
+	if (format == FORMAT_UNSUPPORTED)
 		usage();
 
 	char* const name = argc >= 2 ? argv[1] : "default";
@@ -43,7 +78,7 @@ int do_package(int argc, char** argv) {
 	if (argc == 3)
 		out = strdup(argv[2]);
 
-	else if (asprintf(&out, "%s.%s", name, format)) {}
+	else if (asprintf(&out, "%s.%s", name, format_str)) {}
 
 	// go to project path
 
@@ -55,6 +90,8 @@ int do_package(int argc, char** argv) {
 	WrenHandle* package_map_handle = NULL;
 	WrenHandle* package_keys_handle = NULL;
 	size_t package_keys_len = 0;
+
+	char* __attribute__((cleanup(strfree))) staging_path = NULL;
 
 	WrenHandle* install_map_handle = NULL;
 	WrenHandle* install_keys_handle = NULL;
@@ -127,7 +164,28 @@ found:
 
 	printf("Found package '%s'\n", package->name);
 
-	// read install map key/value pairs
+	// create package staging directory
+
+	if (asprintf(&staging_path, "%s/%s", bin_path, out)) {}
+
+	if (mkdir(staging_path, 0660) < 0 && errno != EEXIST) {
+		LOG_FATAL("Can't create package staging path: mkdir(\"%s\"): %s", staging_path, strerror(errno))
+		goto err;
+	}
+
+	// format specific population
+
+	size_t const fn_count = sizeof(stage_populate_fns) / sizeof(*stage_populate_fns);
+
+	if ((size_t) format > fn_count) {
+		LOG_FATAL("Sanity check failed: there are %zu stage population functions, but format is %d", fn_count, format)
+		goto err;
+	}
+
+	if (stage_populate_fns[format](staging_path) < 0)
+		goto err;
+
+	// TODO read install map key/value pairs
 
 	(void) install_keys_len;
 
