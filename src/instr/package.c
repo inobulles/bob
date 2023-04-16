@@ -36,7 +36,7 @@ int do_package(int argc, char** argv) {
 	if (!is_supported(format))
 		usage();
 
-	char* const name = argc >= 2 ? argv[1] : "package";
+	char* const name = argc >= 2 ? argv[1] : "default";
 
 	char* __attribute__((cleanup(strfree))) out = NULL;
 
@@ -74,6 +74,9 @@ int do_package(int argc, char** argv) {
 		goto err;
 
 	// read package map key/value pairs
+	// look for the package name asked of us
+
+	char const* key = NULL;
 
 	package_keys_handle = wrenGetSlotHandle(state.vm, 0);
 
@@ -90,7 +93,7 @@ int do_package(int argc, char** argv) {
 			continue;
 		}
 
-		char const* const key = wrenGetSlotString(state.vm, 1);
+		key = wrenGetSlotString(state.vm, 1);
 
 		// sanity check - make sure map contains key
 
@@ -99,19 +102,30 @@ int do_package(int argc, char** argv) {
 			continue;
 		}
 
-		// get value
+		// is the key what we're looking for?
 
-		wrenGetMapValue(state.vm, 3, 1, 2);
-
-		if (wrenGetSlotType(state.vm, 2) != WREN_TYPE_FOREIGN) {
-			LOG_WARN("'%s' map element '%s' value is of incorrect type (expected 'WREN_TYPE_FOREIGN') - skipping", PACKAGE_MAP, key)
-			continue;
-		}
-
-		package_t* const package = wrenGetSlotForeign(state.vm, 2);
-
-		printf("%s %s\n", key, package->name);
+		if (!strcmp(key, name))
+			goto found;
 	}
+
+	// found nothing :'(
+
+	LOG_FATAL("'%s' map doesn't contain package '%s'", PACKAGE_MAP, name)
+
+found:
+
+	// get value
+
+	wrenGetMapValue(state.vm, 3, 1, 2);
+
+	if (wrenGetSlotType(state.vm, 2) != WREN_TYPE_FOREIGN) {
+		LOG_FATAL("'%s' map element '%s' value is of incorrect type (expected 'WREN_TYPE_FOREIGN')", PACKAGE_MAP, key)
+		goto err;
+	}
+
+	package_t* const package = wrenGetSlotForeign(state.vm, 2);
+
+	printf("Found package '%s'\n", package->name);
 
 	// read install map key/value pairs
 
