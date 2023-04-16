@@ -29,6 +29,10 @@ typedef enum {
 
 typedef int (*stage_populate_fn_t) (package_t* package);
 
+typedef struct {
+	stage_populate_fn_t stage_populate;
+} format_info_t;
+
 static int stage_populate_unsupported(package_t* package) {
 	LOG_FATAL("Unsupported packaging format (package '%s')", package->name)
 	return -1;
@@ -61,10 +65,16 @@ static int stage_populate_fbsd(package_t* package) {
 	return -1;
 }
 
-static stage_populate_fn_t const STAGE_POPULATE_LUT[] = {
-	stage_populate_unsupported,
-	stage_populate_zpk,
-	stage_populate_fbsd,
+static format_info_t const FORMAT_LUT[] = {
+	{
+		.stage_populate = stage_populate_unsupported,
+	},
+	{
+		.stage_populate = stage_populate_zpk,
+	},
+	{
+		.stage_populate = stage_populate_fbsd,
+	},
 };
 
 static format_t get_format(char* format) {
@@ -103,13 +113,19 @@ int do_package(int argc, char** argv) {
 	navigate_project_path();
 	ensure_out_path();
 
+	// set prefix to staging path
+
+	char* __attribute__((cleanup(strfree))) staging_path = NULL;
+	if (asprintf(&staging_path, "%s/%s", bin_path, out)) {}
+
+	prefix = staging_path;
+
 	// declarations which must come before first goto
 
 	WrenHandle* package_map_handle = NULL;
 	WrenHandle* package_keys_handle = NULL;
 	size_t package_keys_len = 0;
 
-	char* __attribute__((cleanup(strfree))) staging_path = NULL;
 	char* __attribute__((cleanup(strfree))) cwd = NULL;
 
 	WrenHandle* install_map_handle = NULL;
@@ -183,8 +199,6 @@ found:
 
 	// create package staging directory
 
-	if (asprintf(&staging_path, "%s/%s", bin_path, out)) {}
-
 	if (mkdir(staging_path, 0770) < 0 && errno != EEXIST) {
 		LOG_FATAL("Can't create package staging path: mkdir(\"%s\"): %s", staging_path, strerror(errno))
 		goto err;
@@ -208,14 +222,16 @@ found:
 
 	// format specific stage population
 
-	size_t const fn_count = sizeof(STAGE_POPULATE_LUT) / sizeof(*STAGE_POPULATE_LUT);
+	size_t const fn_count = sizeof(FORMAT_LUT) / sizeof(*FORMAT_LUT);
 
 	if ((size_t) format > fn_count) {
-		LOG_FATAL("Sanity check failed: there are %zu stage population functions, but format is %d", fn_count, format)
+		LOG_FATAL("Sanity check failed: there are %zu format info structures, but format is %d", fn_count, format)
 		goto err;
 	}
 
-	if (STAGE_POPULATE_LUT[format](package) < 0)
+	format_info_t const* const info = &FORMAT_LUT[format];
+
+	if (info->stage_populate(package) < 0)
 		goto err;
 
 	// change back to working directory
@@ -231,6 +247,11 @@ found:
 	// TODO read install map key/value pairs
 
 	(void) install_keys_len;
+
+	rv = install(&state);
+
+	if (rv != EXIT_SUCCESS)
+		goto err;
 
 err:
 
