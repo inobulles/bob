@@ -84,7 +84,7 @@ static int stage_package_zpk(package_t* package, char* stage, char* out) {
 
 	int rv = 0;
 
-	// much easier than using libiar, because it means it isn't a dependency
+	// much easier than using libiar, because it means it isn't a build dependency
 
 	exec_args_t* const exec_args = exec_args_new(5, "iar", "--pack", stage, "--output", out);
 
@@ -241,7 +241,7 @@ found:
 
 	// create package staging directory
 
-	if (mkdir(staging_path, 0770) < 0 && errno != EEXIST) {
+	if (mkdir_recursive(staging_path) < 0) {
 		LOG_FATAL("Can't create package staging path: mkdir(\"%s\"): %s", staging_path, strerror(errno))
 		goto err;
 	}
