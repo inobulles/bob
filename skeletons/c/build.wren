@@ -36,6 +36,7 @@ var install = {
 
 var pkg = Package.new(entry)
 
+pkg.unique = "bob.skeleton.c"
 pkg.name = "Bob C Skeleton"
 pkg.description = "Skeleton for a C project with Bob."
 pkg.version = "0.1.0"

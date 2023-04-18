@@ -39,6 +39,7 @@ var install = {
 
 var pkg = Package.new(entry)
 
+pkg.unique = "bob.skeleton.aqua"
 pkg.name = "Bob AQUA Skeleton"
 pkg.description = "Skeleton for an AQUA project with Bob (written in Rust)."
 pkg.version = "0.1.0"

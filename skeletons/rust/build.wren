@@ -31,6 +31,7 @@ var install = {
 
 var pkg = Package.new(entry)
 
+pkg.unique = "bob.skeleton.rust"
 pkg.name = "Bob Rust Skeleton"
 pkg.description = "Skeleton for a Rust project with Bob."
 pkg.version = "0.1.0"
