@@ -93,6 +93,11 @@ size_t wait_for_tasks(task_kind_t kind) {
 		i++;
 	}
 
+	// complete progress
+
+	progress_complete(progress);
+	progress_del(progress);
+
 	// print out warning & error messages if there are any
 
 	for (size_t i = 0; i < task_count; i++) {
