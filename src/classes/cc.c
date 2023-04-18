@@ -34,7 +34,7 @@ WrenForeignMethodFn cc_bind_foreign_method(bool static_, char const* signature) 
 
 // helpers
 
-static int cc_internal_add_lib(cc_t* cc, char const* lib) {
+static int internal_add_lib(cc_t* cc, char const* lib) {
 	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
 	exec_args_save_out(exec_args, PIPE_STDOUT);
 
@@ -125,7 +125,7 @@ void cc_add_lib(WrenVM* vm) {
 	cc_t* const cc = foreign;
 	char const* const lib = wrenGetSlotString(vm, 1);
 
-	int rv = cc_internal_add_lib(cc, lib);
+	int rv = internal_add_lib(cc, lib);
 
 	if (rv)
 		LOG_WARN("'CC.add_lib' failed to add '%s' (error code is %d)", lib, rv);

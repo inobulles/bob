@@ -51,6 +51,8 @@ foreign class Linker {
 	// methods
 
 	foreign add_opt(opt)
+	foreign add_lib(lib)
+
 	foreign link(path_list, libs, out)
 	foreign link(path_list, libs, out, shared)
 	foreign archive(path_list, out)

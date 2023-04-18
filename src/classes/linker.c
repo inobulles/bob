@@ -24,6 +24,8 @@ WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signatu
 	// methods
 
 	BIND_FOREIGN_METHOD(false, "add_opt(_)", linker_add_opt)
+	BIND_FOREIGN_METHOD(false, "add_lib(_)", linker_add_lib)
+
 	BIND_FOREIGN_METHOD(false, "link(_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "link(_,_,_,_)", linker_link)
 	BIND_FOREIGN_METHOD(false, "archive(_,_)", linker_archive)
@@ -31,6 +33,37 @@ WrenForeignMethodFn linker_bind_foreign_method(bool static_, char const* signatu
 	// unknown
 
 	return wren_unknown_foreign;
+}
+
+// helpers
+
+static int add_lib(linker_t* linker, char const* lib) {
+	exec_args_t* exec_args = exec_args_new(4, "pkg-config", "--libs", "--cflags", lib);
+	exec_args_save_out(exec_args, PIPE_STDOUT);
+
+	int rv = execute(exec_args);
+
+	if (rv != EXIT_SUCCESS)
+		goto err;
+
+	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
+	char* opts = orig_opts;
+
+	char* opt;
+
+	while ((opt = strsep(&opts, " "))) {
+		if (*opt == '\n')
+			continue;
+
+		opts_add(&linker->opts, opt);
+	}
+
+	free(orig_opts);
+
+err:
+
+	exec_args_del(exec_args);
+	return rv;
 }
 
 // constructor/destructor
@@ -103,6 +136,21 @@ void linker_set_archiver_path(WrenVM* vm) {
 }
 
 // methods
+// TODO make this add lib (haha adlib) stuff like way better
+
+void linker_add_lib(WrenVM* vm) {
+	CHECK_ARGC("Linker.add_lib", 1, 1)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	linker_t* const linker = foreign;
+	char const* const lib = wrenGetSlotString(vm, 1);
+
+	int rv = add_lib(linker, lib);
+
+	if (rv)
+		LOG_WARN("'Linker.add_lib' failed to add '%s' (error code is %d)", lib, rv);
+}
 
 void linker_add_opt(WrenVM* vm) {
 	CHECK_ARGC("Linker.add_opt", 1, 1)
