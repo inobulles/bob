@@ -157,8 +157,11 @@ int do_package(int argc, char** argv) {
 
 	// set prefix to staging path
 
+	char* __attribute__((cleanup(strfree))) link_name = NULL;
+	if (asprintf(&link_name, "%s/%s", bin_path, out)) {}
+
 	char* __attribute__((cleanup(strfree))) staging_path = NULL;
-	if (asprintf(&staging_path, "%s/%s", bin_path, out)) {}
+	if (asprintf(&staging_path, "%s.stage", link_name)) {}
 
 	prefix = staging_path;
 
@@ -299,6 +302,15 @@ found:
 
 	if (info->stage_package(package, staging_path, out) < 0)
 		goto err;
+
+	// link output file to bin directory
+
+	remove(link_name);
+
+	if (link(out, link_name) < 0) {
+		LOG_FATAL("link(\"%s\", \"%s\"): %s", out, link_name, strerror(errno))
+		goto err;
+	}
 
 	// success!
 
