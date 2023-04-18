@@ -35,7 +35,7 @@ int path_write_str(char* path, char* str) {
 		return -1;
 	}
 
-	fprintf(fp, "%s\n", str);
+	fprintf(fp, "%s", str);
 	fclose(fp);
 
 	return 0;
