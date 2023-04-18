@@ -10,6 +10,8 @@ var rustc = RustC.new()
 var src = File.list("src")
 	.where { |path| path.endsWith(".rs") }
 
+src = ["src/main.rs"]
+
 src
 	.each { |path| rustc.compile(path) }
 
