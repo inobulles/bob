@@ -23,7 +23,7 @@ linker.link(src.toList, ["std-7c7f3bd22bdaa9dd"], "main", true)
 // running
 
 class Runner {
-	static run(args) { File.exec("aqua", ["--boot", "default.zpk"]) }
+	static run(args) { File.exec("kos", ["--boot", "default.zpk"]) }
 }
 
 // installation map

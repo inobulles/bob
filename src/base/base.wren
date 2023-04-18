@@ -97,6 +97,10 @@ class Deps {
 			instruction = "build"
 		}
 
+		if (instruction == "package") { // neither package instructions
+			instruction = "build"
+		}
+
 		return File.bob(path, [instruction])
 	}
 
