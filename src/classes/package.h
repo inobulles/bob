@@ -13,6 +13,7 @@ void package_del(void* _package);
 
 // getters
 
+void package_get_unique(WrenVM* vm);
 void package_get_name(WrenVM* vm);
 void package_get_description(WrenVM* vm);
 void package_get_version(WrenVM* vm);
@@ -22,6 +23,7 @@ void package_get_www(WrenVM* vm);
 
 // setters
 
+void package_set_unique(WrenVM* vm);
 void package_set_name(WrenVM* vm);
 void package_set_description(WrenVM* vm);
 void package_set_version(WrenVM* vm);

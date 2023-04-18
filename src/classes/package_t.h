@@ -5,6 +5,7 @@
 
 typedef struct {
 	char* entry;
+	char* unique;
 	char* name;
 	char* description;
 	char* version;

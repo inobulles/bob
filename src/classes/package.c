@@ -7,6 +7,7 @@
 #include <classes/package_t.h>
 
 #include <pwd.h>
+#include <time.h>
 #include <unistd.h>
 
 // foreign method binding
@@ -14,6 +15,7 @@
 WrenForeignMethodFn package_bind_foreign_method(bool static_, char const* signature) {
 	// getters
 
+	BIND_FOREIGN_METHOD(false, "unique()", package_get_unique)
 	BIND_FOREIGN_METHOD(false, "name()", package_get_name)
 	BIND_FOREIGN_METHOD(false, "description()", package_get_description)
 	BIND_FOREIGN_METHOD(false, "version()", package_get_version)
@@ -23,6 +25,7 @@ WrenForeignMethodFn package_bind_foreign_method(bool static_, char const* signat
 
 	// setters
 
+	BIND_FOREIGN_METHOD(false, "unique=(_)", package_set_unique)
 	BIND_FOREIGN_METHOD(false, "name=(_)", package_set_name)
 	BIND_FOREIGN_METHOD(false, "description=(_)", package_set_description)
 	BIND_FOREIGN_METHOD(false, "version=(_)", package_set_version)
@@ -72,6 +75,12 @@ void package_new(WrenVM* vm) {
 		free(package->organization);
 		package->organization = strdup("Knights of Can-A-Lot");
 	}
+
+	// from all this info, create a completely random unique value
+
+	time_t const seconds = time(NULL);
+	srand(seconds ^ hash_str(package->organization) ^ hash_str(package->author) ^ hash_str(package->name));
+	if (asprintf(&package->unique, "%lx:%x", seconds, rand())) {}
 }
 
 void package_del(void* _package) {
@@ -96,6 +105,7 @@ void package_del(void* _package) {
 		wrenSetSlotString(vm, 0, package->name); \
 	}
 
+GETTER(unique)
 GETTER(name)
 GETTER(description)
 GETTER(version)
@@ -118,6 +128,7 @@ GETTER(www)
 		package->name = strdup(name); \
 	}
 
+SETTER(unique)
 SETTER(name)
 SETTER(description)
 SETTER(version)

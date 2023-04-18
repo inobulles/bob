@@ -63,6 +63,7 @@ foreign class Package {
 
 	// getters
 
+	foreign unique      ()
 	foreign name        ()
 	foreign description ()
 	foreign version     ()
@@ -72,6 +73,7 @@ foreign class Package {
 
 	// setters
 
+	foreign unique=      (unique)
 	foreign name=        (name)
 	foreign description= (description)
 	foreign version=     (version)

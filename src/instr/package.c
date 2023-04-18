@@ -45,6 +45,7 @@ static int stage_populate_unsupported(package_t* package) {
 static int stage_populate_zpk(package_t* package) {
 	// properties necessary for the app to function
 
+	path_write_str("unique", package->unique);
 	path_write_str("start", "native");
 	path_write_str("entry", package->entry);
 
