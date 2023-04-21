@@ -32,13 +32,13 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 // helpers
 
 static void rustc_init(rustc_t* rustc) {
-	rustc->path = strdup("rustc");
+	rustc->path = strdup("cargo");
 }
 
 // constructor/destructor
 
 void rustc_new(WrenVM* vm) {
-	CHECK_ARGC("CC.new", 0, 0)
+	CHECK_ARGC("RustC.new", 0, 0)
 
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
 	rustc_init(rustc);
@@ -63,7 +63,7 @@ void rustc_get_path(WrenVM* vm) {
 // setters
 
 void rustc_set_path(WrenVM* vm) {
-	CHECK_ARGC("CC.path=", 1, 1)
+	CHECK_ARGC("RustC.path=", 1, 1)
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
@@ -132,10 +132,32 @@ void rustc_compile(WrenVM* vm) {
 
 compile: {}
 
+	// create Cargo.toml file
+	// TODO in the future, it'd be nice if we could pass a Package to the RustC constructor to fill in the [package] section of the manifest
+	// TODO what's the risk for injection here?
+
+	FILE* const fp = fopen("Cargo.toml", "w");
+
+	if (!fp) {
+		LOG_ERROR("RustC.compile: fopen(\"Cargo.toml\"): %s", strerror(errno))
+		goto done;
+	}
+
+	fprintf(fp, "[package]\n");
+	fprintf(fp, "name = '_%lx'\n", hash);
+	fprintf(fp, "version = '0.0.0'\n");
+
+	fprintf(fp, "[lib]\n");
+	fprintf(fp, "crate-type = ['staticlib']\n");
+	fprintf(fp, "name = '_%lx'\n", hash);
+	fprintf(fp, "path = '%s'\n", path);
+
+	fclose(fp);
+
 	// construct exec args
 	// see: https://medium.com/@squanderingtime/manually-linking-rust-binaries-to-support-out-of-tree-llvm-passes-8776b1d037a4
 
-	exec_args_t* const exec_args = exec_args_new(5, rustc->path, "--emit=obj", path, "-o", out_path);
+	exec_args_t* const exec_args = exec_args_new(4, rustc->path, "build", "--manifest-path", "Cargo.toml");
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
 
 	// if we've got colour support, force it in the compiler
