@@ -7,6 +7,7 @@
 
 typedef struct {
 	char* path;
+	opts_t deps;
 } rustc_t;
 
 // foreign method binding
@@ -22,6 +23,7 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 
 	// methods
 
+	BIND_FOREIGN_METHOD(false, "add_dep(_,_)", rustc_add_dep)
 	BIND_FOREIGN_METHOD(false, "compile(_)", rustc_compile)
 
 	// unknown
@@ -31,17 +33,51 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 
 // helpers
 
-static void rustc_init(rustc_t* rustc) {
-	rustc->path = strdup("rustc");
+typedef struct {
+	rustc_t* rustc;
+	uint64_t hash;
+	char* cargo_dir_path;
+} compile_post_hook_data_t;
+
+static int compile_post_hook(task_t* task, void* _data) {
+	int rv = -1;
+
+	(void) task;
+
+	compile_post_hook_data_t* const data = _data;
+
+	char* __attribute__((cleanup(strfree))) src = NULL;
+	if (asprintf(&src, "%s/target/debug/lib_%lx.so", data->cargo_dir_path, data->hash)) {}
+
+	char* __attribute__((cleanup(strfree))) dest = NULL;
+	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
+
+	if (copy_recursive(src, dest) < 0) {
+		LOG_ERROR("Failed to copy %s to %s", src, dest)
+		goto err;
+	}
+
+	// success
+
+	rv = 0;
+
+err:
+
+	free(data->cargo_dir_path);
+	free(data);
+
+	return rv;
 }
 
 // constructor/destructor
 
 void rustc_new(WrenVM* vm) {
-	CHECK_ARGC("CC.new", 0, 0)
+	CHECK_ARGC("RustC.new", 0, 0)
 
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
-	rustc_init(rustc);
+
+	rustc->path = strdup("cargo");
+	opts_init(&rustc->deps);
 }
 
 void rustc_del(void* _rustc) {
@@ -49,6 +85,8 @@ void rustc_del(void* _rustc) {
 
 	if (rustc->path)
 		free(rustc->path);
+
+	opts_free(&rustc->deps);
 }
 
 // getters
@@ -63,7 +101,7 @@ void rustc_get_path(WrenVM* vm) {
 // setters
 
 void rustc_set_path(WrenVM* vm) {
-	CHECK_ARGC("CC.path=", 1, 1)
+	CHECK_ARGC("RustC.path=", 1, 1)
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
@@ -77,6 +115,21 @@ void rustc_set_path(WrenVM* vm) {
 }
 
 // methods
+
+void rustc_add_dep(WrenVM* vm) {
+	CHECK_ARGC("RustC.add_opt", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	rustc_t* const rustc = foreign;
+	char const* const name = wrenGetSlotString(vm, 1);
+	char const* const git = wrenGetSlotString(vm, 2);
+
+	char* __attribute__((cleanup(strfree))) dep = NULL;
+	if (asprintf(&dep, "%s:%s", name, git)) {}
+
+	opts_add(&rustc->deps, dep);
+}
 
 void rustc_compile(WrenVM* vm) {
 	CHECK_ARGC("RustC.compile", 1, 1)
@@ -92,11 +145,11 @@ void rustc_compile(WrenVM* vm) {
 
 	// get absolute path or source file, hashing it, and getting output path
 
-	char* const path = realpath(_path, NULL);
+	char* const __attribute__((cleanup(strfree))) path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
-		goto done;
+		return;
 	}
 
 	uint64_t const hash = hash_str(path);
@@ -111,7 +164,7 @@ void rustc_compile(WrenVM* vm) {
 			goto compile;
 
 		LOG_ERROR("RustC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
-		goto done;
+		return;
 	}
 
 	// if the source file is newer than the output, compile
@@ -126,16 +179,60 @@ void rustc_compile(WrenVM* vm) {
 
 	// don't need to compile!
 
-	goto done;
+	return;
 
 	// actually compile
 
 compile: {}
 
-	// construct exec args
-	// see: https://medium.com/@squanderingtime/manually-linking-rust-binaries-to-support-out-of-tree-llvm-passes-8776b1d037a4
+	// create Cargo.toml file
+	// TODO in the future, it'd be nice if we could pass a Package to the RustC constructor to fill in the [package] section of the manifest
+	// TODO what's the risk for injection here?
 
-	exec_args_t* const exec_args = exec_args_new(5, rustc->path, "--emit=obj", path, "-o", out_path);
+	char* __attribute__((cleanup(strfree))) cargo_dir_path = NULL;
+	if (asprintf(&cargo_dir_path, "%s/%lx_Cargo.toml.d", bin_path, hash)) {}
+
+	if (mkdir(cargo_dir_path, 0770) < 0 && errno != EEXIST) {
+		LOG_ERROR("RustC.compile: mkdir(\"%s\"): %s", cargo_dir_path, strerror(errno))
+		return;
+	}
+
+	char* __attribute__((cleanup(strfree))) cargo_path = NULL;
+	if (asprintf(&cargo_path, "%s/Cargo.toml", cargo_dir_path)) {}
+
+	FILE* const fp = fopen(cargo_path, "w");
+
+	if (!fp) {
+		LOG_ERROR("RustC.compile: fopen(\"%s\"): %s", cargo_path, strerror(errno))
+		return;
+	}
+
+	fprintf(fp, "[package]\n");
+	fprintf(fp, "name = '_%lx'\n", hash);
+	fprintf(fp, "version = '0.0.0'\n");
+
+	fprintf(fp, "[lib]\n");
+	fprintf(fp, "crate-type = ['dylib']\n");
+	fprintf(fp, "name = '_%lx'\n", hash);
+	fprintf(fp, "path = '%s'\n", path);
+
+	fprintf(fp, "[dependencies]\n");
+
+	for (size_t i = 0; i < rustc->deps.count; i++) {
+		char* const dep = rustc->deps.opts[i];
+		char* const git = strchr(dep, ':');
+
+		char* const __attribute__((cleanup(strfree))) name = strdup(dep);
+		name[git - dep] = '\0';
+
+		fprintf(fp, "%s = { git = '%s' }\n", name, git + 1);
+	}
+
+	fclose(fp);
+
+	// construct exec args
+
+	exec_args_t* const exec_args = exec_args_new(4, rustc->path, "build", "--manifest-path", cargo_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
 
 	// if we've got colour support, force it in the compiler
@@ -145,14 +242,17 @@ compile: {}
 	if (colour_support)
 		exec_args_add(exec_args, "--color=always");
 
-	// finally, add task to compile asynchronously
+	// add task to compile asynchronously
 
-	add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
+	task_t* const task = add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
 
-	// clean up
+	// add post hook
 
-done:
+	compile_post_hook_data_t* const data = calloc(1, sizeof *data);
 
-	if (path)
-		free(path);
+	data->rustc = rustc;
+	data->hash = hash;
+	data->cargo_dir_path = strdup(cargo_dir_path);
+
+	task_hook(task, TASK_HOOK_KIND_POST, compile_post_hook, data);
 }

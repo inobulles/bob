@@ -32,6 +32,7 @@ foreign class RustC {
 
 	// methods
 
+	foreign add_dep(name, git)
 	foreign compile(path)
 }
 

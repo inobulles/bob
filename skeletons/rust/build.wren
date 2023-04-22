@@ -1,9 +1,7 @@
 // compilation
 
 var rustc = RustC.new()
-
-var src = File.list("src")
-	.where { |path| path.endsWith(".rs") }
+var src = ["src/main.rs"]
 
 src
 	.each { |path| rustc.compile(path) }
@@ -11,7 +9,7 @@ src
 // link program
 
 var linker = Linker.new()
-linker.link(src.toList, ["std-7c7f3bd22bdaa9dd"], "cmd")
+linker.link(src.toList, ["std-7c7f3bd22bdaa9dd", "pthread"], "cmd")
 
 // running
 

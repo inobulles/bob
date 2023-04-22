@@ -163,7 +163,14 @@ typedef enum {
 	TASK_KIND_COMPILE,
 } task_kind_t;
 
-typedef struct {
+typedef enum {
+	TASK_HOOK_KIND_POST,
+} task_hook_kind_t;
+
+typedef struct task_t task_t; // forward declaration
+typedef int (*task_hook_t) (task_t* task, void* data);
+
+struct task_t {
 	bool completed;
 	task_kind_t kind;
 
@@ -172,9 +179,15 @@ typedef struct {
 
 	int result;
 	exec_args_t* exec_args;
-} task_t;
+
+	// hooks
+
+	task_hook_t post_hook;
+	void* post_hook_data;
+};
 
 task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args);
+void task_hook(task_t* self, task_hook_kind_t kind, task_hook_t hook, void* data);
 size_t wait_for_tasks(task_kind_t kind);
 
 // filesystem stuff

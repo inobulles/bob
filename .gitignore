@@ -3,3 +3,6 @@ sh-bin
 *.sw[op]
 *.core
 *.zpk
+Cargo.toml
+Cargo.lock
+target

@@ -2,6 +2,7 @@
 
 var cc = CC.new()
 
+cc.add_opt("-g")
 cc.add_opt("-std=c99")
 cc.add_opt("-Isrc")
 cc.add_opt("-Isrc/wren/include")
