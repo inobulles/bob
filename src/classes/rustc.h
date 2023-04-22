@@ -21,4 +21,5 @@ void rustc_set_path(WrenVM* vm);
 
 // methods
 
+void rustc_add_dep(WrenVM* vm);
 void rustc_compile(WrenVM* vm);

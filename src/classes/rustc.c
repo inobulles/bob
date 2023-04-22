@@ -7,6 +7,7 @@
 
 typedef struct {
 	char* path;
+	opts_t deps;
 } rustc_t;
 
 // foreign method binding
@@ -22,6 +23,7 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 
 	// methods
 
+	BIND_FOREIGN_METHOD(false, "add_dep(_,_)", rustc_add_dep)
 	BIND_FOREIGN_METHOD(false, "compile(_)", rustc_compile)
 
 	// unknown
@@ -75,6 +77,7 @@ void rustc_new(WrenVM* vm) {
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
 
 	rustc->path = strdup("cargo");
+	opts_init(&rustc->deps);
 }
 
 void rustc_del(void* _rustc) {
@@ -82,6 +85,8 @@ void rustc_del(void* _rustc) {
 
 	if (rustc->path)
 		free(rustc->path);
+
+	opts_free(&rustc->deps);
 }
 
 // getters
@@ -110,6 +115,21 @@ void rustc_set_path(WrenVM* vm) {
 }
 
 // methods
+
+void rustc_add_dep(WrenVM* vm) {
+	CHECK_ARGC("RustC.add_opt", 2, 2)
+
+	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+
+	rustc_t* const rustc = foreign;
+	char const* const name = wrenGetSlotString(vm, 1);
+	char const* const git = wrenGetSlotString(vm, 2);
+
+	char* __attribute__((cleanup(strfree))) dep = NULL;
+	if (asprintf(&dep, "%s:%s", name, git)) {}
+
+	opts_add(&rustc->deps, dep);
+}
 
 void rustc_compile(WrenVM* vm) {
 	CHECK_ARGC("RustC.compile", 1, 1)
@@ -195,6 +215,18 @@ compile: {}
 	fprintf(fp, "crate-type = ['dylib']\n");
 	fprintf(fp, "name = '_%lx'\n", hash);
 	fprintf(fp, "path = '%s'\n", path);
+
+	fprintf(fp, "[dependencies]\n");
+
+	for (size_t i = 0; i < rustc->deps.count; i++) {
+		char* const dep = rustc->deps.opts[i];
+		char* const git = strchr(dep, ':');
+
+		char* const __attribute__((cleanup(strfree))) name = strdup(dep);
+		name[git - dep] = '\0';
+
+		fprintf(fp, "%s = { git = '%s' }\n", name, git + 1);
+	}
 
 	fclose(fp);
 
