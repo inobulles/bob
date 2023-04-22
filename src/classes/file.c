@@ -194,18 +194,6 @@ void file_exec(WrenVM* vm) {
 	char const* const path = wrenGetSlotString(vm, 1);
 	size_t const args_list_len = has_args ? wrenGetListCount(vm, 2) : 0;
 
-	// check if we have (executable) access to the file
-
-	if (access(path, F_OK) < 0) {
-		LOG_WARN("'File.exec' can't execute '%s' as it does not exist", path)
-		return;
-	}
-
-	if (access(path, X_OK) < 0) {
-		LOG_WARN("'File.exec' doesn't have executable access to '%s'", path)
-		return;
-	}
-
 	// actually execute file
 
 	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
