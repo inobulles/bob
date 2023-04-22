@@ -45,7 +45,7 @@ static int compile_post_hook(task_t* task, void* _data) {
 	compile_post_hook_data_t* const data = _data;
 
 	char* __attribute__((cleanup(strfree))) src = NULL;
-	if (asprintf(&src, "%s/target/debug/lib_%lx.a", data->cargo_dir_path, data->hash)) {}
+	if (asprintf(&src, "%s/target/debug/lib_%lx.so", data->cargo_dir_path, data->hash)) {}
 
 	char* __attribute__((cleanup(strfree))) dest = NULL;
 	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
@@ -192,7 +192,7 @@ compile: {}
 	fprintf(fp, "version = '0.0.0'\n");
 
 	fprintf(fp, "[lib]\n");
-	fprintf(fp, "crate-type = ['staticlib']\n");
+	fprintf(fp, "crate-type = ['dylib']\n");
 	fprintf(fp, "name = '_%lx'\n", hash);
 	fprintf(fp, "path = '%s'\n", path);
 
