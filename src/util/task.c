@@ -52,6 +52,16 @@ task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
 	return task;
 } 
 
+void task_hook(task_t* self, task_hook_kind_t kind, task_hook_t hook, void* data) {
+	if (kind == TASK_HOOK_KIND_POST) {
+		self->post_hook = hook;
+		self->post_hook_data = data;
+	}
+
+	else
+		LOG_WARN("Unknown task hook kind %d", kind)
+}
+
 size_t wait_for_tasks(task_kind_t kind) {
 	// count relevant tasks
 
@@ -123,6 +133,11 @@ size_t wait_for_tasks(task_kind_t kind) {
 
 			fprintf(stderr, "%s", out);
 		}
+
+		// call any hooks there might be
+
+		if (task->post_hook)
+			task->result |= task->post_hook(task, task->post_hook_data);
 
 		// then, free the task struct and mark as completed
 

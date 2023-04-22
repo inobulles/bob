@@ -31,8 +31,40 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 
 // helpers
 
-static void rustc_init(rustc_t* rustc) {
-	rustc->path = strdup("cargo");
+typedef struct {
+	rustc_t* rustc;
+	uint64_t hash;
+	char* cargo_dir_path;
+} compile_post_hook_data_t;
+
+static int compile_post_hook(task_t* task, void* _data) {
+	int rv = -1;
+
+	(void) task;
+
+	compile_post_hook_data_t* const data = _data;
+
+	char* __attribute__((cleanup(strfree))) src = NULL;
+	if (asprintf(&src, "%s/target/debug/lib_%lx.a", data->cargo_dir_path, data->hash)) {}
+
+	char* __attribute__((cleanup(strfree))) dest = NULL;
+	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
+
+	if (copy_recursive(src, dest) < 0) {
+		LOG_ERROR("Failed to copy %s to %s", src, dest)
+		goto err;
+	}
+
+	// success
+
+	rv = 0;
+
+err:
+
+	free(data->cargo_dir_path);
+	free(data);
+
+	return rv;
 }
 
 // constructor/destructor
@@ -41,7 +73,8 @@ void rustc_new(WrenVM* vm) {
 	CHECK_ARGC("RustC.new", 0, 0)
 
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
-	rustc_init(rustc);
+
+	rustc->path = strdup("cargo");
 }
 
 void rustc_del(void* _rustc) {
@@ -177,7 +210,17 @@ compile: {}
 	if (colour_support)
 		exec_args_add(exec_args, "--color=always");
 
-	// finally, add task to compile asynchronously
+	// add task to compile asynchronously
 
-	add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
+	task_t* task = add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
+
+	// add post hook
+
+	compile_post_hook_data_t* const data = calloc(1, sizeof *data);
+
+	data->rustc = rustc;
+	data->hash = hash;
+	data->cargo_dir_path = strdup(cargo_dir_path);
+
+	task_hook(task, TASK_HOOK_KIND_POST, compile_post_hook, data);
 }
