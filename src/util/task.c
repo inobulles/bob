@@ -42,11 +42,12 @@ task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
 	tasks = realloc(tasks, ++task_count * sizeof *tasks);
 	task_t* const task = &tasks[task_count - 1];
 
+	memset(task, 0, sizeof *task);
+
 	task->kind = kind;
 	task->name = name;
 	task->exec_args = exec_args;
 
-	task->completed = false;
 	task->pid = execute_async(exec_args);
 
 	return task;

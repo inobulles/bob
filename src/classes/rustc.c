@@ -212,7 +212,7 @@ compile: {}
 
 	// add task to compile asynchronously
 
-	task_t* task = add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
+	task_t* const task = add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
 
 	// add post hook
 
