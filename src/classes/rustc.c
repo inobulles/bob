@@ -92,11 +92,11 @@ void rustc_compile(WrenVM* vm) {
 
 	// get absolute path or source file, hashing it, and getting output path
 
-	char* const path = realpath(_path, NULL);
+	char* const __attribute__((cleanup(strfree))) path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
-		goto done;
+		return;
 	}
 
 	uint64_t const hash = hash_str(path);
@@ -111,7 +111,7 @@ void rustc_compile(WrenVM* vm) {
 			goto compile;
 
 		LOG_ERROR("RustC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
-		goto done;
+		return;
 	}
 
 	// if the source file is newer than the output, compile
@@ -126,7 +126,7 @@ void rustc_compile(WrenVM* vm) {
 
 	// don't need to compile!
 
-	goto done;
+	return;
 
 	// actually compile
 
@@ -136,11 +136,22 @@ compile: {}
 	// TODO in the future, it'd be nice if we could pass a Package to the RustC constructor to fill in the [package] section of the manifest
 	// TODO what's the risk for injection here?
 
-	FILE* const fp = fopen("Cargo.toml", "w");
+	char* __attribute__((cleanup(strfree))) cargo_dir_path = NULL;
+	if (asprintf(&cargo_dir_path, "%s/%lx_Cargo.toml.d", bin_path, hash)) {}
+
+	if (mkdir(cargo_dir_path, 0770) < 0 && errno != EEXIST) {
+		LOG_ERROR("RustC.compile: mkdir(\"%s\"): %s", cargo_dir_path, strerror(errno))
+		return;
+	}
+
+	char* __attribute__((cleanup(strfree))) cargo_path = NULL;
+	if (asprintf(&cargo_path, "%s/Cargo.toml", cargo_dir_path)) {}
+
+	FILE* const fp = fopen(cargo_path, "w");
 
 	if (!fp) {
-		LOG_ERROR("RustC.compile: fopen(\"Cargo.toml\"): %s", strerror(errno))
-		goto done;
+		LOG_ERROR("RustC.compile: fopen(\"%s\"): %s", cargo_path, strerror(errno))
+		return;
 	}
 
 	fprintf(fp, "[package]\n");
@@ -155,9 +166,8 @@ compile: {}
 	fclose(fp);
 
 	// construct exec args
-	// see: https://medium.com/@squanderingtime/manually-linking-rust-binaries-to-support-out-of-tree-llvm-passes-8776b1d037a4
 
-	exec_args_t* const exec_args = exec_args_new(4, rustc->path, "build", "--manifest-path", "Cargo.toml");
+	exec_args_t* const exec_args = exec_args_new(4, rustc->path, "build", "--manifest-path", cargo_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
 
 	// if we've got colour support, force it in the compiler
@@ -170,11 +180,4 @@ compile: {}
 	// finally, add task to compile asynchronously
 
 	add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
-
-	// clean up
-
-done:
-
-	if (path)
-		free(path);
 }
