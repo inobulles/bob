@@ -9,7 +9,7 @@ src
 // link program
 
 var linker = Linker.new()
-linker.link(src.toList, ["std-7c7f3bd22bdaa9dd"], "cmd")
+linker.link(src.toList, ["std-7c7f3bd22bdaa9dd", "pthread"], "cmd")
 
 // running
 
