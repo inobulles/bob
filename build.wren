@@ -79,7 +79,7 @@ class Tests {
 	}
 
 	static file_exec_error { // check if we error correctly if file does not exist/is unexecutable
-		return File.exec("this-is-not-a-script.sh") == null
+		return File.exec("this-is-not-a-script.sh") == 1
 	}
 
 	static file_exec { // check if we process error codes of executed files correctly
