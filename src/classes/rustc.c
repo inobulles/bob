@@ -6,8 +6,18 @@
 #include <sys/stat.h>
 
 typedef struct {
+	char* name;
+	char* git;
+
+	size_t feature_count;
+	char** features;
+} dep_t;
+
+typedef struct {
 	char* path;
-	opts_t deps;
+
+	size_t dep_count;
+	dep_t* deps;
 } rustc_t;
 
 // foreign method binding
@@ -24,6 +34,7 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 	// methods
 
 	BIND_FOREIGN_METHOD(false, "add_dep(_,_)", rustc_add_dep)
+	BIND_FOREIGN_METHOD(false, "add_dep(_,_,_)", rustc_add_dep)
 	BIND_FOREIGN_METHOD(false, "compile(_)", rustc_compile)
 
 	// unknown
@@ -77,7 +88,9 @@ void rustc_new(WrenVM* vm) {
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
 
 	rustc->path = strdup("cargo");
-	opts_init(&rustc->deps);
+
+	rustc->deps = NULL;
+	rustc->dep_count = 0;
 }
 
 void rustc_del(void* _rustc) {
@@ -86,7 +99,23 @@ void rustc_del(void* _rustc) {
 	if (rustc->path)
 		free(rustc->path);
 
-	opts_free(&rustc->deps);
+	// free dependencies
+
+	for (size_t i = 0; i < rustc->dep_count; i++) {
+		dep_t* const dep = &rustc->deps[i];
+
+		free(dep->name);
+		free(dep->git);
+
+		for (size_t i = 0; i < dep->feature_count; i++)
+			free(dep->features[i]);
+
+		if (dep->features)
+			free(dep->features);
+	}
+
+	if (rustc->deps)
+		free(rustc->deps);
 }
 
 // getters
@@ -117,18 +146,54 @@ void rustc_set_path(WrenVM* vm) {
 // methods
 
 void rustc_add_dep(WrenVM* vm) {
-	CHECK_ARGC("RustC.add_opt", 2, 2)
+	CHECK_ARGC("RustC.add_dep", 2, 3)
+	bool const has_feature_list = argc == 3;
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+
+	if (has_feature_list)
+		ASSERT_ARG_TYPE(3, WREN_TYPE_LIST)
 
 	rustc_t* const rustc = foreign;
 	char const* const name = wrenGetSlotString(vm, 1);
 	char const* const git = wrenGetSlotString(vm, 2);
+	size_t const feature_list_len = has_feature_list ? wrenGetListCount(vm, 3) : 0;
 
-	char* __attribute__((cleanup(strfree))) dep = NULL;
-	if (asprintf(&dep, "%s:%s", name, git)) {}
+	// extra argument checks
 
-	opts_add(&rustc->deps, dep);
+	if (has_feature_list && !feature_list_len)
+		LOG_WARN("'%s' passed an empty list of features", __fn_name)
+
+	// add dependency
+
+	rustc->deps = realloc(rustc->deps, ++rustc->dep_count * sizeof *rustc->deps);
+	dep_t* const dep = &rustc->deps[rustc->dep_count - 1];
+
+	dep->name = strdup(name);
+	dep->git = strdup(git);
+
+	// read dependency features (if there are any)
+
+	dep->feature_count = feature_list_len;
+	dep->features = NULL;
+
+	if (dep->feature_count)
+		dep->features = malloc(dep->feature_count * sizeof *dep->features);
+
+	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
+
+	for (size_t i = 0; i < dep->feature_count; i++) {
+		wrenGetListElement(vm, 3, i, 4);
+
+		if (wrenGetSlotType(vm, 4) != WREN_TYPE_STRING) {
+			LOG_WARN("'RustC.add_dep' list element %zu of argument 3 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
+			continue;
+		}
+
+		char const* const feature = wrenGetSlotString(vm, 4);
+		dep->features[i] = strdup(feature);
+	}
 }
 
 void rustc_compile(WrenVM* vm) {
@@ -218,14 +283,15 @@ compile: {}
 
 	fprintf(fp, "[dependencies]\n");
 
-	for (size_t i = 0; i < rustc->deps.count; i++) {
-		char* const dep = rustc->deps.opts[i];
-		char* const git = strchr(dep, ':');
+	for (size_t i = 0; i < rustc->dep_count; i++) {
+		dep_t* const dep = &rustc->deps[i];
 
-		char* const __attribute__((cleanup(strfree))) name = strdup(dep);
-		name[git - dep] = '\0';
+		fprintf(fp, "%s = { git = '%s', features = [", dep->name, dep->git);
 
-		fprintf(fp, "%s = { git = '%s' }\n", name, git + 1);
+		for (size_t i = 0; i < dep->feature_count; i++)
+			fprintf(fp, "'%s', ", dep->features[i]);
+
+		fprintf(fp, "] }\n");
 	}
 
 	fclose(fp);
