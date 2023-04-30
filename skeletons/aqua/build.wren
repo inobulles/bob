@@ -6,6 +6,9 @@ Deps.git_inherit("https://github.com/inobulles/iar")
 // compilation
 
 var rustc = RustC.new()
+
+rustc.add_dep("aqua", "https://github.com/inobulles/aqua-rs")
+
 var src = ["src/main.rs"]
 
 src
