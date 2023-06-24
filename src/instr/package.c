@@ -144,7 +144,7 @@ int do_package(int argc, char** argv) {
 
 	char* const name = argc >= 2 ? argv[1] : "default";
 
-	char* __attribute__((cleanup(strfree))) out = NULL;
+	char* CLEANUP_STR out = NULL;
 
 	if (argc == 3)
 		out = strdup(argv[2]);
@@ -158,10 +158,10 @@ int do_package(int argc, char** argv) {
 
 	// set prefix to staging path
 
-	char* __attribute__((cleanup(strfree))) link_name = NULL;
+	char* CLEANUP_STR link_name = NULL;
 	if (asprintf(&link_name, "%s/%s", bin_path, out)) {}
 
-	char* __attribute__((cleanup(strfree))) staging_path = NULL;
+	char* CLEANUP_STR staging_path = NULL;
 	if (asprintf(&staging_path, "%s.stage", link_name)) {}
 
 	prefix = staging_path;
@@ -172,7 +172,7 @@ int do_package(int argc, char** argv) {
 	WrenHandle* package_keys_handle = NULL;
 	size_t package_keys_len = 0;
 
-	char* __attribute__((cleanup(strfree))) cwd = NULL;
+	char* CLEANUP_STR cwd = NULL;
 
 	// setup state
 

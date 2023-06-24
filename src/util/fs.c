@@ -49,12 +49,12 @@ int mkdir_recursive(char const* _path) {
 	if (!*_path)
 		return 0;
 
-	char* const __attribute__((cleanup(strfree))) orig_path = strdup(_path);
+	char* const CLEANUP_STR orig_path = strdup(_path);
 	char* path = orig_path;
 
 	// remember previous working directory, because to make our lives easier, we'll be jumping around the place to create our subdirectories
 
-	char* const __attribute__((cleanup(strfree))) cwd = getcwd(NULL, 0);
+	char* const CLEANUP_STR cwd = getcwd(NULL, 0);
 
 	if (!cwd) {
 		LOG_ERROR("getcwd: %s", strerror(errno))

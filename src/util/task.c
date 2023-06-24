@@ -123,7 +123,7 @@ size_t wait_for_tasks(task_kind_t kind) {
 		// print out stderr of the compilation process
 		// we don't only do this on error, because warnings are also printed to stderr
 
-		char* const __attribute__((cleanup(strfree))) out = exec_args_read_out(exec_args, PIPE_STDERR);
+		char* const CLEANUP_STR out = exec_args_read_out(exec_args, PIPE_STDERR);
 
 		if (*out) {
 			if (task->result == EXIT_SUCCESS)

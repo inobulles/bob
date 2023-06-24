@@ -212,7 +212,7 @@ void linker_link(WrenVM* vm) {
 		//      another solution would be to initially stage in an empty directory, and if we want to reuse resources, we explicitly copy from a temporary backup of the old directory (in '/tmp/', whatever)
 		//      but that would mean bringing in libcopyfile as a dependency and meeeeeeh
 
-		char* const __attribute__((cleanup(strfree))) abs_path = realpath(src_path, NULL);
+		char* const CLEANUP_STR abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
 			LOG_WARN("Could not find '%s' - skipping", src_path)
@@ -293,7 +293,7 @@ void linker_archive(WrenVM* vm) {
 
 		// TODO same comment as in 'linker_link'
 
-		char* const __attribute__((cleanup(strfree))) abs_path = realpath(src_path, NULL);
+		char* const CLEANUP_STR abs_path = realpath(src_path, NULL);
 
 		if (!abs_path) {
 			LOG_WARN("Could not find '%s' - skipping", src_path)

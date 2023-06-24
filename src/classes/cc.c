@@ -79,7 +79,7 @@ void cc_new(WrenVM* vm) {
 
 	// add the output directory as an include search path
 
-	char* __attribute__((cleanup(strfree))) opt = NULL;
+	char* CLEANUP_STR opt = NULL;
 	if (asprintf(&opt, "-I%s", bin_path)) {}
 
 	opts_add(&cc->opts, opt);
@@ -155,15 +155,15 @@ void cc_compile(WrenVM* vm) {
 	exec_args_t* exec_args = NULL;
 	FILE* fp = NULL;
 
-	char* __attribute__((cleanup(strfree))) orig_headers = NULL;
-	char* __attribute__((cleanup(strfree))) orig_prev = NULL;
+	char* CLEANUP_STR orig_headers = NULL;
+	char* CLEANUP_STR orig_prev = NULL;
 
-	char* __attribute__((cleanup(strfree))) out_path = NULL;
-	char* __attribute__((cleanup(strfree))) opts_path = NULL;
+	char* CLEANUP_STR out_path = NULL;
+	char* CLEANUP_STR opts_path = NULL;
 
 	// get absolute path or source file, hashing it, and getting output path
 
-	char* const __attribute__((cleanup(strfree))) path = realpath(_path, NULL);
+	char* const CLEANUP_STR path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)

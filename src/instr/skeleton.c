@@ -30,12 +30,12 @@ int do_skeleton(int argc, char** argv) {
 	// XXX instead of hardcoding this format string, maybe there's a better way by passing installation directories at compile time
 	// XXX also, how does this work for when bob isn't yet installed to the system?
 
-	char* __attribute__((cleanup(strfree))) skeleton_path = NULL;
+	char* CLEANUP_STR skeleton_path = NULL;
 	if (asprintf(&skeleton_path, "%s/share/bob/skeletons/%s", install_prefix(), name)) {};
 
 	// copy over skeleton files
 
-	char* const __attribute__((cleanup(strfree))) err = copy_recursive(skeleton_path, out);
+	char* const CLEANUP_STR err = copy_recursive(skeleton_path, out);
 
 	if (err != NULL) {
 		LOG_FATAL("Failed to copy skeleton '%s' to output directory '%s': %s", skeleton_path, out, err)

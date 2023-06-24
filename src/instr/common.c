@@ -67,7 +67,7 @@ int install(state_t* state) {
 	for (size_t i = 0; i < keys_len; i++) {
 		// this is declared all the way up here, because you can't jump over an __attribute__((cleanup)) declaration with goto
 
-		char* __attribute__((cleanup(strfree))) sig = NULL;
+		char* CLEANUP_STR sig = NULL;
 
 		// get key
 
@@ -99,10 +99,10 @@ int install(state_t* state) {
 		char const* const val = wrenGetSlotString(state->vm, 2);
 		char const* dest = val;
 
-		char* __attribute__((cleanup(strfree))) src = NULL;
+		char* CLEANUP_STR src = NULL;
 		if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
-		char* __attribute__((cleanup(strfree))) orig_dest_prefix = NULL;
+		char* CLEANUP_STR orig_dest_prefix = NULL;
 		if (asprintf(&orig_dest_prefix, "%s/%s", install_prefix(), dest)) {}
 
 		char* dest_prefix = orig_dest_prefix;
@@ -152,7 +152,7 @@ int install(state_t* state) {
 		if (dest_prefix)
 			dest = dest_prefix;
 
-		char* const __attribute__((cleanup(strfree))) dest_parent = strdup(dest);
+		char* const CLEANUP_STR dest_parent = strdup(dest);
 		char* basename = strrchr(dest_parent, '/');
 
 		if (!basename)
@@ -168,7 +168,7 @@ int install(state_t* state) {
 			goto err;
 		}
 
-		char* const __attribute__((cleanup(strfree))) copy_err = copy_recursive(src, dest);
+		char* const CLEANUP_STR copy_err = copy_recursive(src, dest);
 
 		if (copy_err != NULL) {
 			progress_complete(progress);

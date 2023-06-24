@@ -27,10 +27,10 @@ void resources_install(WrenVM* vm) {
 
 	char const* const base = basename(path);
 
-	char* __attribute__((cleanup(strfree))) dest = NULL;
+	char* CLEANUP_STR dest = NULL;
 	if (asprintf(&dest, "%s/%s", bin_path, base)) {}
 
-	char* const __attribute__((cleanup(strfree))) err = copy_recursive(path, dest);
+	char* const CLEANUP_STR err = copy_recursive(path, dest);
 
 	if (err != NULL) {
 		LOG_ERROR("Failed to copy resource '%s' to '%s': %s", path, dest, err)
