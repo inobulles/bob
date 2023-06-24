@@ -196,8 +196,8 @@ size_t file_get_size(FILE* fp);
 char* file_read_str(FILE* fp, size_t size);
 int path_write_str(char* path, char* str);
 int mkdir_recursive(char const* _path);
-int copy_recursive(char const* _src, char const* dest);
-int remove_recursive(char const* path);
+char* copy_recursive(char const* _src, char const* dest);
+char* remove_recursive(char const* path);
 
 // misc stuff
 

@@ -1,5 +1,6 @@
 #include <instr.h>
 
+#include <errno.h>
 #include <unistd.h>
 
 int do_skeleton(int argc, char** argv) {
@@ -21,7 +22,7 @@ int do_skeleton(int argc, char** argv) {
 	// make output directory
 
 	if (mkdir_recursive(out) < 0) {
-		LOG_FATAL("Failed to create output directory '%s'", out)
+		LOG_FATAL("Failed to create output directory '%s': %s", out, strerror(errno))
 		return EXIT_FAILURE;
 	}
 
@@ -34,8 +35,10 @@ int do_skeleton(int argc, char** argv) {
 
 	// copy over skeleton files
 
-	if (copy_recursive(skeleton_path, out) < 0) {
-		LOG_FATAL("Failed to copy skeleton '%s' to output directory '%s'", skeleton_path, out)
+	char* const __attribute__((cleanup(strfree))) err = copy_recursive(skeleton_path, out);
+
+	if (err != NULL) {
+		LOG_FATAL("Failed to copy skeleton '%s' to output directory '%s': %s", skeleton_path, out, err)
 		return EXIT_FAILURE;
 	}
 

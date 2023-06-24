@@ -63,8 +63,10 @@ static int compile_post_hook(task_t* task, void* _data) {
 	char* __attribute__((cleanup(strfree))) dest = NULL;
 	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
 
-	if (copy_recursive(src, dest) < 0) {
-		LOG_ERROR("Failed to copy %s to %s", src, dest)
+	char* const __attribute__((cleanup(strfree))) err_str = copy_recursive(src, dest);
+
+	if (err_str != NULL) {
+		LOG_ERROR("Failed to copy %s to %s: %s", src, dest, err_str)
 		goto err;
 	}
 

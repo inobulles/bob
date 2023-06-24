@@ -136,7 +136,7 @@ err_cwd:
 	return rv;
 }
 
-int copy_recursive(char const* _src, char const* dest) {
+char* copy_recursive(char const* _src, char const* dest) {
 	// it's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary
 	// would've loved to use libcopyfile but, alas, POSIX is missing features :(
 	// if 'src' is a directory, append a slash to it to override stupid cp(1) behaviour
@@ -144,32 +144,89 @@ int copy_recursive(char const* _src, char const* dest) {
 	struct stat sb;
 
 	if (stat(_src, &sb) < 0) {
-		LOG_ERROR("stat(\"%s\"): %s", _src, strerror(errno))
-		return EXIT_FAILURE;
+		char* err;
+		if (asprintf(&err, "stat(\"%s\"): %s", _src, strerror(errno))) {}
+		return err;
 	}
 
-	bool const add_slash = S_ISDIR(sb.st_mode);
+	bool const is_dir = S_ISDIR(sb.st_mode);
 	char* src = (void*) _src;
 
-	if (add_slash)
-		if (asprintf(&src, "%s/", src)) {};
+	if (is_dir) {
+		if (asprintf(&src, "%s/", src)) {}
+	}
 
-	exec_args_t* exec_args = exec_args_new(4, "cp", "-RpP", src, dest);
-	int rv = execute(exec_args);
+	// also if 'src' is a directory, we'd like to start off by recursively removing it
+	// this is so the copy overwrites the destination rather than preserving the original files
+
+	if (is_dir) {
+		char* const err = remove_recursive(dest);
+
+		if (err != NULL) {
+			free(src);
+			return err;
+		}
+	}
+
+	// finally, actually run the copy command
+
+	exec_args_t* const exec_args = exec_args_new(4, "cp", "-RpP", src, dest);
+	exec_args_save_out(exec_args, PIPE_STDERR); // there only ever will be error outputs (I think)
+
+	int const rv = execute(exec_args);
+
+	// read stderr output
+
+	char* const err = pipe_read_out(&exec_args->pipe, PIPE_STDERR);
 	exec_args_del(exec_args);
 
-	if (add_slash) 
-		free(src);
+	if (err == NULL) {
+		char* err;
+		if (asprintf(&err, "Exit value = %d (failed to read pipe)", rv)) {}
 
-	return rv;
+		return err;
+	}
+
+	err[strlen(err) - 1] = '\0'; // cut of last char or we'll get an extraneous newline
+
+	// handle any errors and clean up
+
+	if (is_dir) {
+		free(src);
+	}
+
+	if (rv == EXIT_SUCCESS) {
+		free(err);
+		return NULL;
+	}
+
+	return err;
 }
 
-int remove_recursive(char const* path) {
+char* remove_recursive(char const* path) {
 	// same comment as for 'copy'
 
-	exec_args_t* exec_args = exec_args_new(3, "rm", "-rf", path);
-	int rv = execute(exec_args);
+	exec_args_t* const exec_args = exec_args_new(3, "rm", "-rf", path);
+	exec_args_save_out(exec_args, PIPE_STDERR); // there only ever will be error outputs (I think)
+
+	int const rv = execute(exec_args);
+
+	char* const err = pipe_read_out(&exec_args->pipe, PIPE_STDERR);
 	exec_args_del(exec_args);
 
-	return rv;
+	if (err == NULL) {
+		char* err;
+		if (asprintf(&err, "Exit value = %d (failed to read pipe)", rv)) {}
+
+		return err;
+	}
+
+	err[strlen(err) - 1] = '\0'; // cut of last char or we'll get an extraneous newline
+
+	if (rv == EXIT_SUCCESS) {
+		free(err);
+		return NULL;
+	}
+
+	return err;
 }

@@ -127,8 +127,13 @@ int do_test(void) {
 			char* test_files_dir;
 			if (asprintf(&test_files_dir, "tests/%s", test_name)) {}
 
-			if (!access(test_files_dir, W_OK))
-				copy_recursive(test_files_dir, test_dir);
+			if (!access(test_files_dir, W_OK)) {
+				char* const __attribute__((cleanup(strfree))) err = copy_recursive(test_files_dir, test_dir);
+
+				if (err != NULL) {
+					LOG_WARN("Failed to copy '%s' to '%s': %s", test_files_dir, test_dir, err)
+				}
+			}
 
 			else if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) 
 				errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", test_dir, strerror(errno));
@@ -142,11 +147,14 @@ int do_test(void) {
 			for (size_t i = 0; i < keys_len; i++) {
 				char* const key = keys[i];
 
-				char* src;
+				char* __attribute__((cleanup(strfree))) src = NULL;
 				if (asprintf(&src, "%s/%s", bin_path, key)) {}
 
-				copy_recursive(src, key);
-				free(src);
+				char* const __attribute__((cleanup(strfree))) err = copy_recursive(src, key);
+
+				if (err != NULL) {
+					LOG_WARN("Failed to copy '%s' to '%s': %s", src, key, err)
+				}
 			}
 
 			// create signature
