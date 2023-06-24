@@ -65,6 +65,8 @@ void usage(void);
 		return; \
 	}
 
+#define CLEANUP_STR __attribute__((cleanup(strfree)))
+
 // wren stuff
 
 typedef struct {
