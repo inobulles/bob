@@ -51,7 +51,7 @@ pid_t execute_async(exec_args_t* self) {
 		char* tok;
 
 		while ((tok = strsep(&search, ":"))) {
-			char* __attribute__((cleanup(strfree))) path = NULL;
+			char* CLEANUP_STR path = NULL;
 			if (asprintf(&path, "%s/%s", tok, query)) {}
 
 			exec_args[0] = path;

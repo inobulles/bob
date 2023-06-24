@@ -57,13 +57,13 @@ static int compile_post_hook(task_t* task, void* _data) {
 
 	compile_post_hook_data_t* const data = _data;
 
-	char* __attribute__((cleanup(strfree))) src = NULL;
+	char* CLEANUP_STR src = NULL;
 	if (asprintf(&src, "%s/target/debug/lib_%lx.so", data->cargo_dir_path, data->hash)) {}
 
-	char* __attribute__((cleanup(strfree))) dest = NULL;
+	char* CLEANUP_STR dest = NULL;
 	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
 
-	char* const __attribute__((cleanup(strfree))) err_str = copy_recursive(src, dest);
+	char* const CLEANUP_STR err_str = copy_recursive(src, dest);
 
 	if (err_str != NULL) {
 		LOG_ERROR("Failed to copy %s to %s: %s", src, dest, err_str)
@@ -212,7 +212,7 @@ void rustc_compile(WrenVM* vm) {
 
 	// get absolute path or source file, hashing it, and getting output path
 
-	char* const __attribute__((cleanup(strfree))) path = realpath(_path, NULL);
+	char* const CLEANUP_STR path = realpath(_path, NULL);
 
 	if (!path) {
 		LOG_WARN("'%s' does not exist", path)
@@ -256,7 +256,7 @@ compile: {}
 	// TODO in the future, it'd be nice if we could pass a Package to the RustC constructor to fill in the [package] section of the manifest
 	// TODO what's the risk for injection here?
 
-	char* __attribute__((cleanup(strfree))) cargo_dir_path = NULL;
+	char* CLEANUP_STR cargo_dir_path = NULL;
 	if (asprintf(&cargo_dir_path, "%s/%lx_Cargo.toml.d", bin_path, hash)) {}
 
 	if (mkdir(cargo_dir_path, 0770) < 0 && errno != EEXIST) {
@@ -264,7 +264,7 @@ compile: {}
 		return;
 	}
 
-	char* __attribute__((cleanup(strfree))) cargo_path = NULL;
+	char* CLEANUP_STR cargo_path = NULL;
 	if (asprintf(&cargo_path, "%s/Cargo.toml", cargo_dir_path)) {}
 
 	FILE* const fp = fopen(cargo_path, "w");
