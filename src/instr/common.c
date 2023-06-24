@@ -160,14 +160,21 @@ int install(state_t* state) {
 
 		*basename = '\0';
 
-		if (
-			mkdir_recursive(dest_parent) < 0 ||
-			copy_recursive(src, dest) != EXIT_SUCCESS
-		) {
+		if (mkdir_recursive(dest_parent) < 0) {
 			progress_complete(progress);
 			progress_del(progress);
 
-			LOG_ERROR("Failed to install '%s' -> '%s'", key, dest)
+			LOG_ERROR("Failed to install '%s' -> '%s' (mkdir): %s", key, dest, strerror(errno))
+			goto err;
+		}
+
+		char* const __attribute__((cleanup(strfree))) copy_err = copy_recursive(src, dest);
+
+		if (copy_err != NULL) {
+			progress_complete(progress);
+			progress_del(progress);
+
+			LOG_ERROR("Failed to install '%s' -> '%s' (copy): %s", key, dest, copy_err)
 			goto err;
 		}
 	}
