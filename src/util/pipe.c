@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
-void pipe_create(pipe_t* self) {
+int pipe_create(pipe_t* self) {
 	// it's important to use '-1' as a default value, because theoretically, file descriptor 0 doesn't *have* to be stdout
 
 	self->in  = -1;
@@ -19,20 +19,31 @@ void pipe_create(pipe_t* self) {
 	// yeah, not super good design to have arguments passed as structure members but whatever yo
 
 	if (self->kind & PIPE_STDOUT) {
-		if (pipe(fd) < 0)
-			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		if (pipe(fd) < 0) {
+			LOG_ERROR("pipe: %s", strerror(errno))
+			goto err;
+		}
 
 		self->in  = fd[1];
 		self->out = fd[0];
 	}
 
 	if (self->kind & PIPE_STDERR) {
-		if (pipe(fd) < 0)
-			errx(EXIT_FAILURE, "pipe: %s", strerror(errno));
+		if (pipe(fd) < 0) {
+			LOG_ERROR("pipe: %s", strerror(errno))
+			goto err;
+		}
 
 		self->err_in  = fd[1];
 		self->err_out = fd[0];
 	}
+
+	return 0;
+
+err:
+
+	pipe_free(self);
+	return -1;
 }
 
 void pipe_child(pipe_t* self) {
@@ -42,15 +53,19 @@ void pipe_child(pipe_t* self) {
 	if (self->kind & PIPE_STDOUT) {
 		close(self->out);
 
-		if (dup2(self->in, STDOUT_FILENO) < 0)
-			errx(EXIT_FAILURE, "dup2(%d, STDOUT_FILENO): %s", self->in, strerror(errno));
+		if (dup2(self->in, STDOUT_FILENO) < 0) {
+			LOG_ERROR("dup2(%d, STDOUT_FILENO): %s", self->in, strerror(errno))
+			_exit(EXIT_FAILURE);
+		}
 	}
 
 	if (self->kind & PIPE_STDERR) {
 		close(self->err_out);
 
-		if (dup2(self->err_in, STDERR_FILENO) < 0)
-			errx(EXIT_FAILURE, "dup2(%d, STDERR_FILENO): %s", self->err_in, strerror(errno));
+		if (dup2(self->err_in, STDERR_FILENO) < 0) {
+			LOG_ERROR("dup2(%d, STDERR_FILENO): %s", self->err_in, strerror(errno))
+			_exit(EXIT_FAILURE);
+		}
 	}
 }
 

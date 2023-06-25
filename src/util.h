@@ -109,7 +109,7 @@ typedef struct {
 	int err_out;
 } pipe_t;
 
-void pipe_create(pipe_t* self);
+int pipe_create(pipe_t* self);
 void pipe_child(pipe_t* self);
 void pipe_parent(pipe_t* self);
 char* pipe_read_out(pipe_t* self, pipe_kind_t kind);
@@ -205,7 +205,7 @@ char* remove_recursive(char const* path);
 
 void strfree(char* const* str_ref);
 uint64_t hash_str(char const* str);
-void navigate_project_path(void);
-void ensure_out_path(void);
-void fix_out_path_owner(void);
+int navigate_project_path(void);
+int ensure_out_path(void);
+int fix_out_path_owner(void);
 char const* install_prefix(void);

@@ -133,28 +133,36 @@ static format_t get_format(char* format) {
 int do_package(int argc, char** argv) {
 	// parse arguments
 
-	if (argc < 1 || argc > 3)
+	if (argc < 1 || argc > 3) {
 		usage();
+	}
 
 	char* const format_str = argv[0];
 	format_t const format = get_format(format_str);
 
-	if (format == FORMAT_UNSUPPORTED)
+	if (format == FORMAT_UNSUPPORTED) {
 		usage();
+	}
 
 	char* const name = argc >= 2 ? argv[1] : "default";
 
 	char* CLEANUP_STR out = NULL;
 
-	if (argc == 3)
+	if (argc == 3) {
 		out = strdup(argv[2]);
+	}
 
 	else if (asprintf(&out, "%s.%s", name, format_str)) {}
 
 	// go to project path
 
-	navigate_project_path();
-	ensure_out_path();
+	if (navigate_project_path() < 0) {
+		return EXIT_FAILURE;
+	}
+
+	if (ensure_out_path() < 0) {
+		return EXIT_FAILURE;
+	}
 
 	// set prefix to staging path
 
@@ -329,7 +337,10 @@ err:
 		wrenReleaseHandle(state.vm, package_map_handle);
 
 	wren_clean_vm(&state);
-	fix_out_path_owner();
+
+	if (fix_out_path_owner() < 0) {
+		return EXIT_FAILURE;
+	}
 
 	return rv;
 }

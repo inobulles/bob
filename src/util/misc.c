@@ -29,19 +29,23 @@ uint64_t hash_str(char const* str) { // djb2 algorithm
 	return hash;
 }
 
-void navigate_project_path(void) {
+int navigate_project_path(void) {
 	// navigate into project directory, if one was specified
 
 	if (project_path && chdir(project_path) < 0) {
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", project_path, strerror(errno));
+		LOG_ERROR("chdir(\"%s\"): %s", project_path, strerror(errno))
+		return -1;
 	}
+
+	return 0;
 }
 
-void ensure_out_path(void) {
+int ensure_out_path(void) {
 	// make sure output directory exists - create it if it doesn't
 
 	if (mkdir_recursive(rel_bin_path) < 0) {
-		errx(EXIT_FAILURE, "mkdir_recursive(\"%s\"): %s", rel_bin_path, strerror(errno));
+		LOG_ERROR("mkdir_recursive(\"%s\"): %s", rel_bin_path, strerror(errno))
+		return -1;
 	}
 
 	// get absolute path of output directory so we don't ever get lost or confused
@@ -49,11 +53,14 @@ void ensure_out_path(void) {
 	bin_path = realpath(rel_bin_path, NULL);
 
 	if (!bin_path) {
-		errx(EXIT_FAILURE, "realpath(\"%s\"): %s", rel_bin_path, strerror(errno));
+		LOG_ERROR("realpath(\"%s\"): %s", rel_bin_path, strerror(errno))
+		return -1;
 	}
+
+	return 0;
 }
 
-void fix_out_path_owner(void) {
+int fix_out_path_owner(void) {
 	// get the owner of the parent directory to the output path
 	// we want the output path to recursively have the same permissions as it
 
@@ -64,13 +71,17 @@ void fix_out_path_owner(void) {
 	FTS* const fts = fts_open(path_argv, FTS_PHYSICAL | FTS_XDEV, NULL);
 
 	if (fts == NULL) {
-		errx(EXIT_FAILURE, "fts_open(\"%s\"): %s", parent, strerror(errno));
+		LOG_ERROR("fts_open(\"%s\"): %s", parent, strerror(errno))
+		return -1;
 	}
 
 	struct stat sb;
 
 	if (stat(parent, &sb) < 0) {
-		errx(EXIT_FAILURE, "stat(\"%s\"): %s", parent, strerror(errno));
+		LOG_ERROR("stat(\"%s\"): %s", parent, strerror(errno))
+		fts_close(fts);
+
+		return -1;
 	}
 
 	uid_t const uid = sb.st_uid;
@@ -111,6 +122,7 @@ void fix_out_path_owner(void) {
 	}
 
 	fts_close(fts);
+	return 0;
 }
 
 char const* install_prefix(void) {

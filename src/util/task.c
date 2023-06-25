@@ -6,32 +6,37 @@ static task_t* tasks = NULL;
 static size_t task_count = 0;
 
 static char const* get_verb(task_kind_t kind) {
-	if (kind == TASK_KIND_COMPILE)
+	if (kind == TASK_KIND_COMPILE) {
 		return "Compiling";
+	}
 
 	return "Running";
 }
 
-static char const* get_past(task_kind_t kind) {
-	if (kind == TASK_KIND_COMPILE)
+static char const* get_past_tense(task_kind_t kind) {
+	if (kind == TASK_KIND_COMPILE) {
 		return "compiled";
+	}
 
 	return "ran";
 }
 
 static char const* get_noun(task_kind_t kind) {
-	if (kind == TASK_KIND_COMPILE)
+	if (kind == TASK_KIND_COMPILE) {
 		return "compilation";
+	}
 
 	return "task";
 }
 
 static bool is_relevant(task_t* task, task_kind_t kind) {
-	if (task->completed)
+	if (task->completed) {
 		return false;
+	}
 
-	if (task->kind != kind)
+	if (task->kind != kind) {
 		return false;
+	}
 
 	return true;
 }
@@ -39,6 +44,12 @@ static bool is_relevant(task_t* task, task_kind_t kind) {
 // TODO realloc on POT's
 
 task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
+	pid_t const pid = execute_async(exec_args);
+
+	if (pid < 0) {
+		return NULL;
+	}
+
 	tasks = realloc(tasks, ++task_count * sizeof *tasks);
 	task_t* const task = &tasks[task_count - 1];
 
@@ -47,8 +58,7 @@ task_t* add_task(task_kind_t kind, char* name, exec_args_t* exec_args) {
 	task->kind = kind;
 	task->name = name;
 	task->exec_args = exec_args;
-
-	task->pid = execute_async(exec_args);
+	task->pid = pid;
 
 	return task;
 } 
@@ -59,8 +69,9 @@ void task_hook(task_t* self, task_hook_kind_t kind, task_hook_t hook, void* data
 		self->post_hook_data = data;
 	}
 
-	else
+	else {
 		LOG_WARN("Unknown task hook kind %d", kind)
+	}
 }
 
 size_t wait_for_tasks(task_kind_t kind) {
@@ -71,16 +82,18 @@ size_t wait_for_tasks(task_kind_t kind) {
 	for (size_t i = 0; i < task_count; i++) {
 		task_t* const task = &tasks[i];
 
-		if (!is_relevant(task, kind))
+		if (!is_relevant(task, kind)) {
 			continue;
+		}
 
 		relevant_count++;
 	}
 
 	// if there are none, return successfully straight away
 
-	if (!relevant_count)
+	if (!relevant_count) {
 		return 0;
+	}
 
 	// otherwise, start a progress bar and wait for each process individually
 	// TODO in the future, it would be nice to batch these processes in groups of n at a time
@@ -92,8 +105,9 @@ size_t wait_for_tasks(task_kind_t kind) {
 	for (size_t i_all = 0, i = 0; i_all < task_count; i_all++) {
 		task_t* const task = &tasks[i_all];
 
-		if (!is_relevant(task, kind))
+		if (!is_relevant(task, kind)) {
 			continue;
+		}
 
 		char const* const verb = get_verb(task->kind);
 		progress_update(progress, i, relevant_count, "%s '%s' (%zu of %zu)", verb, task->name, i + 1, relevant_count);
@@ -114,8 +128,9 @@ size_t wait_for_tasks(task_kind_t kind) {
 	for (size_t i = 0; i < task_count; i++) {
 		task_t* const task = &tasks[i];
 
-		if (!is_relevant(task, kind))
+		if (!is_relevant(task, kind)) {
 			continue;
+		}
 
 		exec_args_t* const exec_args = task->exec_args;
 		char const* const verb = get_verb(task->kind);
@@ -126,19 +141,22 @@ size_t wait_for_tasks(task_kind_t kind) {
 		char* const CLEANUP_STR out = exec_args_read_out(exec_args, PIPE_STDERR);
 
 		if (*out) {
-			if (task->result == EXIT_SUCCESS)
-				LOG_WARN("%s '%s' succeeded with warnings:", verb, task->name)
+			if (task->result == EXIT_SUCCESS) {
+				LOG_SUCCESS("%s '%s' succeeded with output:", verb, task->name)
+			}
 
-			else
+			else {
 				LOG_ERROR("%s '%s' failed with errors:", verb, task->name)
+			}
 
 			fprintf(stderr, "%s", out);
 		}
 
 		// call any hooks there might be
 
-		if (task->post_hook)
+		if (task->post_hook) {
 			task->result |= task->post_hook(task, task->post_hook_data);
+		}
 
 		// then, free the task struct and mark as completed
 
@@ -151,13 +169,15 @@ size_t wait_for_tasks(task_kind_t kind) {
 	// print out final message
 
 	char const* const noun = get_noun(kind);
-	char const* const past = get_past(kind);
+	char const* const past_tense = get_past_tense(kind);
 
-	if (err_count)
+	if (err_count) {
 		LOG_ERROR("Failed %s", noun)
+	}
 
-	else
-		LOG_SUCCESS("All %zu source files %s", relevant_count, past)
+	else {
+		LOG_SUCCESS("All %zu source files %s", relevant_count, past_tense)
+	}
 
 	return err_count;
 }
