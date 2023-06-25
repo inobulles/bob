@@ -16,25 +16,25 @@ This is necessary for ZPK files and has numerous advantages, but results in bloa
 
 Soon, you'll be able to use Bob with Cargo projects without needing `build.wren`, though ;)
 
-## Building
-
-To build the project:
-
-```console
-bob build
-```
-
 ## Running
 
-To run the project:
+To build and run the project:
 
 ```console
 bob run
 ```
 
+## Building
+
+To build the project without running it:
+
+```console
+bob build
+```
+
 ## Installing
 
-To install the `bob-skeleton-rust` command:
+To build and install the `bob-skeleton-rust` command:
 
 ```console
 bob install

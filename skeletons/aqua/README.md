@@ -10,7 +10,7 @@ You don't need to [create an AQUA environment](https://github.com/inobulles/aqua
 
 ## Running
 
-To build, package, and run the project:
+To build and run the project:
 
 ```console
 bob run
@@ -32,4 +32,4 @@ Building without packaging in AQUA is like a joke without a punchline (ChatGPT g
 You necessarily need to package it to be able to run it.
 So while you can `bob build`, it's a bit useless.
 
-Requiring a package be created before running can be achieved with the `Meta.prerun("package")` function.
+Requiring a package be created before running can be achieved with the `Runner.pre_package` method.
