@@ -7,9 +7,10 @@ src
 	.each { |path| rustc.compile(path) }
 
 // link program
+// XXX linking with pthread is necessary for rust
 
 var linker = Linker.new()
-linker.link(src.toList, ["std-7c7f3bd22bdaa9dd", "pthread"], "cmd")
+linker.link(src.toList, ["pthread"], "cmd")
 
 // running
 
