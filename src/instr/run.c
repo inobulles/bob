@@ -23,6 +23,19 @@ int do_run(int argc, char** argv) {
 		goto err;
 	}
 
+	// if 'Runner.pre_package' is set, we must first create the package
+
+	char const* format_str = NULL;
+	wren_shush(true);
+
+	if (wren_call(&state, "Runner", "pre_package", &format_str) == EXIT_SUCCESS) {
+		if (package(&state, format_str, "default", NULL) == EXIT_FAILURE) {
+			LOG_ERROR("Failed to create package before running")
+		}
+	}
+
+	wren_shush(false);
+
 	// call the run function
 
 	rv = wren_call_args(&state, "Runner", "run(_)", argc, argv);

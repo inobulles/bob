@@ -16,6 +16,7 @@
 
 int setup_env(char* working_dir);
 int install(state_t* state);
+int package(state_t* state, char const* format_str, char* name, char* _out);
 
 // actual instructions
 

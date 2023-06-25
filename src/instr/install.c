@@ -20,6 +20,8 @@ int do_install(void) {
 		goto err;
 	}
 
+	// actually install
+
 	rv = install(&state);
 
 	if (rv != EXIT_SUCCESS) {

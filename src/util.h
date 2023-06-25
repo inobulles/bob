@@ -79,6 +79,7 @@ typedef struct {
 	char* src;
 } state_t;
 
+void wren_shush(bool shut_up);
 void wren_unknown_foreign(WrenVM* vm);
 
 WrenForeignMethodFn wren_bind_foreign_method(WrenVM* vm, char const* module, char const* class, bool static_, char const* sig);

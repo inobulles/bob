@@ -1,5 +1,7 @@
 // dependencies
 
+Meta.setenv("DEVSET", "aquabsd.alps")
+
 Deps.git_inherit("https://github.com/inobulles/aqua-unix")
 Deps.git_inherit("https://github.com/inobulles/iar")
 
@@ -22,6 +24,7 @@ linker.link(src.toList, [], "main", true)
 // running
 
 class Runner {
+	static pre_package { "zpk" }
 	static run(args) { File.exec("kos", ["--boot", "default.zpk"]) }
 }
 
