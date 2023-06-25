@@ -40,8 +40,9 @@ static int internal_add_lib(cc_t* cc, char const* lib) {
 
 	int rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS)
+	if (rv != EXIT_SUCCESS) {
 		goto err;
+	}
 
 	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
 	char* opts = orig_opts;
@@ -49,8 +50,9 @@ static int internal_add_lib(cc_t* cc, char const* lib) {
 	char* opt;
 
 	while ((opt = strsep(&opts, " "))) {
-		if (*opt == '\n')
+		if (*opt == '\n') {
 			continue;
+		}
 
 		opts_add(&cc->opts, opt);
 	}
@@ -127,8 +129,9 @@ void cc_add_lib(WrenVM* vm) {
 
 	int rv = internal_add_lib(cc, lib);
 
-	if (rv)
+	if (rv) {
 		LOG_WARN("'CC.add_lib' failed to add '%s' (error code is %d)", lib, rv);
+	}
 }
 
 void cc_add_opt(WrenVM* vm) {
@@ -180,8 +183,9 @@ void cc_compile(WrenVM* vm) {
 	struct stat sb;
 
 	if (stat(out_path, &sb) < 0) {
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
 			goto compile;
+		}
 
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
 		goto done;
@@ -189,13 +193,15 @@ void cc_compile(WrenVM* vm) {
 
 	// if the source file is newer than the output, compile
 
-	time_t out_mtime = sb.st_mtime;
+	time_t const out_mtime = sb.st_mtime;
 
-	if (stat(path, &sb) < 0)
+	if (stat(path, &sb) < 0) {
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
+	}
 
-	if (sb.st_mtime >= out_mtime)
+	if (sb.st_mtime >= out_mtime) {
 		goto compile;
+	}
 
 	// if one of the dependencies (i.e. included headers) of the source file is more recent than the output, compile
 	// for this, parse the makefile rule output by the preprocessor
@@ -208,25 +214,29 @@ void cc_compile(WrenVM* vm) {
 
 	int rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS)
+	if (rv != EXIT_SUCCESS) {
 		goto done;
+	}
 
 	orig_headers = exec_args_read_out(exec_args, PIPE_STDOUT);
 
-	if (!orig_headers)
+	if (!orig_headers) {
 		goto done;
+	}
 
 	char* headers = orig_headers;
 	char* header;
 
 	while ((header = strsep(&headers, " "))) {
-		if (*header == ':' || *header == '\\' || !*header)
+		if (*header == ':' || *header == '\\' || !*header) {
 			continue;
+		}
 
 		size_t const len = strlen(header);
 
-		if (header[len - 1] == '\n')
+		if (header[len - 1] == '\n') {
 			header[len - 1] = '\0';
+		}
 
 		// if header is more recent than the output, compile
 
@@ -235,8 +245,9 @@ void cc_compile(WrenVM* vm) {
 			continue;
 		}
 
-		if (sb.st_mtime >= out_mtime)
+		if (sb.st_mtime >= out_mtime) {
 			goto compile;
+		}
 	}
 
 	// if one of the options changed, compile
@@ -247,8 +258,9 @@ void cc_compile(WrenVM* vm) {
 
 	fp = fopen(opts_path, "r");
 
-	if (!fp)
+	if (!fp) {
 		goto compile;
+	}
 
 	orig_prev = file_read_str(fp, file_get_size(fp));
 	char* prev = orig_prev;
@@ -261,8 +273,9 @@ void cc_compile(WrenVM* vm) {
 		bool const prev_done = !prev_opt || !*prev_opt || *prev_opt == '\n';
 		bool const opts_done = i == cc->opts.count;
 
-		if (opts_done && prev_done)
+		if (opts_done && prev_done) {
 			break;
+		}
 
 		if (prev_done != opts_done) {
 			fclose(fp);
@@ -288,8 +301,9 @@ compile: {}
 
 	// construct exec args
 
-	if (exec_args)
+	if (exec_args) {
 		exec_args_del(exec_args);
+	}
 
 	exec_args = exec_args_new(5, cc->path, "-c", path, "-o", out_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
@@ -298,13 +312,16 @@ compile: {}
 	// we do this, because compiler output is piped
 	// '-fcolor-diagnostics' also works, but only on clang
 
-	if (colour_support)
+	if (colour_support) {
 		exec_args_add(exec_args, "-fdiagnostics-color=always");
+	}
 
 	fp = fopen(opts_path, "w");
 
-	if (!fp)
+	if (!fp) {
 		LOG_WARN("fopen(\"%s\"): %s", opts_path, strerror(errno))
+		goto no_opts;
+	}
 
 	exec_args_add_opts(exec_args, &cc->opts);
 
@@ -313,6 +330,8 @@ compile: {}
 	}
 
 	// finally, add task to compile asynchronously
+
+no_opts:
 
 	add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
 

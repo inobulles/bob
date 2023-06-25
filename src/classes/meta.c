@@ -82,14 +82,17 @@ void meta_os(WrenVM* vm) {
 	// set runtime OS information
 	// this info is cached
 
-	struct utsname name;
-	bool cached = false;
+	static struct utsname name;
+	static bool cached = false;
 
-	if (cached)
+	if (cached) {
 		goto cached;
+	}
 
-	if (!cached && uname(&name) < 0)
-		errx(EXIT_FAILURE, "uname: %s", strerror(errno));
+	if (!cached && uname(&name) < 0) {
+		LOG_ERROR("uname: %s", strerror(errno));
+		return;
+	}
 
 	// check if running under WSL (only on Linux)
 	// I actually hate this, how tf is there no surefire way of detecting if running under WSL
@@ -119,8 +122,9 @@ cached:
 	meta_os_add(vm, name.sysname);
 
 #if defined(__linux__)
-	if (wsl)
+	if (wsl) {
 		meta_os_add(vm, "WSL");
+	}
 #endif
 }
 
@@ -135,8 +139,9 @@ void meta_setenv(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	if (!unset)
+	if (!unset) {
 		ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+	}
 
 	char const* const env = wrenGetSlotString(vm, 1);
 	char const* const val = unset ? NULL : wrenGetSlotString(vm, 2);
@@ -144,12 +149,14 @@ void meta_setenv(WrenVM* vm) {
 	// set/unset environment variable
 
 	if (unset) {
-		if (unsetenv(env) < 0)
+		if (unsetenv(env) < 0) {
 			LOG_WARN("Meta.setenv: unsetenv(\"%s\"): %s", env, strerror(errno))
+		}
 	}
 
 	else {
-		if (setenv(env, val, true) < 0)
+		if (setenv(env, val, true) < 0) {
 			LOG_WARN("Meta.setenv: setenv(\"%s\", \"%s\"): %s", env, val, strerror(errno))
+		}
 	}
 }

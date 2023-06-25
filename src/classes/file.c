@@ -246,6 +246,11 @@ void file_list(WrenVM* vm) {
 	char* const path_argv[] = { (char*) path, NULL };
 	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
 
+	if (fts == NULL) {
+		LOG_ERROR("fts_open(\"%s\"): %s", path, strerror(errno))
+		return;
+	}
+
 	for (FTSENT* ent; (ent = fts_read(fts));) {
 		char* const path = ent->fts_path; // shadow parent scope's 'path'
 
@@ -262,14 +267,14 @@ void file_list(WrenVM* vm) {
 
 		case FTS_DOT:
 
-			LOG_WARN("fts_read: Read a '.' or '..' entry, which shouldn't happen as the 'FTS_SEEDOT' option was not passed to 'fts_open'")
+			LOG_ERROR("fts_read: Read a '.' or '..' entry, which shouldn't happen as the 'FTS_SEEDOT' option was not passed to 'fts_open'")
 			break;
 
 		case FTS_DNR:
 		case FTS_ERR:
 		case FTS_NS:
 
-			LOG_WARN("fts_read: Failed to read '%s': %s", path, strerror(errno))
+			LOG_ERROR("fts_read: Failed to read '%s': %s", path, strerror(errno))
 
 			wrenSetSlotNull(vm, 0);
 			goto err;

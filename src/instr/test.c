@@ -16,8 +16,13 @@ typedef struct {
 } test_t;
 
 int do_test(void) {
-	navigate_project_path();
-	ensure_out_path();
+	if (navigate_project_path() < 0) {
+		return EXIT_FAILURE;
+	}
+
+	if (ensure_out_path() < 0) {
+		return EXIT_FAILURE;
+	}
 
 	// declarations which must come before first goto
 
@@ -99,7 +104,10 @@ int do_test(void) {
 		// setup pipes
 
 		pipe_t pipe = { .kind = PIPE_STDOUT | PIPE_STDERR };
-		pipe_create(&pipe);
+
+		if (pipe_create(&pipe) < 0) {
+			continue;
+		}
 
 		// actually run test
 
@@ -135,12 +143,16 @@ int do_test(void) {
 				}
 			}
 
-			else if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) 
-				errx(EXIT_FAILURE, "mkdir(\"%s\"): %s", test_dir, strerror(errno));
+			else if (mkdir(test_dir, 0777) < 0 && errno != EEXIST) {
+				LOG_WARN("mkdir(\"%s\"): %s", test_dir, strerror(errno))
+				_exit(EXIT_FAILURE);
+			}
 
 			// setup testing environment
 
-			setup_env(test_dir);
+			if (setup_env(test_dir) < 0) {
+				_exit(EXIT_FAILURE);
+			}
 
 			// then, copy over all the files in 'keys'
 
@@ -264,6 +276,10 @@ err:
 		wrenReleaseHandle(state.vm, map_handle);
 
 	wren_clean_vm(&state);
+
+	if (fix_out_path_owner() < 0) {
+		return EXIT_FAILURE;
+	}
 
 	return rv;
 }

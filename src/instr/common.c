@@ -8,37 +8,47 @@
 #define ENV_LD_LIBRARY_PATH "LD_LIBRARY_PATH"
 #define ENV_PATH "PATH"
 
-void setup_env(char* working_dir) {
+int setup_env(char* working_dir) {
 	char* const env_lib_path = getenv(ENV_LD_LIBRARY_PATH);
 	char* const env_bin_path = getenv(ENV_PATH);
 
-	char* lib_path;
-	char* path;
+	char* CLEANUP_STR lib_path;
+	char* CLEANUP_STR path;
 
 	// format new library & binary search paths
 
-	if (!env_lib_path)
+	if (!env_lib_path) {
 		lib_path = strdup(bin_path);
+	}
 
 	else if (asprintf(&lib_path, "%s:%s", env_lib_path, bin_path)) {}
 
-	if (!env_bin_path)
+	if (!env_bin_path) {
 		path = strdup(bin_path);
+	}
 
 	else if (asprintf(&path, "%s:%s", env_bin_path, bin_path)) {}
 
 	// set environment variables
 
-	if (setenv(ENV_LD_LIBRARY_PATH, lib_path, true) < 0)
-		errx(EXIT_FAILURE, "setenv(\"" ENV_LD_LIBRARY_PATH "\", \"%s\"): %s", lib_path, strerror(errno));
+	if (setenv(ENV_LD_LIBRARY_PATH, lib_path, true) < 0) {
+		LOG_FATAL("setenv(\"" ENV_LD_LIBRARY_PATH "\", \"%s\"): %s", lib_path, strerror(errno))
+		return -1;
+	}
 
-	if (setenv(ENV_PATH, path, true) < 0)
-		errx(EXIT_FAILURE, "setenv(\"" ENV_PATH "\", \"%s\"): %s", path, strerror(errno));
+	if (setenv(ENV_PATH, path, true) < 0) {
+		LOG_FATAL("setenv(\"" ENV_PATH "\", \"%s\"): %s", path, strerror(errno))
+		return -1;
+	}
 
 	// move into working directory
 
-	if (working_dir && chdir(working_dir) < 0)
-		errx(EXIT_FAILURE, "chdir(\"%s\"): %s", working_dir, strerror(errno));
+	if (working_dir && chdir(working_dir) < 0) {
+		LOG_FATAL("chdir(\"%s\"): %s", working_dir, strerror(errno))
+		return -1;
+	}
+
+	return 0;
 }
 
 int install(state_t* state) {

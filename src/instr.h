@@ -14,7 +14,7 @@
 
 // common stuff between instructions
 
-void setup_env(char* working_dir);
+int setup_env(char* working_dir);
 int install(state_t* state);
 
 // actual instructions

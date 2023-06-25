@@ -314,6 +314,10 @@ compile: {}
 
 	task_t* const task = add_task(TASK_KIND_COMPILE, strdup(_path), exec_args);
 
+	if (task == NULL) {
+		return;
+	}
+
 	// add post hook
 
 	compile_post_hook_data_t* const data = calloc(1, sizeof *data);
