@@ -207,4 +207,5 @@ void strfree(char* const* str_ref);
 uint64_t hash_str(char const* str);
 void navigate_project_path(void);
 void ensure_out_path(void);
+void fix_out_path_owner(void);
 char const* install_prefix(void);

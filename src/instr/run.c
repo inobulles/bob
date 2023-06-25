@@ -25,6 +25,7 @@ int do_run(int argc, char** argv) {
 err:
 
 	wren_clean_vm(&state);
+	fix_out_path_owner();
 
 	return rv;
 }

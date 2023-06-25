@@ -264,6 +264,7 @@ err:
 		wrenReleaseHandle(state.vm, map_handle);
 
 	wren_clean_vm(&state);
+	fix_out_path_owner();
 
 	return rv;
 }

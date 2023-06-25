@@ -22,6 +22,7 @@ int do_install(void) {
 err:
 
 	wren_clean_vm(&state);
+	fix_out_path_owner();
 
 	return rv;
 }
