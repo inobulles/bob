@@ -9,6 +9,7 @@ cc_flags="
 	-std=c99 -g -O0 -Isrc/wren/include -Isrc
 	-isystem=/usr/local/include -L/usr/local/lib
 	-DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0
+	-Wall -Wextra
 	-Wno-unused-command-line-argument
 	-lm
 "
