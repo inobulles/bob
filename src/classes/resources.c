@@ -2,6 +2,8 @@
 
 #include <classes/resources.h>
 
+#include <libgen.h>
+
 // foreign method binding
 
 WrenForeignMethodFn resources_bind_foreign_method(bool static_, char const* signature) {
@@ -25,7 +27,8 @@ void resources_install(WrenVM* vm) {
 
 	// copy file to output directory
 
-	char const* const base = basename(path);
+	char* const CLEANUP_STR writable_path = strdup(path);
+	char const* const base = basename(writable_path);
 
 	char* CLEANUP_STR dest = NULL;
 	if (asprintf(&dest, "%s/%s", bin_path, base)) {}
