@@ -12,6 +12,14 @@
 
 #include <base/base.h>
 
+static bool shush = false;
+
+void wren_shush(bool shut_up) {
+	// XXX because Wren doesn't provide a way of checking if a method on a class exists AFAIK, we need to resort to telling it we expect there'll be an error and to shut up if there is one
+
+	shush = shut_up;
+}
+
 void wren_unknown_foreign(WrenVM* vm) {
 	(void) vm;
 
@@ -101,7 +109,10 @@ static void error_fn(WrenVM* vm, WrenErrorType type, char const* module, int lin
 	(void) vm;
 
 	if (type == WREN_ERROR_RUNTIME) {
-		LOG_ERROR("Wren runtime error: %s", msg)
+		if (!shush) {
+			LOG_ERROR("Wren runtime error: %s", msg)
+		}
+
 		return;
 	}
 
@@ -194,7 +205,10 @@ int wren_call(state_t* state, char const* class, char const* sig, char const** s
 	// error checking & return value
 
 	if (rv != WREN_RESULT_SUCCESS) {
-		LOG_ERROR("Something went wrong running")
+		if (!shush) {
+			LOG_ERROR("Something went wrong running")
+		}
+
 		return EXIT_FAILURE;
 	}
 
