@@ -11,6 +11,7 @@ cc.add_opt("-DWREN_OPT_META=0")
 cc.add_opt("-DWREN_OPT_RANDOM=0")
 cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
+cc.add_opt("-Werror")
 
 // disabling these warnings so we don't have to modify Wren too much
 
