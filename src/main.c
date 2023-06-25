@@ -16,10 +16,11 @@ void usage(void) {
 #if defined(__FreeBSD__)
 	char const* const progname = getprogname();
 #elif defined(__Linux__)
-	char progname[16];
+	char progname[16] = init_name;
 
-	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0)
-		errx("prctl(PR_GET_NAME): %s", strerror(errno));
+	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
+		LOG_WARN("prctl(PR_GET_NAME): %s", strerror(errno))
+	}
 #else
 	char const* const progname = init_name;
 #endif
@@ -45,17 +46,21 @@ int main(int argc, char* argv[]) {
 	int c;
 
 	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
-		if (c == 'C')
+		if (c == 'C') {
 			project_path = optarg;
+		}
 
-		else if (c == 'o')
+		else if (c == 'o') {
 			rel_bin_path = optarg;
+		}
 
-		else if (c == 'p')
+		else if (c == 'p') {
 			prefix = optarg;
+		}
 
-		else
+		else {
 			usage();
+		}
 	}
 
 	argc -= optind;
@@ -63,60 +68,74 @@ int main(int argc, char* argv[]) {
 
 	// need to run at least one instruction
 
-	if (!argc)
+	if (!argc) {
 		usage();
+	}
 
 	// make 'init_name' absolute
 	// no biggie if we can't make it absolute, it's probably being run as a standalone command, in which case 'execute_async' can find it for us later by searching through 'PATH'
 
 	char const* const abs_init_name = realpath(init_name, NULL);
 
-	if (abs_init_name)
+	if (abs_init_name) {
 		init_name = abs_init_name;
+	}
 
 	// parse instructions
 
+	int rv = EXIT_FAILURE; // I'm a pessimist
+
 	while (argc --> 0) {
 		curr_instr = *argv++;
-		int rv = EXIT_FAILURE; // I'm a pessimist
 
-		if (!strcmp(curr_instr, "build"))
+		if (!strcmp(curr_instr, "build")) {
 			rv = do_build();
+		}
 
 		// everything stops if we run the 'run' command
 		// we don't know how many arguments there'll still be
 
-		else if (!strcmp(curr_instr, "run"))
-			return do_run(argc, argv);
+		else if (!strcmp(curr_instr, "run")) {
+			rv = do_run(argc, argv);
+			goto done;
+		}
 
-		else if (!strcmp(curr_instr, "install"))
+		else if (!strcmp(curr_instr, "install")) {
 			rv = do_install();
+		}
 
 		// everything stops if we run the 'skeleton' command
 		// I don't wanna deal with how the output/project paths should best be handled for subsequent commands
 
-		else if (!strcmp(curr_instr, "skeleton"))
-			return do_skeleton(argc, argv);
+		else if (!strcmp(curr_instr, "skeleton")) {
+			rv = do_skeleton(argc, argv);
+			goto done;
+		}
 
 		// everything stops if we run the 'package' command
 		// the last argument is optional, so it would introduce ambiguity
 
-		else if (!strcmp(curr_instr, "package"))
-			return do_package(argc, argv);
+		else if (!strcmp(curr_instr, "package")) {
+			rv = do_package(argc, argv);
+			goto done;
+		}
 
-		else if (!strcmp(curr_instr, "test"))
+		else if (!strcmp(curr_instr, "test")) {
 			rv = do_test();
+		}
 
-		else
+		else {
 			usage();
+		}
 
 		// stop here if there was an error in the execution of an instruction
 
-		if (rv != EXIT_SUCCESS)
-			return rv;
+		if (rv != EXIT_SUCCESS) {
+			goto done;
+		}
 	}
 
-	// if all went well, we may rest peacefully
+done:
 
-	return EXIT_SUCCESS;
+	return rv;
 }
