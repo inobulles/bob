@@ -198,6 +198,7 @@ size_t wait_for_tasks(task_kind_t kind);
 size_t file_get_size(FILE* fp);
 char* file_read_str(FILE* fp, size_t size);
 int path_write_str(char* path, char* str);
+time_t be_frugal(char* src_path, char* out_path);
 int mkdir_recursive(char const* _path);
 char* copy_recursive(char const* _src, char const* dest);
 char* remove_recursive(char const* path);

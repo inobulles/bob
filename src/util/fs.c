@@ -41,6 +41,39 @@ int path_write_str(char* path, char* str) {
 	return 0;
 }
 
+time_t be_frugal(char* src_path, char* out_path) {
+	// if the output simply doesn't yet exist, we assume the file has changed
+
+	struct stat sb;
+
+	if (stat(out_path, &sb) < 0) {
+		if (errno == ENOENT) {
+			return 0;
+		}
+
+		LOG_ERROR("stat(\"%s\"): %s", out_path, strerror(errno))
+		return -1;
+	}
+
+	// if the source file is newer than the output, is has changed
+
+	time_t const out_mtime = sb.st_mtime;
+
+	if (stat(src_path, &sb) < 0) {
+		LOG_ERROR("stat(\"%s\"): %s", src_path, strerror(errno))
+		return -1;
+	}
+
+	// strict comparison because if b is built right after a, we don't want to rebuild b d'office
+	// XXX there is a case where we could build, modify, and build again in the space of one minute in which case changes won't be reflected, but that's such a small edgecase I don't think it's worth letting the complexity spirit demon enter
+
+	if (sb.st_mtime > out_mtime) {
+		return 0;
+	}
+
+	return out_mtime;
+}
+
 int mkdir_recursive(char const* _path) {
 	int rv = -1;
 
