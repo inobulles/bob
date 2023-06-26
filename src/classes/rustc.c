@@ -98,8 +98,9 @@ void rustc_new(WrenVM* vm) {
 void rustc_del(void* _rustc) {
 	rustc_t* const rustc = _rustc;
 
-	if (rustc->path)
+	if (rustc->path) {
 		free(rustc->path);
+	}
 
 	// free dependencies
 
@@ -109,15 +110,18 @@ void rustc_del(void* _rustc) {
 		free(dep->name);
 		free(dep->git);
 
-		for (size_t i = 0; i < dep->feature_count; i++)
+		for (size_t i = 0; i < dep->feature_count; i++) {
 			free(dep->features[i]);
+		}
 
-		if (dep->features)
+		if (dep->features) {
 			free(dep->features);
+		}
 	}
 
-	if (rustc->deps)
+	if (rustc->deps) {
 		free(rustc->deps);
+	}
 }
 
 // getters
@@ -139,8 +143,9 @@ void rustc_set_path(WrenVM* vm) {
 	rustc_t* const rustc = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
-	if (rustc->path)
+	if (rustc->path) {
 		free(rustc->path);
+	}
 
 	rustc->path = strdup(path);
 }
@@ -154,8 +159,9 @@ void rustc_add_dep(WrenVM* vm) {
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
 
-	if (has_feature_list)
+	if (has_feature_list) {
 		ASSERT_ARG_TYPE(3, WREN_TYPE_LIST)
+	}
 
 	rustc_t* const rustc = foreign;
 	char const* const name = wrenGetSlotString(vm, 1);
@@ -164,8 +170,9 @@ void rustc_add_dep(WrenVM* vm) {
 
 	// extra argument checks
 
-	if (has_feature_list && !feature_list_len)
+	if (has_feature_list && !feature_list_len) {
 		LOG_WARN("'%s' passed an empty list of features", __fn_name)
+	}
 
 	// add dependency
 
@@ -180,8 +187,9 @@ void rustc_add_dep(WrenVM* vm) {
 	dep->feature_count = feature_list_len;
 	dep->features = NULL;
 
-	if (dep->feature_count)
+	if (dep->feature_count) {
 		dep->features = malloc(dep->feature_count * sizeof *dep->features);
+	}
 
 	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
 
@@ -222,36 +230,6 @@ void rustc_compile(WrenVM* vm) {
 	uint64_t const hash = hash_str(path);
 	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash)) {}
 
-	// if the output simply doesn't yet exist, don't bother doing anything, compile
-
-	struct stat sb;
-
-	if (stat(out_path, &sb) < 0) {
-		if (errno == ENOENT)
-			goto compile;
-
-		LOG_ERROR("RustC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
-		return;
-	}
-
-	// if the source file is newer than the output, compile
-
-	time_t out_mtime = sb.st_mtime;
-
-	if (stat(path, &sb) < 0)
-		LOG_ERROR("RustC.compile: stat(\"%s\"): %s", path, strerror(errno))
-
-	if (sb.st_mtime >= out_mtime)
-		goto compile;
-
-	// don't need to compile!
-
-	return;
-
-	// actually compile
-
-compile: {}
-
 	// create Cargo.toml file
 	// TODO in the future, it'd be nice if we could pass a Package to the RustC constructor to fill in the [package] section of the manifest
 	// TODO what's the risk for injection here?
@@ -290,8 +268,9 @@ compile: {}
 
 		fprintf(fp, "%s = { git = '%s', features = [", dep->name, dep->git);
 
-		for (size_t i = 0; i < dep->feature_count; i++)
+		for (size_t i = 0; i < dep->feature_count; i++) {
 			fprintf(fp, "'%s', ", dep->features[i]);
+		}
 
 		fprintf(fp, "] }\n");
 	}
@@ -307,8 +286,9 @@ compile: {}
 	// we do this, because compiler output is piped
 	// see: https://github.com/rust-lang/rustfmt/pull/2137
 
-	if (colour_support)
+	if (colour_support) {
 		exec_args_add(exec_args, "--color=always");
+	}
 
 	// add task to compile asynchronously
 

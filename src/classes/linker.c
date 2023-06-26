@@ -43,8 +43,9 @@ static int add_lib(linker_t* linker, char const* lib) {
 
 	int rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS)
+	if (rv != EXIT_SUCCESS) {
 		goto err;
+	}
 
 	char* const orig_opts = exec_args_read_out(exec_args, PIPE_STDOUT);
 	char* opts = orig_opts;
@@ -52,8 +53,9 @@ static int add_lib(linker_t* linker, char const* lib) {
 	char* opt;
 
 	while ((opt = strsep(&opts, " "))) {
-		if (*opt == '\n')
+		if (*opt == '\n') {
 			continue;
+		}
 
 		opts_add(&linker->opts, opt);
 	}
@@ -82,11 +84,13 @@ void linker_new(WrenVM* vm) {
 void linker_del(void* _linker) {
 	linker_t* const linker = _linker;
 
-	if (linker->path)
+	if (linker->path) {
 		free(linker->path);
+	}
 
-	if (linker->archiver_path)
+	if (linker->archiver_path) {
 		free(linker->archiver_path);
+	}
 }
 
 // getters
@@ -115,8 +119,9 @@ void linker_set_path(WrenVM* vm) {
 	linker_t* const linker = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
-	if (linker->path)
+	if (linker->path) {
 		free(linker->path);
+	}
 
 	linker->path = strdup(path);
 }
@@ -129,14 +134,15 @@ void linker_set_archiver_path(WrenVM* vm) {
 	linker_t* const linker = foreign;
 	char const* const path = wrenGetSlotString(vm, 1);
 
-	if (linker->archiver_path)
+	if (linker->archiver_path) {
 		free(linker->archiver_path);
+	}
 
 	linker->archiver_path = strdup(path);
 }
 
 // methods
-// TODO make this add lib (haha adlib) stuff like way better
+// TODO make this add lib (haha adlib skrrrrrt) stuff like way better
 
 void linker_add_lib(WrenVM* vm) {
 	CHECK_ARGC("Linker.add_lib", 1, 1)
@@ -148,8 +154,9 @@ void linker_add_lib(WrenVM* vm) {
 
 	int rv = add_lib(linker, lib);
 
-	if (rv)
+	if (rv) {
 		LOG_WARN("'Linker.add_lib' failed to add '%s' (error code is %d)", lib, rv);
+	}
 }
 
 void linker_add_opt(WrenVM* vm) {
@@ -171,8 +178,9 @@ void linker_link(WrenVM* vm) {
 	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
 	ASSERT_ARG_TYPE(3, WREN_TYPE_STRING)
 
-	if (has_shared)
+	if (has_shared) {
 		ASSERT_ARG_TYPE(4, WREN_TYPE_BOOL)
+	}
 
 	linker_t* const linker = foreign;
 	size_t const path_list_len = wrenGetListCount(vm, 1);
@@ -186,6 +194,20 @@ void linker_link(WrenVM* vm) {
 		LOG_WARN("'%s' passed an empty list of paths", __fn_name)
 		return;
 	}
+
+	// wait for compilation tasks
+
+	if (wait_for_tasks(TASK_KIND_COMPILE)) {
+		LOG_ERROR("Error while compiling")
+		return;
+	}
+
+	// create output path
+
+	char* CLEANUP_STR out_path = NULL;
+	if (asprintf(&out_path, "%s/%s", bin_path, out)) {}
+
+	bool changed = false;
 
 	// construct exec args
 	// we pass '-u__native_entry' to the linker so that it preserves what's necessary for the '__native_entry' symbol
@@ -223,6 +245,24 @@ void linker_link(WrenVM* vm) {
 
 		uint64_t const hash = hash_str(abs_path);
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
+
+		// check if last file we added to 'exec_args' is newer than output file
+		// we go ahead with linking so long as at least one is newer
+		// if we already know this to be the case, we don't need to check
+
+		if (changed) {
+			continue;
+		}
+
+		char* const obj_path = exec_args->args[exec_args->len - 2];
+		changed |= !be_frugal(obj_path, out_path);
+	}
+
+	// if nothing has changed, just give up
+
+	if (!changed) {
+		exec_args_del(exec_args);
+		return;
 	}
 
 	// libraries
@@ -241,18 +281,14 @@ void linker_link(WrenVM* vm) {
 
 	// linker flags which must come after source files
 
-	if (shared)
+	if (shared) {
 		exec_args_add(exec_args, "-shared");
+	}
 
 	exec_args_add(exec_args, "-o");
-	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
+	exec_args_add(exec_args, out_path);
 
-	// wait for compilation tasks and execute linker
-
-	if (wait_for_tasks(TASK_KIND_COMPILE)) {
-		LOG_FATAL("Error while compiling")
-		exit(EXIT_FAILURE);
-	}
+	// execute linker
 
 	execute(exec_args);
 	exec_args_del(exec_args);
@@ -275,13 +311,27 @@ void linker_archive(WrenVM* vm) {
 		return;
 	}
 
+	// wait for compilation tasks
+
+	if (wait_for_tasks(TASK_KIND_COMPILE)) {
+		LOG_ERROR("Error while compiling")
+		return;
+	}
+
+	// create output path
+
+	char* CLEANUP_STR out_path = NULL;
+	if (asprintf(&out_path, "%s/%s", bin_path, out)) {}
+
+	bool changed = false;
+
 	// read list elements & construct exec args
 
 	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
 	exec_args_t* const exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
 	exec_args_add_opts(exec_args, &linker->opts);
-	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
+	exec_args_add(exec_args, out_path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
@@ -304,14 +354,27 @@ void linker_archive(WrenVM* vm) {
 
 		uint64_t const hash = hash_str(abs_path);
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
+
+		// check if last file we added to 'exec_args' is newer than output file
+		// we go ahead with archiving so long as at least one is newer
+		// if we already know this to be the case, we don't need to check
+
+		if (changed) {
+			continue;
+		}
+
+		char* const obj_path = exec_args->args[exec_args->len - 2];
+		changed |= !be_frugal(obj_path, out_path);
 	}
 
-	// wait for compilation tasks and execute archiver
+	// if nothing has changed, just give up
 
-	if (wait_for_tasks(TASK_KIND_COMPILE)) {
-		LOG_FATAL("Error while compiling")
-		exit(EXIT_FAILURE);
+	if (!changed) {
+		exec_args_del(exec_args);
+		return;
 	}
+
+	// execute archiver
 
 	execute(exec_args);
 	exec_args_del(exec_args);
