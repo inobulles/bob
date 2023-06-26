@@ -197,6 +197,7 @@ void cc_compile(WrenVM* vm) {
 
 	if (stat(path, &sb) < 0) {
 		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
+		goto done;
 	}
 
 	if (sb.st_mtime >= out_mtime) {
