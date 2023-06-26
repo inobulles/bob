@@ -198,7 +198,7 @@ void linker_link(WrenVM* vm) {
 	// wait for compilation tasks
 
 	if (wait_for_tasks(TASK_KIND_COMPILE)) {
-		LOG_FATAL("Error while compiling")
+		LOG_ERROR("Error while compiling")
 		return;
 	}
 
@@ -311,13 +311,27 @@ void linker_archive(WrenVM* vm) {
 		return;
 	}
 
+	// wait for compilation tasks
+
+	if (wait_for_tasks(TASK_KIND_COMPILE)) {
+		LOG_ERROR("Error while compiling")
+		return;
+	}
+
+	// create output path
+
+	char* CLEANUP_STR out_path = NULL;
+	if (asprintf(&out_path, "%s/%s", bin_path, out)) {}
+
+	bool changed = false;
+
 	// read list elements & construct exec args
 
 	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
 	exec_args_t* const exec_args = exec_args_new(2, linker->archiver_path, "-rcs");
 	exec_args_add_opts(exec_args, &linker->opts);
-	exec_args_fmt(exec_args, "%s/%s", bin_path, out);
+	exec_args_add(exec_args, out_path);
 
 	for (size_t i = 0; i < path_list_len; i++) {
 		wrenGetListElement(vm, 1, i, 3);
@@ -340,14 +354,27 @@ void linker_archive(WrenVM* vm) {
 
 		uint64_t const hash = hash_str(abs_path);
 		exec_args_fmt(exec_args, "%s/%lx.o", bin_path, hash);
+
+		// check if last file we added to 'exec_args' is newer than output file
+		// we go ahead with archiving so long as at least one is newer
+		// if we already know this to be the case, we don't need to check
+
+		if (changed) {
+			continue;
+		}
+
+		char* const obj_path = exec_args->args[exec_args->len - 2];
+		changed |= !be_frugal(obj_path, out_path);
 	}
 
-	// wait for compilation tasks and execute archiver
+	// if nothing has changed, just give up
 
-	if (wait_for_tasks(TASK_KIND_COMPILE)) {
-		LOG_FATAL("Error while compiling")
-		exit(EXIT_FAILURE);
+	if (!changed) {
+		exec_args_del(exec_args);
+		return;
 	}
+
+	// execute archiver
 
 	execute(exec_args);
 	exec_args_del(exec_args);
