@@ -178,29 +178,13 @@ void cc_compile(WrenVM* vm) {
 	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash)) {}
 	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash)) {}
 
-	// if the output simply doesn't yet exist, don't bother doing anything, compile
+	time_t const out_mtime = be_frugal(path, out_path);
 
-	struct stat sb;
-
-	if (stat(out_path, &sb) < 0) {
-		if (errno == ENOENT) {
-			goto compile;
-		}
-
-		LOG_ERROR("CC.compile: stat(\"%s\"): %s", out_path, strerror(errno))
+	if (out_mtime < 0) {
 		goto done;
 	}
 
-	// if the source file is newer than the output, compile
-
-	time_t const out_mtime = sb.st_mtime;
-
-	if (stat(path, &sb) < 0) {
-		LOG_ERROR("CC.compile: stat(\"%s\"): %s", path, strerror(errno))
-		goto done;
-	}
-
-	if (sb.st_mtime >= out_mtime) {
+	if (!out_mtime) {
 		goto compile;
 	}
 
@@ -240,6 +224,8 @@ void cc_compile(WrenVM* vm) {
 		}
 
 		// if header is more recent than the output, compile
+
+		struct stat sb;
 
 		if (stat(header, &sb) < 0) {
 			LOG_WARN("CC.compile: stat(\"%s\"): %s", header, strerror(errno));
