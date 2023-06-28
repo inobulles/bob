@@ -78,13 +78,6 @@ void cc_new(WrenVM* vm) {
 	// this is very annoying and dumb so whatever just disable it for everyone
 
 	opts_add(&cc->opts, "-Wno-unused-command-line-argument");
-
-	// add the output directory as an include search path
-
-	char* CLEANUP_STR opt = NULL;
-	if (asprintf(&opt, "-I%s", bin_path)) {}
-
-	opts_add(&cc->opts, opt);
 }
 
 void cc_del(void* _cc) {
@@ -316,6 +309,11 @@ compile: {}
 		fprintf(fp, "%s\n", cc->opts.opts[i]);
 	}
 
+	// add the output directory as an include search path
+	// we do this at the end so as not to override any custom include search paths
+
+	exec_args_fmt(exec_args, "-I%s", bin_path);
+
 	// finally, add task to compile asynchronously
 
 no_opts:
@@ -326,6 +324,7 @@ no_opts:
 
 done:
 
-	if (fp)
+	if (fp) {
 		fclose(fp);
+	}
 }
