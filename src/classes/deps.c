@@ -25,8 +25,9 @@ void deps_git(WrenVM* vm) {
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 
-	if (has_branch)
+	if (has_branch) {
 		ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+	}
 
 	char const* const url = wrenGetSlotString(vm, 1);
 	char const* const branch = has_branch ? wrenGetSlotString(vm, 2) : NULL;
@@ -48,6 +49,7 @@ void deps_git(WrenVM* vm) {
 
 	if (stat(repo_path, &sb) || !S_ISDIR(sb.st_mode)) {
 		args = exec_args_new(6, "git", "clone", url, repo_path, "--depth", "1");
+		exec_args_save_out(args, PIPE_STDERR);
 
 		if (branch) {
 			exec_args_add(args, "--branch");
@@ -55,10 +57,20 @@ void deps_git(WrenVM* vm) {
 		}
 
 		rv = execute(args);
+		char* const CLEANUP_STR err = exec_args_read_out(args, PIPE_STDERR);
+
 		exec_args_del(args);
 
 		if (rv) {
-			LOG_ERROR("Failed to clone remote git repository '%s'", url)
+			if (err != NULL) {
+				err[strlen(err) - 1] = '\0';
+				LOG_ERROR("Failed to clone remote git repository '%s':\n%s", url, err)
+			}
+
+			else {
+				LOG_ERROR("Failed to clone remote git repository '%s'", url)
+			}
+
 			goto err;
 		}
 	}
