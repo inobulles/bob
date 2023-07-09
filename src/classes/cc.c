@@ -189,10 +189,18 @@ void cc_compile(WrenVM* vm) {
 	exec_args = exec_args_new(5, cc->path, "-MM", "-MT", "", path);
 	exec_args_save_out(exec_args, PIPE_STDOUT | PIPE_STDERR);
 	exec_args_add_opts(exec_args, &cc->opts);
+	exec_args_fmt(exec_args, "-I%s", bin_path); // TODO share more code between this and the actual compilation command
 
 	int rv = execute(exec_args);
 
 	if (rv != EXIT_SUCCESS) {
+		char* const CLEANUP_STR header_errors = exec_args_read_out(exec_args, PIPE_STDERR);
+		LOG_WARN("CC.compile(\"%s\"): Failed to look for header dependencies%s", path, header_errors ? ":" : "")
+
+		if (header_errors) {
+			fprintf(stderr, "%s", header_errors);
+		}
+
 		goto done;
 	}
 
