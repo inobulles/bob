@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 // much of this mimics the behaviour of the old aqua-manager tool:
 // https://github.com/inobulles/aqua-manager
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 // this file is stuck at the top of every Wren build configuration file
 // object classes
 

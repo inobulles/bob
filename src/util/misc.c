@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 #include <util.h>
 
 #include <err.h>
@@ -67,7 +70,7 @@ int fix_out_path_owner(void) {
 	char* CLEANUP_STR parent = NULL;
 	if (asprintf(&parent, "%s/..", bin_path)) {}
 
-	char* const path_argv[] = { (char*) parent, NULL };
+	char* const path_argv[] = { parent, NULL };
 	FTS* const fts = fts_open(path_argv, FTS_PHYSICAL | FTS_XDEV, NULL);
 
 	if (fts == NULL) {
