@@ -213,9 +213,10 @@ void linker_link(WrenVM* vm) {
 	// we pass '-u__native_entry' to the linker so that it preserves what's necessary for the '__native_entry' symbol
 	// this is only necessary for AQUA, but there's no harm leaving it
 
-	exec_args_t* const exec_args = exec_args_new(3, linker->path, "-L/usr/local/lib", "-Wl,--gc-sections,-u__native_entry");
+	exec_args_t* const exec_args = exec_args_new(2, linker->path, "-Wl,--gc-sections,-u__native_entry");
 	exec_args_add_opts(exec_args, &linker->opts);
 	exec_args_fmt(exec_args, "-L%s", bin_path);
+	exec_args_add(exec_args, "-L/usr/local/lib");
 
 	// then, read list elements
 
