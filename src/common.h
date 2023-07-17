@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 #pragma once
 
 // this file must be included before anything else

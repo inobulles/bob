@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2023 Aymeric Wibo
+
 with open("base.wren") as f:
 	base = f.read()
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 #include <instr.h>
 
 #include <classes/package_t.h>

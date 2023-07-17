@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2023 Aymeric Wibo
+
 #include <util.h>
 
 #include <err.h>
@@ -79,8 +82,9 @@ int mkdir_recursive(char const* _path) {
 
 	// we don't need to do anything if path is empty
 
-	if (!*_path)
+	if (!*_path) {
 		return 0;
+	}
 
 	char* const CLEANUP_STR orig_path = strdup(_path);
 	char* path = orig_path;
@@ -101,8 +105,9 @@ int mkdir_recursive(char const* _path) {
 
 		// if $HOME isn't set, treat as an absolute directory
 
-		if (!home)
+		if (!home) {
 			*path = '/';
+		}
 
 		else if (chdir(home) < 0) {
 			LOG_ERROR("chdir($HOME): %s", strerror(errno))
@@ -124,18 +129,21 @@ int mkdir_recursive(char const* _path) {
 	while ((bit = strsep(&path, "/"))) {
 		// ignore if the bit is empty
 
-		if (!bit || !*bit)
+		if (!bit || !*bit) {
 			continue;
+		}
 
 		// ignore if the bit refers to the current directory
 
-		if (!strcmp(bit, "."))
+		if (!strcmp(bit, ".")) {
 			continue;
+		}
 
 		// don't attempt to mkdir if we're going backwards, only chdir
 
-		if (!strcmp(bit, ".."))
+		if (!strcmp(bit, "..")) {
 			goto no_mkdir;
+		}
 
 		if (mkdir(bit, 0755) < 0 && errno != EEXIST) {
 			LOG_ERROR("mkdir(\"%s\"): %s", bit, strerror(errno))
@@ -159,8 +167,9 @@ err_mkdir:
 
 	// move back to current directory once we're sure the output directory exists (or there's an error)
 
-	if (chdir(cwd) < 0)
+	if (chdir(cwd) < 0) {
 		LOG_ERROR("chdir(\"%s\"): %s", cwd, strerror(errno))
+	}
 
 err_abs:
 err_home:
