@@ -1,9 +1,7 @@
 // dependencies
 
 Meta.setenv("DEVSET", "aquabsd.alps")
-
 Deps.git_inherit("https://github.com/inobulles/aqua-unix")
-Deps.git_inherit("https://github.com/inobulles/iar")
 
 // compilation
 
