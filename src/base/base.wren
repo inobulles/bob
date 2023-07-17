@@ -160,4 +160,5 @@ class Meta {
 
 class Resources {
 	foreign static install(path)
+	foreign static install(path, dest)
 }
