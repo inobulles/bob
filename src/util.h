@@ -23,6 +23,7 @@ extern char const* curr_instr;
 extern char const* prefix;
 extern char const* project_path;
 extern bool gen_lsp_config;
+extern bool ran_as_dep;
 
 void usage(void);
 

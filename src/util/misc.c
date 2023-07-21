@@ -144,6 +144,12 @@ char const* install_prefix(void) {
 }
 
 void validate_gitignore(char* path) {
+	// we don't want to validate dependencies
+
+	if (ran_as_dep) {
+		return;
+	}
+
 	FILE* const fp = fopen(".gitignore", "r");
 
 	if (!fp) {

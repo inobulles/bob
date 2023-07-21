@@ -15,6 +15,7 @@ char const* curr_instr = NULL;
 char const* prefix = NULL;
 char const* project_path = NULL;
 bool gen_lsp_config = false;
+bool ran_as_dep = false;
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -50,9 +51,13 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:do:p:")) != -1) {
 		if (c == 'C') {
 			project_path = optarg;
+		}
+
+		else if (c == 'd') { // undocumented, as for internal use only!
+			ran_as_dep = true;
 		}
 
 		else if (c == 'o') {
