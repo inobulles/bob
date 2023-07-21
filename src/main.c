@@ -92,6 +92,10 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// make sure relative bin path is in .gitignore
+
+	validate_gitignore((char*) rel_bin_path);
+
 	// make 'init_name' absolute
 	// no biggie if we can't make it absolute, it's probably being run as a standalone command, in which case 'execute_async' can find it for us later by searching through 'PATH'
 	// TODO shouldn't this be relative to 'project_path' if one is set?
