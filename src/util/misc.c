@@ -142,3 +142,27 @@ char const* install_prefix(void) {
 
 	return "/usr/local";
 }
+
+void validate_gitignore(char* path) {
+	FILE* const fp = fopen(".gitignore", "r");
+
+	if (!fp) {
+		return;
+	}
+
+	// XXX this could be smarter, by trying to match the glob, but glob(3) is shell-dependent so yeah not for now
+
+	for (char ent[256]; fgets(ent, sizeof ent, fp);) {
+		ent[strlen(ent) - 1] = '\0';
+
+		if (strcmp(ent, path) == 0) {
+			goto found;
+		}
+	}
+
+	LOG_WARN("'.gitignore' file doesn't contain '%s'", path);
+
+found:
+
+	fclose(fp);
+}

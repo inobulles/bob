@@ -97,6 +97,9 @@ void cc_new(WrenVM* vm) {
 		return;
 	}
 
+	validate_gitignore("compile_commands.json");
+	validate_gitignore(".cache");
+
 	fprintf(cc->lsp_config, "[\n");
 }
 

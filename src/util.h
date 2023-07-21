@@ -215,3 +215,4 @@ int navigate_project_path(void);
 int ensure_out_path(void);
 int fix_out_path_owner(void);
 char const* install_prefix(void);
+void validate_gitignore(char* path);
