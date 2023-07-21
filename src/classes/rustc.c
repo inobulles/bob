@@ -18,6 +18,7 @@ typedef struct {
 
 typedef struct {
 	char* path;
+	char* cargo_target;
 
 	size_t dep_count;
 	dep_t* deps;
@@ -56,12 +57,11 @@ typedef struct {
 static int compile_post_hook(task_t* task, void* _data) {
 	int rv = -1;
 
-	(void) task;
-
 	compile_post_hook_data_t* const data = _data;
+	rustc_t* const rustc = data->rustc;
 
 	char* CLEANUP_STR src = NULL;
-	if (asprintf(&src, "%s/target/release/lib_%lx.a", data->cargo_dir_path, data->hash)) {}
+	if (asprintf(&src, "%s/release/lib_%lx.a", rustc->cargo_target, data->hash)) {}
 
 	char* CLEANUP_STR dest = NULL;
 	if (asprintf(&dest, "%s/%lx.o", bin_path, data->hash)) {}
@@ -93,6 +93,7 @@ void rustc_new(WrenVM* vm) {
 	rustc_t* const rustc = wrenSetSlotNewForeign(vm, 0, 0, sizeof *rustc);
 
 	rustc->path = strdup("cargo");
+	if (asprintf(&rustc->cargo_target, "%s/RustC.cargo_target.d", bin_path)) {}
 
 	rustc->deps = NULL;
 	rustc->dep_count = 0;
@@ -103,6 +104,10 @@ void rustc_del(void* _rustc) {
 
 	if (rustc->path) {
 		free(rustc->path);
+	}
+
+	if (rustc->cargo_target) {
+		free(rustc->cargo_target);
 	}
 
 	// free dependencies
@@ -281,6 +286,10 @@ void rustc_compile(WrenVM* vm) {
 	fclose(fp);
 
 	// construct exec args
+
+	if (setenv("CARGO_TARGET_DIR", rustc->cargo_target, 1) < 0) {
+		LOG_ERROR("Failed to set 'CARGO_TARGET_DIR' environment variable (to \"%s\")", rustc->cargo_target)
+	}
 
 	exec_args_t* const exec_args = exec_args_new(5, rustc->path, "build", "--release", "--manifest-path", cargo_path);
 	exec_args_save_out(exec_args, PIPE_STDERR); // both warning & errors go through stderr
