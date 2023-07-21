@@ -12,8 +12,6 @@ typedef struct {
 	char* path;
 	opts_t opts;
 
-	// LSP config stuff
-
 	FILE* lsp_config;
 } cc_t;
 
@@ -74,6 +72,8 @@ err:
 
 // constructor/destructor
 
+#define LSP_CONFIG "compile_commands.json"
+
 void cc_new(WrenVM* vm) {
 	CHECK_ARGC("CC.new", 0, 0)
 
@@ -90,14 +90,14 @@ void cc_new(WrenVM* vm) {
 		return;
 	}
 
-	cc->lsp_config = fopen("compile_commands.json", "w");
+	cc->lsp_config = fopen(LSP_CONFIG, "w");
 
 	if (!cc->lsp_config) {
 		LOG_ERROR("Failed to create CC LSP configuration file");
 		return;
 	}
 
-	validate_gitignore("compile_commands.json");
+	validate_gitignore(LSP_CONFIG);
 	validate_gitignore(".cache");
 
 	fprintf(cc->lsp_config, "[\n");
@@ -109,12 +109,10 @@ void cc_del(void* _cc) {
 	strfree(&cc->path);
 	opts_free(&cc->opts);
 
-	if (!cc->lsp_config) {
-		return;
+	if (cc->lsp_config) {
+		fprintf(cc->lsp_config, "]\n");
+		fclose(cc->lsp_config);
 	}
-
-	fprintf(cc->lsp_config, "]\n");
-	fclose(cc->lsp_config);
 }
 
 // getters
