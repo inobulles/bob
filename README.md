@@ -74,6 +74,17 @@ cd project
 bob run
 ```
 
+### Creating an LSP configuration
+
+Bob isn't one of those idiots who says "hurr durr language survurs r fur soydevs, _real_ programmurs don't need cuz never make mistakes" (based on true events).
+Bob is smart; he knows good tooling makes him a better, more productive developer! 🛠
+
+To generate an LSP configuration for your project, run:
+
+```console
+bob lsp
+```
+
 ### Packaging
 
 Bob used to work at an Amazon distribution centre! 📦
