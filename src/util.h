@@ -22,6 +22,7 @@ extern char const* init_name;
 extern char const* curr_instr;
 extern char const* prefix;
 extern char const* project_path;
+extern bool gen_lsp_config;
 
 void usage(void);
 

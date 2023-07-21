@@ -3,7 +3,7 @@
 
 #include <instr.h>
 
-int do_build(void) {
+int do_build() {
 	if (navigate_project_path() < 0) {
 		return EXIT_FAILURE;
 	}
