@@ -14,6 +14,8 @@ char const* init_name = "bob";
 char const* curr_instr = NULL;
 char const* prefix = NULL;
 char const* project_path = NULL;
+bool gen_lsp_config = false;
+bool ran_as_dep = false;
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -30,6 +32,7 @@ void usage(void) {
 
 	fprintf(stderr,
 		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] lsp\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
 		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
@@ -48,9 +51,13 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:do:p:")) != -1) {
 		if (c == 'C') {
 			project_path = optarg;
+		}
+
+		else if (c == 'd') { // undocumented, as for internal use only!
+			ran_as_dep = true;
 		}
 
 		else if (c == 'o') {
@@ -75,8 +82,28 @@ int main(int argc, char* argv[]) {
 		usage();
 	}
 
+	// if project path wasn't set, set it to the current working directory
+	// then, make it absolute
+
+	if (!project_path) {
+		project_path = ".";
+	}
+
+	char const* const rel_project_path = project_path;
+	project_path = realpath(rel_project_path, NULL);
+
+	if (!project_path) {
+		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
+		return EXIT_FAILURE;
+	}
+
+	// make sure relative bin path is in .gitignore
+
+	validate_gitignore((char*) rel_bin_path);
+
 	// make 'init_name' absolute
 	// no biggie if we can't make it absolute, it's probably being run as a standalone command, in which case 'execute_async' can find it for us later by searching through 'PATH'
+	// TODO shouldn't this be relative to 'project_path' if one is set?
 
 	char const* const abs_init_name = realpath(init_name, NULL);
 
@@ -91,26 +118,31 @@ int main(int argc, char* argv[]) {
 	while (argc --> 0) {
 		curr_instr = *argv++;
 
-		if (!strcmp(curr_instr, "build")) {
-			rv = do_build();
+		if (strcmp(curr_instr, "build") == 0) {
+			rv = do_build(false);
+		}
+
+		else if (strcmp(curr_instr, "lsp") == 0) {
+			gen_lsp_config = true;
+			rv = do_build(true);
 		}
 
 		// everything stops if we run the 'run' command
 		// we don't know how many arguments there'll still be
 
-		else if (!strcmp(curr_instr, "run")) {
+		else if (strcmp(curr_instr, "run") == 0) {
 			rv = do_run(argc, argv);
 			goto done;
 		}
 
-		else if (!strcmp(curr_instr, "install")) {
+		else if (strcmp(curr_instr, "install") == 0) {
 			rv = do_install();
 		}
 
 		// everything stops if we run the 'skeleton' command
 		// I don't wanna deal with how the output/project paths should best be handled for subsequent commands
 
-		else if (!strcmp(curr_instr, "skeleton")) {
+		else if (strcmp(curr_instr, "skeleton") == 0) {
 			rv = do_skeleton(argc, argv);
 			goto done;
 		}
@@ -118,12 +150,12 @@ int main(int argc, char* argv[]) {
 		// everything stops if we run the 'package' command
 		// the last argument is optional, so it would introduce ambiguity
 
-		else if (!strcmp(curr_instr, "package")) {
+		else if (strcmp(curr_instr, "package") == 0) {
 			rv = do_package(argc, argv);
 			goto done;
 		}
 
-		else if (!strcmp(curr_instr, "test")) {
+		else if (strcmp(curr_instr, "test") == 0) {
 			rv = do_test();
 		}
 

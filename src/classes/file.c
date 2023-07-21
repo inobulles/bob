@@ -47,7 +47,7 @@ void file_bob(WrenVM* vm) {
 	// actually execute bob
 
 	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
-	exec_args_t* exec_args = exec_args_new(7, init_name, "-C", path, "-o", bin_path, "-p", install_prefix());
+	exec_args_t* exec_args = exec_args_new(8, init_name, "-d", "-C", path, "-o", bin_path, "-p", install_prefix());
 
 	// add list of arguments to exec_args if we have them
 

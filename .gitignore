@@ -6,3 +6,5 @@ sh-bin
 Cargo.toml
 Cargo.lock
 target
+compile_commands.json
+.cache

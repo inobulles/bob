@@ -22,6 +22,8 @@ extern char const* init_name;
 extern char const* curr_instr;
 extern char const* prefix;
 extern char const* project_path;
+extern bool gen_lsp_config;
+extern bool ran_as_dep;
 
 void usage(void);
 
@@ -214,3 +216,4 @@ int navigate_project_path(void);
 int ensure_out_path(void);
 int fix_out_path_owner(void);
 char const* install_prefix(void);
+void validate_gitignore(char* path);

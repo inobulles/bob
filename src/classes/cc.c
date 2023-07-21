@@ -11,6 +11,8 @@
 typedef struct {
 	char* path;
 	opts_t opts;
+
+	FILE* lsp_config;
 } cc_t;
 
 // foreign method binding
@@ -70,6 +72,8 @@ err:
 
 // constructor/destructor
 
+#define LSP_CONFIG "compile_commands.json"
+
 void cc_new(WrenVM* vm) {
 	CHECK_ARGC("CC.new", 0, 0)
 
@@ -81,6 +85,22 @@ void cc_new(WrenVM* vm) {
 	// this is very annoying and dumb so whatever just disable it for everyone
 
 	opts_add(&cc->opts, "-Wno-unused-command-line-argument");
+
+	if (!gen_lsp_config) {
+		return;
+	}
+
+	cc->lsp_config = fopen(LSP_CONFIG, "w");
+
+	if (!cc->lsp_config) {
+		LOG_ERROR("Failed to create CC LSP configuration file");
+		return;
+	}
+
+	validate_gitignore(LSP_CONFIG);
+	validate_gitignore(".cache");
+
+	fprintf(cc->lsp_config, "[\n");
 }
 
 void cc_del(void* _cc) {
@@ -88,6 +108,11 @@ void cc_del(void* _cc) {
 
 	strfree(&cc->path);
 	opts_free(&cc->opts);
+
+	if (cc->lsp_config) {
+		fprintf(cc->lsp_config, "]\n");
+		fclose(cc->lsp_config);
+	}
 }
 
 // getters
@@ -173,6 +198,14 @@ void cc_compile(WrenVM* vm) {
 
 	if (asprintf(&out_path, "%s/%lx.o", bin_path, hash)) {}
 	if (asprintf(&opts_path, "%s/%lx.opts", bin_path, hash)) {}
+
+	// if we're generating LSP config, always compile
+
+	if (cc->lsp_config) {
+		goto compile;
+	}
+
+	// check if source has been modified since it was last compiled
 
 	time_t const out_mtime = be_frugal(path, out_path);
 
@@ -324,6 +357,22 @@ compile: {}
 	// we do this at the end so as not to override any custom include search paths
 
 	exec_args_fmt(exec_args, "-I%s", bin_path);
+
+	// if we're writing an LSP config, add the exec_args to it
+
+	if (cc->lsp_config) {
+		fprintf(cc->lsp_config, "\t{\n\t\t\"arguments\": [\n");
+
+		for (size_t i = 0; i < exec_args->len - 1; i++) {
+			char const* const comma = i < exec_args->len - 2 ? "," : "";
+			fprintf(cc->lsp_config, "\t\t\t\"%s\"%s\n", exec_args->args[i], comma);
+		}
+
+		fprintf(cc->lsp_config, "\t\t],\n");
+		fprintf(cc->lsp_config, "\t\t\"file\": \"%s\",\n", path);
+		fprintf(cc->lsp_config, "\t\t\"directory\": \"%s\"\n", project_path);
+		fprintf(cc->lsp_config, "\t},\n");
+	}
 
 	// finally, add task to compile asynchronously
 
