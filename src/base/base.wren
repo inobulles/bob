@@ -35,8 +35,8 @@ foreign class RustC {
 
 	// methods
 
-	foreign add_dep(name, git)
-	foreign add_dep(name, git, features)
+	foreign add_dep(name, kind, url)
+	foreign add_dep(name, kind, url, features)
 	foreign compile(path)
 }
 
@@ -104,7 +104,7 @@ class Deps {
 			instruction = "build"
 		}
 
-		if (instruction == "package") { // neither package instructions
+		if (instruction == "package") { // nor package instructions
 			instruction = "build"
 		}
 

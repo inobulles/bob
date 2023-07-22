@@ -8,9 +8,16 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+typedef enum {
+	DEP_KIND_PATH,
+	DEP_KIND_GIT,
+} dep_kind_t;
+
 typedef struct {
+	dep_kind_t kind;
+
 	char* name;
-	char* git;
+	char* url;
 
 	size_t feature_count;
 	char** features;
@@ -37,8 +44,8 @@ WrenForeignMethodFn rustc_bind_foreign_method(bool static_, char const* signatur
 
 	// methods
 
-	BIND_FOREIGN_METHOD(false, "add_dep(_,_)", rustc_add_dep)
 	BIND_FOREIGN_METHOD(false, "add_dep(_,_,_)", rustc_add_dep)
+	BIND_FOREIGN_METHOD(false, "add_dep(_,_,_,_)", rustc_add_dep)
 	BIND_FOREIGN_METHOD(false, "compile(_)", rustc_compile)
 
 	// unknown
@@ -144,7 +151,7 @@ void rustc_del(void* _rustc) {
 		dep_t* const dep = &rustc->deps[i];
 
 		free(dep->name);
-		free(dep->git);
+		free(dep->url);
 
 		for (size_t i = 0; i < dep->feature_count; i++) {
 			free(dep->features[i]);
@@ -189,20 +196,22 @@ void rustc_set_path(WrenVM* vm) {
 // methods
 
 void rustc_add_dep(WrenVM* vm) {
-	CHECK_ARGC("RustC.add_dep", 2, 3)
-	bool const has_feature_list = argc == 3;
+	CHECK_ARGC("RustC.add_dep", 3, 4)
+	bool const has_feature_list = argc == 4;
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 	ASSERT_ARG_TYPE(2, WREN_TYPE_STRING)
+	ASSERT_ARG_TYPE(3, WREN_TYPE_STRING)
 
 	if (has_feature_list) {
-		ASSERT_ARG_TYPE(3, WREN_TYPE_LIST)
+		ASSERT_ARG_TYPE(4, WREN_TYPE_LIST)
 	}
 
 	rustc_t* const rustc = foreign;
 	char const* const name = wrenGetSlotString(vm, 1);
-	char const* const git = wrenGetSlotString(vm, 2);
-	size_t const feature_list_len = has_feature_list ? wrenGetListCount(vm, 3) : 0;
+	char const* const kind = wrenGetSlotString(vm, 2);
+	char const* const url = wrenGetSlotString(vm, 3);
+	size_t const feature_list_len = has_feature_list ? wrenGetListCount(vm, 4) : 0;
 
 	// extra argument checks
 
@@ -215,8 +224,22 @@ void rustc_add_dep(WrenVM* vm) {
 	rustc->deps = realloc(rustc->deps, ++rustc->dep_count * sizeof *rustc->deps);
 	dep_t* const dep = &rustc->deps[rustc->dep_count - 1];
 
+	dep->kind = DEP_KIND_PATH;
+
+	if (strcmp(kind, "path") == 0) {
+		// ok
+	}
+
+	else if (strcmp(kind, "git") == 0) {
+		dep->kind = DEP_KIND_GIT;
+	}
+
+	else {
+		LOG_WARN("Unknown dependency kind '%s' - defaulting to DEP_KIND_PATH", kind);
+	}
+
 	dep->name = strdup(name);
-	dep->git = strdup(git);
+	dep->url = strdup(url);
 
 	// read dependency features (if there are any)
 
@@ -227,12 +250,12 @@ void rustc_add_dep(WrenVM* vm) {
 		dep->features = malloc(dep->feature_count * sizeof *dep->features);
 	}
 
-	wrenEnsureSlots(vm, 5); // we just need a single extra slot for each list element
+	wrenEnsureSlots(vm, 6); // we just need a single extra slot for each list element
 
 	for (size_t i = 0; i < dep->feature_count; i++) {
-		wrenGetListElement(vm, 3, i, 4);
+		wrenGetListElement(vm, 4, i, 5);
 
-		if (wrenGetSlotType(vm, 4) != WREN_TYPE_STRING) {
+		if (wrenGetSlotType(vm, 5) != WREN_TYPE_STRING) {
 			LOG_WARN("'RustC.add_dep' list element %zu of argument 3 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
@@ -302,7 +325,13 @@ void rustc_compile(WrenVM* vm) {
 	for (size_t i = 0; i < rustc->dep_count; i++) {
 		dep_t* const dep = &rustc->deps[i];
 
-		fprintf(fp, "%s = { git = '%s', features = [", dep->name, dep->git);
+		if (dep->kind == DEP_KIND_GIT) {
+			fprintf(fp, "%s = { git = '%s', features = [", dep->name, dep->url);
+		}
+
+		else {
+			fprintf(fp, "%s = { path = '%s', features = [", dep->name, dep->url);
+		}
 
 		for (size_t i = 0; i < dep->feature_count; i++) {
 			fprintf(fp, "'%s', ", dep->features[i]);
