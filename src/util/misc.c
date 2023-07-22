@@ -150,6 +150,16 @@ void validate_gitignore(char* path) {
 		return;
 	}
 
+	// if the file doesn't exist in the first place, obviously we don't wanna emit a warning
+
+	struct stat sb_a;
+
+	if (stat(path, &sb_a) < 0) {
+		return;
+	}
+
+	// open .gitignore
+
 	FILE* const fp = fopen(".gitignore", "r");
 
 	if (!fp) {
@@ -158,10 +168,16 @@ void validate_gitignore(char* path) {
 
 	// XXX this could be smarter, by trying to match the glob, but glob(3) is shell-dependent so yeah not for now
 
-	for (char ent[256]; fgets(ent, sizeof ent, fp);) {
+	for (char ent[1024]; fgets(ent, sizeof ent, fp);) {
 		ent[strlen(ent) - 1] = '\0';
 
-		if (strcmp(ent, path) == 0) {
+		struct stat sb_b;
+
+		if (stat(ent, &sb_b) < 0) {
+			continue;
+		}
+
+		if (sb_a.st_ino == sb_b.st_ino) {
 			goto found;
 		}
 	}
