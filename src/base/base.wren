@@ -108,7 +108,7 @@ class Deps {
 			instruction = "build"
 		}
 
-		return File.bob(path, [instruction])
+		return File.bob(path, [instruction], true)
 	}
 
 	static git_inherit(url, branch) { git_inherit_internal(git(url, branch)) }
@@ -133,6 +133,7 @@ class File {
 	static SETUID { File.EXEC  }
 
 	foreign static bob(path, args)
+	foreign static bob(path, args, as_dep)
 
 	foreign static chmod(path, mask, bit)
 	foreign static chown(path, user)

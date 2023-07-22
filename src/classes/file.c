@@ -19,6 +19,7 @@ WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature
 	// methods
 
 	BIND_FOREIGN_METHOD(true, "bob(_,_)", file_bob)
+	BIND_FOREIGN_METHOD(true, "bob(_,_,_)", file_bob)
 	BIND_FOREIGN_METHOD(true, "chmod(_,_,_)", file_chmod)
 	BIND_FOREIGN_METHOD(true, "chown(_,_)", file_chown)
 	BIND_FOREIGN_METHOD(true, "chown(_,_,_)", file_chown)
@@ -36,30 +37,41 @@ WrenForeignMethodFn file_bind_foreign_method(bool static_, char const* signature
 // methods
 
 void file_bob(WrenVM* vm) {
-	CHECK_ARGC("File.bob", 2, 2)
+	CHECK_ARGC("File.bob", 2, 3)
+	bool const has_as_dep = argc == 3;
 
 	ASSERT_ARG_TYPE(1, WREN_TYPE_STRING)
 	ASSERT_ARG_TYPE(2, WREN_TYPE_LIST)
 
+	if (has_as_dep) {
+		ASSERT_ARG_TYPE(3, WREN_TYPE_BOOL)
+	}
+
 	char const* const path = wrenGetSlotString(vm, 1);
 	size_t const args_list_len = wrenGetListCount(vm, 2);
+	bool const as_dep = has_as_dep ? wrenGetSlotBool(vm, 3) : false;
 
 	// actually execute bob
 
-	wrenEnsureSlots(vm, 3); // we just need a single extra slot for each list element
-	exec_args_t* exec_args = exec_args_new(8, init_name, "-d", "-C", path, "-o", bin_path, "-p", install_prefix());
+	exec_args_t* exec_args = exec_args_new(7, init_name, "-C", path, "-o", bin_path, "-p", install_prefix());
+
+	if (as_dep) {
+		exec_args_add(exec_args, "-d");
+	}
 
 	// add list of arguments to exec_args if we have them
 
-	for (size_t i = 0; i < args_list_len; i++) {
-		wrenGetListElement(vm, 2, i, 3);
+	wrenEnsureSlots(vm, 4); // we just need a single extra slot for each list element
 
-		if (wrenGetSlotType(vm, 3) != WREN_TYPE_STRING) {
+	for (size_t i = 0; i < args_list_len; i++) {
+		wrenGetListElement(vm, 2, i, 4);
+
+		if (wrenGetSlotType(vm, 4) != WREN_TYPE_STRING) {
 			LOG_WARN("'File.bob' list element %zu of argument 2 is of incorrect type (expected 'WREN_TYPE_STRING') - skipping", i)
 			continue;
 		}
 
-		char const* const arg = wrenGetSlotString(vm, 3);
+		char const* const arg = wrenGetSlotString(vm, 4);
 		exec_args_add(exec_args, arg);
 	}
 
@@ -67,8 +79,9 @@ void file_bob(WrenVM* vm) {
 
 	int const rv = execute(exec_args);
 
-	if (rv != EXIT_SUCCESS)
+	if (rv != EXIT_SUCCESS) {
 		LOG_WARN("'File.bob' failed execution with error code %d", rv)
+	}
 
 	exec_args_del(exec_args);
 	wrenSetSlotDouble(vm, 0, rv);
