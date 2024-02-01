@@ -60,6 +60,12 @@ static int add_lib(linker_t* linker, char const* lib) {
 			continue;
 		}
 
+		char* const end = opt + strlen(opt) - 1;
+
+		if (*end == '\n') {
+			*end = '\0';
+		}
+
 		opts_add(&linker->opts, opt);
 	}
 
