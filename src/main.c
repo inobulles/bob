@@ -119,12 +119,12 @@ int main(int argc, char* argv[]) {
 		curr_instr = *argv++;
 
 		if (strcmp(curr_instr, "build") == 0) {
-			rv = do_build(false);
+			rv = do_build();
 		}
 
 		else if (strcmp(curr_instr, "lsp") == 0) {
 			gen_lsp_config = true;
-			rv = do_build(true);
+			rv = do_build();
 		}
 
 		// everything stops if we run the 'run' command
