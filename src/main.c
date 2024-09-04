@@ -20,7 +20,7 @@ bool ran_as_dep = false;
 void usage(void) {
 #if defined(__FreeBSD__)
 	char const* const progname = getprogname();
-#elif defined(__Linux__)
+#elif defined(__linux__)
 	char progname[16] = init_name;
 
 	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
