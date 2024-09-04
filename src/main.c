@@ -6,6 +6,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#if defined(__linux__)
+# include <sys/prctl.h>
+#endif
+
 // global options go here so they're accessible by everyone
 
 char const* rel_bin_path = "bin"; // default output path
@@ -21,10 +25,11 @@ void usage(void) {
 #if defined(__FreeBSD__)
 	char const* const progname = getprogname();
 #elif defined(__linux__)
-	char progname[16] = init_name;
+	char progname[16];
+	strncpy(progname, init_name, sizeof progname);
 
 	if (prctl(PR_GET_NAME, progname, NULL, NULL, NULL) < 0) {
-		LOG_WARN("prctl(PR_GET_NAME): %s", strerror(errno))
+		LOG_WARN("prctl(PR_GET_NAME): %s", strerror(errno));
 	}
 #else
 	char const* const progname = init_name;
