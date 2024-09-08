@@ -8,6 +8,7 @@
 
 #if defined(__linux__)
 # include <sys/prctl.h>
+# include <errno.h>
 #endif
 
 // global options go here so they're accessible by everyone
