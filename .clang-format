@@ -1,0 +1,275 @@
+# Version: 1
+# Minimum clang-format version is 18.
+
+# My personal opinion on what a good-ish style for C is, based on at least some amount of reason (sometimes) ;)
+# This forgoes a lot of the C++/ObjC-specific stuff, simply because I practically don't ever write C++/ObjC.
+
+BasedOnStyle: WebKit
+Language: Cpp # This is also for C.
+
+# Makes numbers look better, especially if there's a unary operand in front.
+
+AlignArrayOfStructures: Right
+
+# For alignment, there's a bit of a tradeoff between readability and diff size.
+# For all assignments, I think this would be obnoxious, which is why they're disabled.
+# But for switch cases and bitfields, which are rarer and (at least for bitfields) are less likely to provide valuable information in e.g. a blame, I think readability trumps. 
+# TODO Same argument for enums, but unfortunately, clang-format lumps those in with assignments at the moment, so we have to disable that for now: https://github.com/llvm/llvm-project/issues/52983
+# TODO As for alignment after open brackets, this seems to be a bit of a mess: https://github.com/llvm/llvm-project/issues/80049
+
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveAssignments: false
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: false
+AlignEscapedNewlines: Left
+AlignConsecutiveShortCaseStatements: # clang-format 17
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCaseColons: false
+SpaceBeforeCaseColon: false
+
+# This is prettier because all terms of a binary expression are aligned this way, including the first one:
+# int a = b +
+#         c;
+# vs:
+# int a = b
+#         + c;
+
+AlignOperands: DontAlign
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+AlignTrailingComments: Always # clang-format 17
+
+# Better than having them on the same line, because for big argument/parameter lists, it's easier to see what's what, and each argument can be changed individually in the diff.
+
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+# clang-format 19: BreakFunctionDefinitionParameters: false
+
+# Never allow this because a block could modify control flow, which is harder to spot when bughunting if it's not on its own line.
+# I do allow this for case labels though, because they tend to be shorter than if/while/for which can be arbitrarily long, and because we anyway align them (which makes control-flow modifying operations easier to spot).
+# Anyways, you can usually assume there's control-flow modification with a case label if it's on one line, because otherwise it would be on multiple lines with a break at the end.
+
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# There's really no need for this, single-line functions are uncommon enough.
+# Disallow empty ones too because almost always when a function is empty it's because content is intended later.
+
+AllowShortFunctionsOnASingleLine: None
+
+# I want each enum value to appear clearly in the diff.
+
+AllowShortEnumsOnASingleLine: false
+
+# More readable for long variable declarations, and has the added benefit of making diffs more localized.
+
+AlwaysBreakBeforeMultilineStrings: true
+
+# Allow groupings of arguments when split over multiple lines, e.g.:
+# resize(
+#    ...
+#    width, height,
+# );
+# TODO Not sure this does what I think it does.
+
+# BinPackArguments: true
+# BinPackParameters: true
+BinPackArguments: false
+BinPackParameters: false
+
+# Might as well have more spacing, fields aren't generally too long so we can afford it.
+
+BitFieldColonSpacing: Both
+
+# I really don't see the point of brace wrapping (sorry Eric).
+# For the Before*'s, I might change my mind on this because technically they don't cause any diff-related problems, but I can't get myself to like no-wrapping aesthetically.
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeWhile: false
+  IndentBraces: false # GNU is crazy for this
+  SplitEmptyFunction: false # redundant with AllowShortFunctionsOnASingleLine I think
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+BreakAdjacentStringLiterals: false # clang-format 18
+
+# The user probably had a reason for why they wrote it the way they did (e.g. I wouldn't be putting a __printf__ on the same line as the function declaration but I would with __unused__ on a variable declaration).
+# There are arguments both ways.
+
+BreakAfterAttributes: Leave # clang-format 16
+
+# Honestly there's a good argument to be made for this.
+# In FreeBSD's source, it was really nice to be able to search for function definitions with the ^ character in regex.
+# This is the reason for setting IndentWrappedFunctionNames to false.
+# But really, I should be depending on the LSP for this rather, and it takes up an extra line for "nothing".
+
+PenaltyReturnTypeOnItsOwnLine: 100
+AlwaysBreakAfterDefinitionReturnType: None
+# clang-format 19: BreakAfterReturnType: None
+IndentWrappedFunctionNames: false
+
+# Usually this is more readable, as this stuff can get very complex.
+# Inline ASM is never very extensively used, so I think the complexity is worth the extra breathing room.
+
+BreakBeforeInlineASMColon: Always # clang-format 16
+
+# The user knows this best.
+
+BreakStringLiterals: true
+
+# The user knows this best.
+# For comments, I think wrapping is a fine solution.
+
+ColumnLimit: 0
+ReflowComments: false
+
+# A bit of a touchy subject here and I get the idea behind right-hand pointers/references, but nowadays this is so much associated to the type that it really makes more sense to me to have it on the left.
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+SpaceAroundPointerQualifiers: Default
+
+# TODO Which ones are used in Linux/FreeBSD?
+
+ForEachMacros: ['FOREACH']
+IfMacros: []
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+Macros: [] # clang-format 17
+SkipMacroDefinitionBody: false # clang-format 18
+StatementAttributeLikeMacros: []
+StatementMacros: []
+TypeNames: [] # clang-format 17
+TypenameMacros: []
+WhitespaceSensitiveMacros: ["STRINGIZE"]
+
+# I think it's best if different kinds of includes are segregated; it makes them easier to find (though I think I need a bit more configuration for IncludeBlocks: Regroup).
+# Sorting them just normalizes things.
+
+# TODO IncludeBlocks: Regroup
+IncludeBlocks: Preserve
+# TODO IncludeCategories
+SortIncludes: true
+
+# In generally I find it best to reduce indentation, and this is especially the case for cases which would otherwise start off with a level of indentation due to the switch statement.
+# It also follows the most common convention for labels.
+# For labels, I don't have a strong opinion one way or another, so might as well mimic the switch cases.
+
+IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: false
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
+PPIndentWidth: 1
+
+# Also a bit of a touchy subject, but one I feel strongly about.
+# There is literally no reason I can conceive to use spaces as opposed to tabs.
+# And though I've searched far and wide for a good reason to, most people base themselves off of moronic logic or emotional arguments.
+# The biggest argument for using tabs for me though is accessibility; someone with visual impairments, who usually code with a larger font size, like to reduce their indentation size sometimes down to 1 or 2 spaces in order to use horizontal space as efficiently as possible.
+# If you use spaces, you're forcing them to scroll horizontally or to have a lot of text wrapping, which is uncool.
+# As for the indentation width, that's purely a matter of taste with tabs.
+# I think 3 is a good compromise between readability and horizontal space usage (I was inspired by Valgrind's source).
+
+UseTab: AlignWithSpaces # I really don't know what the difference between this and ForContinuationAndIndentation is - the documentation is unclear.
+IndentWidth: 3
+TabWidth: 3
+ContinuationIndentWidth: 3
+BracedInitializerIndentWidth: 3
+ObjCBlockIndentWidth: 3 # Are also sometimes used as an extension in regular C (-fblocks).
+
+# I go back and forth on this one, but a lot of languages anyway force this, it reduces ambiguity, and can prevent the famous Apple goto fail bug (though realistically your compiler should anyway warn you about code like that).
+
+InsertBraces: true
+
+# Anyone who doesn't do this is a monster.
+# I have no clue whatsoever why this isn't the default for VSCode and IntelliJ.
+# Well, I guess that makes sense for JetBrains, they like doing stuff stupidly.
+# Without this, everytime you add a line to the end of a file, you're changing two lines in the diff instead of just one.
+# Same argument goes for trailing commas (though the option doesn't do anything for C I believe).
+
+InsertNewlineAtEOF: true # clang-format 16
+KeepEmptyLinesAtEOF: false # clang-format 17
+InsertTrailingCommas: Wrapped
+
+# In general, I think avoiding empty lines where unnecessary is best, because vertical space is expensive.
+# But definition blocks are more readable with spacing between them and are uncommon enough that it's not a big deal.
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+SeparateDefinitionBlocks: Always
+
+# Windows is insane.
+
+LineEnding: LF # clang-format 16
+
+# Is much more consistent, because you anyway have to put the qualifier to the right side of the star if you wanna make a pointer itself const.
+# So instead of writing const int* const, you just write int const* const.
+# Also it removes that ambiguity for newbies about what the const really applies to.
+
+QualifierAlignment: Right
+
+# The user knows this best, and apparently this is a risky option to set.
+
+RemoveParentheses: Leave # clang-format 17
+
+# There's no point to keeping this.
+
+RemoveSemicolon: true # clang-format 16
+
+# Most places in this style have a space after a closing parenthesis, but I don't otherwise feel strongly about this.
+
+SpaceAfterCStyleCast: true
+
+# Unary operators rarely have a space after them, so I don't see why nots should.
+
+SpaceAfterLogicalNot: false
+
+# Personal preference, but I think it shows stronger separation between the LHS and the expression (especially since that LHS has spaces in it if it's a declaration).
+
+SpaceBeforeAssignmentOperators: true
+
+# This is really personal preference, I have no good argument for this.
+
+SpaceBeforeParens: ControlStatementsExceptControlMacros
+
+# Since this is strongly associated to the identifier as it has a high precedence, I think having a space makes it harder to read.
+
+SpaceBeforeSquareBrackets: false
+
+# Don't see the point.
+
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesInParens: Never # clang-format 17
+SpacesInSquareBrackets: false
+
+# I go back and forth on this one, but not having spaces makes it consistent with argument lists.
+# Apparently, this is what's preferred in C++11.
+
+SpacesInContainerLiterals: false
+Cpp11BracedListStyle: true
+
+# Comments are in a sense the lowest precedence things, so I think having spacing around them is best.
+
+SpacesBeforeTrailingComments: 1
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: -1
