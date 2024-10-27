@@ -1,6 +1,5 @@
 # Don't format any generated source files, i.e. those that come from Tree-sitter.
 
-flamingo/runtime/*
-flamingo/runtime/*/*
-flamingo/tree_sitter/parser.h
-flamingo/parser.c
+src/flamingo/*
+src/flamingo/*/*
+src/flamingo/*/*/*
