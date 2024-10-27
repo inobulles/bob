@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2023 Aymeric Wibo
 
-#define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
+#define __STDC_WANT_LIB_EXT2__ \
+	1 // ISO/IEC TR 24731-2:2010 standard library extensions
 
 #if __linux__
-   #define _GNU_SOURCE
+# define _GNU_SOURCE
 #endif
 
 #include <err.h>
@@ -23,34 +24,40 @@ static bool supports_colour(void) {
 
 	bool const clicolor_force = !!getenv("CLICOLOR_FORCE");
 
-	if (clicolor_force)
+	if (clicolor_force) {
 		return true;
+	}
 
 	// if stdout or stderr is not a TTY, we don't want colours
 
-	if (!isatty(STDOUT_FILENO) || !isatty(STDERR_FILENO))
+	if (!isatty(STDOUT_FILENO) || !isatty(STDERR_FILENO)) {
 		return false;
+	}
 
-	// check 'COLORTERM' (this is what ls(1) does on aquaBSD, except it also checks 'CLICOLOR' - too lazy personally)
+	// check 'COLORTERM' (this is what ls(1) does on aquaBSD, except it also
+	// checks 'CLICOLOR' - too lazy personally)
 
 	char* const colorterm = getenv("COLORTERM");
 
-	if (colorterm && *colorterm)
+	if (colorterm && *colorterm) {
 		return true;
+	}
 
 	// check if 'TERM' has the substring "color" in it
 
 	char* const term = getenv("TERM");
 
-	if (!term)
+	if (!term) {
 		return false;
+	}
 
 	return !!strstr(term, "color");
 }
 
 void logging_init(void) {
 	// does our terminal support colours?
-	// this seems surprisingly stupidly difficult: https://unix.stackexchange.com/questions/573410/how-to-interact-with-a-terminfo-database-in-c-without-ncurses
+	// this seems surprisingly stupidly difficult:
+	// https://unix.stackexchange.com/questions/573410/how-to-interact-with-a-terminfo-database-in-c-without-ncurses
 
 	colour_support = supports_colour();
 }
@@ -64,11 +71,13 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 
 	va_end(args);
 
-	if (colour_support)
+	if (colour_support) {
 		fprintf(stream, "%s%s%s\n", colour, msg, CLEAR);
+	}
 
-	else
+	else {
 		fprintf(stream, "%s\n", msg);
+	}
 
 	free(msg);
 }
@@ -95,15 +104,18 @@ void progress_complete(progress_t* self) {
 
 void progress_update(progress_t* self, size_t numerator, size_t _denominator, char const* fmt, ...) {
 	float const denominator = (float) _denominator - 1;
-	self->frac = 0.5; // if something goes wrong (e.g. there's only one item in our progress bar), default to 50%
+	self->frac = 0.5; // if something goes wrong (e.g. there's only one item in
+							// our progress bar), default to 50%
 
-	if (denominator > 0)
+	if (denominator > 0) {
 		self->frac = numerator / denominator;
+	}
 
 	printf(colour_support ? REPLACE_LINE BOLD BLUE "🚧 [" : "🚧 [");
 
-	for (size_t i = 0; i < BAR_SIZE; i++)
+	for (size_t i = 0; i < BAR_SIZE; i++) {
 		printf(i < self->frac * (BAR_SIZE + 1) ? "=" : ".");
+	}
 
 	printf(colour_support ? " %3d%%] " REGULAR BLUE : " %3d%%] ", (int) (self->frac * 100));
 
