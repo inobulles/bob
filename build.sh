@@ -4,11 +4,11 @@ set -xe
 mkdir -p sh-bin # 'bin' reserved for when compiling bob with bob
 
 # compile all objects
+# TODO Should we have to -Isrc/flamingo? Can it be made to just use quote includes?
 
 cc_flags="
-	-std=c99 -g -O0 -Isrc/wren/include -Isrc
+	-std=c99 -g -O0 -Isrc -Isrc/flamingo
 	-isystem=/usr/local/include -L/usr/local/lib
-	-DWREN_OPT_META=0 -DWREN_OPT_RANDOM=0
 	-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable
 	-Wno-unused-command-line-argument
 	-lm

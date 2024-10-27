@@ -42,8 +42,7 @@ void usage(void) {
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
 		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] package format [name] [out_file]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] test\n",
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] package format [name] [out_file]\n",
 	progname);
 
 	exit(EXIT_FAILURE);
@@ -159,10 +158,6 @@ int main(int argc, char* argv[]) {
 		else if (strcmp(curr_instr, "package") == 0) {
 			rv = do_package(argc, argv);
 			goto done;
-		}
-
-		else if (strcmp(curr_instr, "test") == 0) {
-			rv = do_test();
 		}
 
 		else {
