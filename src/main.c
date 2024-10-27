@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2023 Aymeric Wibo
 
-#include <instr.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #if defined(__linux__)
-# include <sys/prctl.h>
 # include <errno.h>
+# include <sys/prctl.h>
 #endif
 
-// global options go here so they're accessible by everyone
+#include <bsys.h>
+#include <logging.h>
 
-char const* rel_bin_path = "bin"; // default output path
+// Global options go here so they're accessible by everyone.
+
+char const* rel_bin_path = ".bob"; // Default output path.
 char* bin_path = NULL;
 char const* init_name = "bob";
-char const* curr_instr = NULL;
 char const* prefix = NULL;
 char const* project_path = NULL;
-bool gen_lsp_config = false;
-bool ran_as_dep = false;
+char* cur_instr = NULL;
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -36,14 +37,20 @@ void usage(void) {
 	char const* const progname = init_name;
 #endif
 
-	fprintf(stderr,
-		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] build\n"
+	fprintf(
+		stderr,
+		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] "
+		"build\n"
 		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] lsp\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] install\n"
-		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name [out_directory]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] package format [name] [out_file]\n",
-	progname);
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run "
+		"[args ...]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] "
+		"install\n"
+		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name "
+		"[out_directory]\n"
+		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] " "package format [name] [out_file]\n",
+		progname
+	);
 
 	exit(EXIT_FAILURE);
 }
@@ -52,17 +59,13 @@ int main(int argc, char* argv[]) {
 	init_name = *argv;
 	logging_init();
 
-	// parse options
+	// Parse options.
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:do:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
 		if (c == 'C') {
 			project_path = optarg;
-		}
-
-		else if (c == 'd') { // undocumented, as for internal use only!
-			ran_as_dep = true;
 		}
 
 		else if (c == 'o') {
@@ -81,14 +84,14 @@ int main(int argc, char* argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	// need to run at least one instruction
+	// Need to run at least one instruction.
 
 	if (!argc) {
 		usage();
 	}
 
-	// if project path wasn't set, set it to the current working directory
-	// then, make it absolute
+	// If project path wasn't set, set it to the current working directory.
+	// Then, make it absolute.
 
 	if (!project_path) {
 		project_path = ".";
@@ -102,13 +105,15 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// make sure relative bin path is in .gitignore
+	// TODO Make sure relative bin path is in '.gitignore'.
 
-	validate_gitignore((char*) rel_bin_path);
+	// validate_gitignore((char*) rel_bin_path);
 
-	// make 'init_name' absolute
-	// no biggie if we can't make it absolute, it's probably being run as a standalone command, in which case 'execute_async' can find it for us later by searching through 'PATH'
-	// TODO shouldn't this be relative to 'project_path' if one is set?
+	// Make 'init_name' absolute.
+	// No biggie if we can't make it absolute, it's probably being run as a
+	// standalone command, in which case 'execute_async' can find it for us later
+	// by searching through 'PATH'.
+	// TODO Shouldn't this be relative to 'project_path' if one is set?
 
 	char const* const abs_init_name = realpath(init_name, NULL);
 
@@ -116,47 +121,59 @@ int main(int argc, char* argv[]) {
 		init_name = abs_init_name;
 	}
 
-	// parse instructions
+	// Identify the build system.
 
-	int rv = EXIT_FAILURE; // I'm a pessimist
+	bsys_t const* const bsys = bsys_identify();
 
-	while (argc --> 0) {
-		curr_instr = *argv++;
+	if (bsys == NULL) {
+		LOG_FATAL("Could not identify build system");
+		return EXIT_FAILURE;
+	}
 
-		if (strcmp(curr_instr, "build") == 0) {
-			rv = do_build();
+	printf("%s\n", bsys->name);
+
+	// Parse instructions.
+
+	int rv = EXIT_FAILURE; // I'm a pessimist.
+
+	while (argc-- > 0) {
+		cur_instr = *argv++;
+
+		if (strcmp(cur_instr, "build") == 0) {
+			// TODO rv = do_build();
 		}
 
-		else if (strcmp(curr_instr, "lsp") == 0) {
-			gen_lsp_config = true;
-			rv = do_build();
+		else if (strcmp(cur_instr, "lsp") == 0) {
+			// TODO gen_lsp_config = true;
+			// TODO rv = do_build();
 		}
 
-		// everything stops if we run the 'run' command
-		// we don't know how many arguments there'll still be
+		// Everything stops if we run the 'run' command.
+		// We don't know how many arguments there'll still be.
 
-		else if (strcmp(curr_instr, "run") == 0) {
-			rv = do_run(argc, argv);
+		else if (strcmp(cur_instr, "run") == 0) {
+			// TODO rv = do_run(argc, argv);
 			goto done;
 		}
 
-		else if (strcmp(curr_instr, "install") == 0) {
-			rv = do_install();
+		else if (strcmp(cur_instr, "install") == 0) {
+			// TODO rv = do_install();
 		}
 
-		// everything stops if we run the 'skeleton' command
-		// I don't wanna deal with how the output/project paths should best be handled for subsequent commands
+		// Everything stops if we run the 'skeleton' command.
+		// I don't wanna deal with how the output/project paths should best be
+		// handled for subsequent commands.
 
-		else if (strcmp(curr_instr, "skeleton") == 0) {
-			rv = do_skeleton(argc, argv);
+		else if (strcmp(cur_instr, "skeleton") == 0) {
+			// TODO rv = do_skeleton(argc, argv);
 			goto done;
 		}
 
-		// everything stops if we run the 'package' command
-		// the last argument is optional, so it would introduce ambiguity
+		// Everything stops if we run the 'package' command.
+		// The last argument is optional, so it would introduce ambiguity.
 
-		else if (strcmp(curr_instr, "package") == 0) {
-			rv = do_package(argc, argv);
+		else if (strcmp(cur_instr, "package") == 0) {
+			// TODO rv = do_package(argc, argv);
 			goto done;
 		}
 
@@ -164,7 +181,7 @@ int main(int argc, char* argv[]) {
 			usage();
 		}
 
-		// stop here if there was an error in the execution of an instruction
+		// Stop here if there was an error in the execution of an instruction.
 
 		if (rv != EXIT_SUCCESS) {
 			goto done;
