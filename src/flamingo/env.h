@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <common.h>
-#include <scope.h>
+#include "common.h"
+#include "scope.h"
 
 #include <assert.h>
 #include <stdlib.h>

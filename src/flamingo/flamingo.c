@@ -10,11 +10,11 @@
 
 #include "runtime/lib.c"
 
-#include <common.h>
-#include <env.h>
-#include <grammar/statement.h>
-#include <primitive_type_member.h>
-#include <scope.h>
+#include "common.h"
+#include "env.h"
+#include "grammar/statement.h"
+#include "primitive_type_member.h"
+#include "scope.h"
 
 typedef struct {
 	TSParser* parser;
@@ -73,6 +73,9 @@ int flamingo_create(flamingo_t* flamingo, char const* progname, char* src, size_
 	flamingo->import_count = 0;
 	flamingo->imported_srcs = NULL;
 	flamingo->imported_flamingos = NULL;
+
+	flamingo->import_path_count = 0;
+	flamingo->import_paths = NULL;
 
 	flamingo->cur_fn_body = NULL;
 	flamingo->cur_fn_rv = NULL;
@@ -182,6 +185,16 @@ void flamingo_destroy(flamingo_t* flamingo) {
 		free(flamingo->imported_srcs);
 	}
 
+	// Free the import paths.
+
+	for (size_t i = 0; i < flamingo->import_path_count; i++) {
+		free(flamingo->import_paths[i]);
+	}
+
+	if (flamingo->import_paths != NULL) {
+		free(flamingo->import_paths);
+	}
+
 	// Finally, free the primitive type members.
 
 	primitive_type_member_free(flamingo);
@@ -201,6 +214,16 @@ char* flamingo_err(flamingo_t* flamingo) {
 void flamingo_register_external_fn_cb(flamingo_t* flamingo, flamingo_external_fn_cb_t cb, void* data) { // TODO Better name for this.
 	flamingo->external_fn_cb = cb;
 	flamingo->external_fn_cb_data = data;
+}
+
+void flamingo_add_import_path(flamingo_t* flamingo, char* path) {
+	char* const duped = strdup(path);
+	assert(duped != NULL);
+
+	flamingo->import_paths = realloc(flamingo->import_paths, (flamingo->import_path_count + 1) * sizeof *flamingo->import_paths);
+	assert(flamingo->import_paths != NULL);
+
+	flamingo->import_paths[flamingo->import_path_count++] = duped;
 }
 
 static int parse(flamingo_t* flamingo, TSNode node) {

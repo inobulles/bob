@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <common.h>
-#include <val.h>
-#include <var.h>
+#include "../common.h"
+#include "../val.h"
+#include "../var.h"
 
 static inline int str_len(flamingo_t* flamingo, flamingo_val_t* self, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(self->kind == FLAMINGO_VAL_KIND_STR);

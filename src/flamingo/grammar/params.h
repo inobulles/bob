@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common.h>
+#include "../common.h"
 
 static inline int check_param_types(flamingo_t* flamingo, TSNode params) {
 	size_t const n = ts_node_named_child_count(params);

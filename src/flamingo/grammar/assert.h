@@ -5,8 +5,8 @@
 
 #include "expr.h"
 
-#include <common.h>
-#include <val.h>
+#include "../common.h"
+#include "../val.h"
 
 static int parse_assert(flamingo_t* flamingo, TSNode node) {
 	assert(ts_node_child_count(node) == 2);

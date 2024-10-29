@@ -5,8 +5,8 @@
 
 #include "expr.h"
 
-#include <common.h>
-#include <scope.h>
+#include "../common.h"
+#include "../scope.h"
 
 static int access_find_var(flamingo_t* flamingo, TSNode node, flamingo_var_t** var, flamingo_val_t** accessed_val) {
 	assert(var != NULL);
