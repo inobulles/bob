@@ -45,7 +45,7 @@ static int external_fn_cb(flamingo_t* flamingo, flamingo_val_t* callable, void* 
 
 		bool consumed = false;
 
-		if (bob_class->call(callable, &consumed) < 0) {
+		if (bob_class->call(callable, args, rv, &consumed) < 0) {
 			return -1;
 		}
 

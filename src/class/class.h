@@ -8,7 +8,7 @@
 typedef struct {
 	char* name;
 	void (*populate)(char* key, size_t key_size, flamingo_val_t* val);
-	int (*call)(flamingo_val_t* callable, bool* consumed);
+	int (*call)(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed);
 } bob_class_t;
 
 extern bob_class_t const BOB_CLASS_FS;

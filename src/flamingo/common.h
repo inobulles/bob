@@ -83,17 +83,6 @@ static inline int primitive_type_member_std(flamingo_t* flamingo);
 
 // Call prototypes.
 
-typedef int (*set_args_cb_t)(flamingo_t* flamingo, void* data);
-
-static inline int call_with_set_args_cb(
-	flamingo_t* flamingo,
-	flamingo_val_t* callable,
-	flamingo_val_t* accessed_val,
-	flamingo_val_t** rv,
-	set_args_cb_t set_args_cb,
-	void* set_args_data
-);
-
 static inline int call(
 	flamingo_t* flamingo,
 	flamingo_val_t* callable,
