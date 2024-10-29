@@ -5,8 +5,8 @@
 
 #include "statement.h"
 
-#include <common.h>
-#include <env.h>
+#include "../common.h"
+#include "../env.h"
 
 static int parse_block(flamingo_t* flamingo, TSNode node, flamingo_scope_t** inner_scope) {
 	assert(strcmp(ts_node_type(node), "block") == 0);

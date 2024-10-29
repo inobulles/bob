@@ -132,6 +132,10 @@ int main(int argc, char* argv[]) {
 
 	printf("%s\n", bsys->name);
 
+	if (bsys->setup && bsys->setup() < 0) {
+		return EXIT_FAILURE;
+	}
+
 	// Parse instructions.
 
 	int rv = EXIT_FAILURE; // I'm a pessimist.

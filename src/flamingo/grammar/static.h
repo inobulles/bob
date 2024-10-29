@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include "../common.h"
 #include "var_decl.h"
-#include <common.h>
 
 static inline int find_static_members_in_class(flamingo_t* flamingo, flamingo_scope_t* scope, TSNode body) {
 	assert(strcmp(ts_node_type(body), "block") == 0);

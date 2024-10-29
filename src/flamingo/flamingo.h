@@ -167,6 +167,12 @@ struct flamingo_t {
 	flamingo_t* imported_flamingos;
 	char** imported_srcs;
 
+	// Import paths for global imports.
+	// These shouldn't be inherited by imported instances for now.
+
+	size_t import_path_count;
+	char** import_paths;
+
 	// Current function stuff.
 
 	flamingo_ts_node_t cur_fn_body;
@@ -188,6 +194,7 @@ void flamingo_destroy(flamingo_t* flamingo);
 
 char* flamingo_err(flamingo_t* flamingo);
 void flamingo_register_external_fn_cb(flamingo_t* flamingo, flamingo_external_fn_cb_t cb, void* data);
+void flamingo_add_import_path(flamingo_t* flamingo, char* path);
 int flamingo_inherit_env(flamingo_t* flamingo, flamingo_env_t* env);
 int flamingo_run(flamingo_t* flamingo);
 

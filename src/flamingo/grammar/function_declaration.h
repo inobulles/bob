@@ -3,14 +3,14 @@
 
 #pragma once
 
+#include "../common.h"
+#include "../env.h"
+#include "../scope.h"
+#include "../val.h"
+#include "../var.h"
 #include "params.h"
 #include "static.h"
 #include "var_decl.h"
-#include <common.h>
-#include <env.h>
-#include <scope.h>
-#include <val.h>
-#include <var.h>
 
 static int parse_function_declaration(flamingo_t* flamingo, TSNode node, flamingo_fn_kind_t kind) {
 	size_t const child_count = ts_node_child_count(node);

@@ -3,12 +3,13 @@
 
 #pragma once
 
-#include <common.h>
+#include "../common.h"
 
-#include <env.h>
+#include "../env.h"
 
 #include <errno.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static int import(flamingo_t* flamingo, char* path) {
 	// TODO This is really relative to the caller, not the current file.
@@ -23,7 +24,7 @@ static int import(flamingo_t* flamingo, char* path) {
 	struct stat sb;
 
 	if (stat(path, &sb) < 0) {
-		rv = error(flamingo, "failed to import '%s': stat: %s\n", path, strerror(errno));
+		rv = error(flamingo, "failed to import '%s': stat: %s", path, strerror(errno));
 		goto err_stat;
 	}
 
@@ -32,7 +33,7 @@ static int import(flamingo_t* flamingo, char* path) {
 	FILE* const f = fopen(path, "r");
 
 	if (f == NULL) {
-		rv = error(flamingo, "failed to import '%s': fopen: %s\n", path, strerror(errno));
+		rv = error(flamingo, "failed to import '%s': fopen: %s", path, strerror(errno));
 		goto err_fopen;
 	}
 
@@ -40,7 +41,7 @@ static int import(flamingo_t* flamingo, char* path) {
 	assert(src != NULL);
 
 	if (fread(src, 1, src_size, f) != src_size) {
-		rv = error(flamingo, "failed to import '%s': fread: %s\n", path, strerror(errno));
+		rv = error(flamingo, "failed to import '%s': fread: %s", path, strerror(errno));
 		goto err_fread;
 	}
 
@@ -60,7 +61,7 @@ static int import(flamingo_t* flamingo, char* path) {
 	// Create new flamingo engine.
 
 	if (flamingo_create(imported_flamingo, flamingo->progname, src, src_size) < 0) {
-		rv = error(flamingo, "failed to import '%s': flamingo_create: %s\n", path, strerror(errno));
+		rv = error(flamingo, "failed to import '%s': flamingo_create: %s", path, strerror(errno));
 		goto err_flamingo_create;
 	}
 
@@ -69,14 +70,14 @@ static int import(flamingo_t* flamingo, char* path) {
 	// Set the scope stack for the imported flamingo instance to be the same as ours.
 
 	if (flamingo_inherit_env(imported_flamingo, flamingo->env) < 0) {
-		rv = error(flamingo, "failed to import '%s': flamingo_inherit_env: %s\n", path, flamingo_err(imported_flamingo));
+		rv = error(flamingo, "failed to import '%s': flamingo_inherit_env: %s", path, flamingo_err(imported_flamingo));
 		goto err_flamingo_inherit_scope_stack;
 	}
 
 	// Run the imported program.
 
 	if (flamingo_run(imported_flamingo) < 0) {
-		rv = error(flamingo, "failed to import '%s': flamingo_run: %s\n", path, flamingo_err(imported_flamingo));
+		rv = error(flamingo, "failed to import '%s': flamingo_run: %s", path, flamingo_err(imported_flamingo));
 		goto err_flamingo_run;
 	}
 
@@ -154,7 +155,9 @@ static int parse_import_path(flamingo_t* flamingo, TSNode node, char** path_ref,
 
 static int parse_import(flamingo_t* flamingo, TSNode node) {
 	assert(strcmp(ts_node_type(node), "import") == 0);
-	assert(ts_node_child_count(node) == 3);
+
+	size_t const child_count = ts_node_child_count(node);
+	assert(child_count == 2 || child_count == 3);
 
 	// Is the import relative to the current file?
 	// If so, it means we need to follow the import file relative to the current one.
@@ -173,8 +176,6 @@ static int parse_import(flamingo_t* flamingo, TSNode node) {
 	}
 
 	// Parse the import path into an actual string path we can use.
-
-	(void) is_relative;
 
 	char* path = NULL;
 	size_t path_len = 0;
@@ -200,11 +201,27 @@ static int parse_import(flamingo_t* flamingo, TSNode node) {
 		return error(flamingo, "failed to allocate memory for import path");
 	}
 
-	// We don't support global imports yet.
+	// If is a global import, go through the import paths until we find the file.
 
 	if (!is_relative) {
-		return error(flamingo, "global imports are not supported yet (trying to import '%s')", import_path);
+		for (size_t i = 0; i < flamingo->import_path_count; i++) {
+			char* full_path = NULL;
+			asprintf(&full_path, "%s/%s", flamingo->import_paths[i], import_path);
+			assert(full_path != NULL);
+
+			if (access(full_path, F_OK) < 0) {
+				free(full_path);
+				continue;
+			}
+
+			free(import_path);
+			import_path = full_path;
+
+			break;
+		}
 	}
+
+	// Actually import.
 
 	rv = import(flamingo, import_path);
 	free(import_path);

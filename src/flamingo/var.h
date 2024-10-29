@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <common.h>
+#include "../common.h"
 
 static void var_set_val(flamingo_var_t* var, flamingo_val_t* val) {
 	if (var->val != NULL && val != NULL) {

@@ -5,8 +5,8 @@
 
 #include "expr.h"
 
-#include <common.h>
-#include <val.h>
+#include "../common.h"
+#include "../val.h"
 
 #include <inttypes.h>
 

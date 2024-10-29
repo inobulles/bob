@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include <common.h>
-#include <val.h>
-#include <var.h>
+#include "../common.h"
+#include "../val.h"
+#include "../var.h"
 
-#include <grammar/call.h>
+#include "../grammar/call.h"
 
 static inline int vec_len(flamingo_t* flamingo, flamingo_val_t* self, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(self->kind == FLAMINGO_VAL_KIND_VEC);

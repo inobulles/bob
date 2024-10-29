@@ -5,8 +5,8 @@
 
 #include "expr.h"
 
-#include <common.h>
-#include <scope.h>
+#include "../common.h"
+#include "../scope.h"
 
 static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
 	assert(strcmp(ts_node_type(node), "index") == 0);

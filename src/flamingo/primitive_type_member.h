@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <common.h>
-#include <val.h>
-#include <var.h>
+#include "common.h"
+#include "val.h"
+#include "var.h"
 
 #include "ptm/str.h"
 #include "ptm/vec.h"

@@ -5,12 +5,16 @@
 
 #include <stdbool.h>
 
-typedef struct {
+typedef struct bsys_t bsys_t;
+
+struct bsys_t {
 	char const* name;
 
 	bool (*identify)(void);
+	int (*setup)(void);
 	int (*build)(void);
-} bsys_t;
+	void (*destroy)(void);
+};
 
 extern bsys_t const BSYS_BOB;
 extern bsys_t const BSYS_MAKE_FREEBSD_PORT;

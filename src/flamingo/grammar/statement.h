@@ -12,7 +12,7 @@
 #include "return.h"
 #include "var_decl.h"
 
-#include <common.h>
+#include "../common.h"
 
 static int parse_statement(flamingo_t* flamingo, TSNode node) {
 	// Line insensitive statements, which are only wrapped by a hidden node.

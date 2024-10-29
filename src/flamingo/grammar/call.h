@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <call.h>
-#include <common.h>
-#include <scope.h>
+#include "../call.h"
+#include "../common.h"
+#include "../scope.h"
 
 #include "block.h"
 #include "expr.h"
