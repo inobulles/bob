@@ -15,9 +15,33 @@ typedef struct flamingo_scope_t flamingo_scope_t;
 typedef struct flamingo_env_t flamingo_env_t;
 typedef struct flamingo_arg_list_t flamingo_arg_list_t;
 
-typedef int (*flamingo_external_fn_cb_t)(flamingo_t* flamingo, flamingo_val_t* callable, void* data, flamingo_arg_list_t* args, flamingo_val_t** rv);
-typedef int (*flamingo_class_declaration_cb_t)(flamingo_t* flamingo, flamingo_val_t* class, void* data);
-typedef int (*flamingo_ptm_cb_t)(flamingo_t* flamingo, flamingo_val_t* self, flamingo_arg_list_t* args, flamingo_val_t** rv);
+typedef int (*flamingo_external_fn_cb_t)(
+	flamingo_t* flamingo,
+	flamingo_val_t* callable,
+	void* data,
+	flamingo_arg_list_t* args,
+	flamingo_val_t** rv
+);
+
+typedef int (*flamingo_class_decl_cb_t)(
+	flamingo_t* flamingo,
+	flamingo_val_t* class,
+	void* data
+);
+
+typedef int (*flamingo_class_inst_cb_t)(
+	flamingo_t* flamingo,
+	flamingo_val_t* instance,
+	void* data,
+	flamingo_arg_list_t* args
+);
+
+typedef int (*flamingo_ptm_cb_t)(
+	flamingo_t* flamingo,
+	flamingo_val_t* self,
+	flamingo_arg_list_t* args,
+	flamingo_val_t** rv
+);
 
 typedef enum {
 	FLAMINGO_VAL_KIND_NONE,
@@ -160,8 +184,11 @@ struct flamingo_t {
 	flamingo_external_fn_cb_t external_fn_cb;
 	void* external_fn_cb_data;
 
-	flamingo_class_declaration_cb_t class_decl_cb;
+	flamingo_class_decl_cb_t class_decl_cb;
 	void* class_decl_cb_data;
+
+	flamingo_class_inst_cb_t class_inst_cb;
+	void* class_inst_cb_data;
 
 	// Runtime stuff.
 
@@ -204,8 +231,11 @@ int flamingo_create(flamingo_t* flamingo, char const* progname, char* src, size_
 void flamingo_destroy(flamingo_t* flamingo);
 
 char* flamingo_err(flamingo_t* flamingo);
+
 void flamingo_register_external_fn_cb(flamingo_t* flamingo, flamingo_external_fn_cb_t cb, void* data);
-void flamingo_register_class_decl_cb(flamingo_t* flamingo, flamingo_class_declaration_cb_t cb, void* data);
+void flamingo_register_class_decl_cb(flamingo_t* flamingo, flamingo_class_decl_cb_t cb, void* data);
+void flamingo_register_class_inst_cb(flamingo_t* flamingo, flamingo_class_inst_cb_t cb, void* data);
+
 void flamingo_add_import_path(flamingo_t* flamingo, char* path);
 int flamingo_inherit_env(flamingo_t* flamingo, flamingo_env_t* env);
 int flamingo_run(flamingo_t* flamingo);

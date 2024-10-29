@@ -78,6 +78,32 @@ static int class_decl_cb(flamingo_t* flamingo, flamingo_val_t* class, void* data
 	return 0;
 }
 
+static int class_inst_cb(flamingo_t* flamingo, flamingo_val_t* inst, void* data, flamingo_arg_list_t* args) {
+	flamingo_val_t* const class = inst->inst.class;
+	char* const name = class->name;
+	size_t const name_size = class->name_size;
+
+	for (size_t i = 0; i < sizeof(BOB_CLASSES) / sizeof(BOB_CLASSES[0]); i++) {
+		bob_class_t const* const bob_class = BOB_CLASSES[i];
+
+		if (bob_class->instantiate == NULL) {
+			continue;
+		}
+
+		if (flamingo_cstrcmp(name, bob_class->name, name_size) != 0) {
+			continue;
+		}
+
+		if (bob_class->instantiate(inst, args) < 0) {
+			return -1;
+		}
+
+		break;
+	}
+
+	return 0;
+}
+
 static int setup(void) {
 	int rv = -1;
 	consistent = false;
@@ -116,6 +142,8 @@ static int setup(void) {
 
 	flamingo_register_external_fn_cb(&flamingo, external_fn_cb, NULL);
 	flamingo_register_class_decl_cb(&flamingo, class_decl_cb, NULL);
+	flamingo_register_class_inst_cb(&flamingo, class_inst_cb, NULL);
+
 	flamingo_add_import_path(&flamingo, BOB_IMPORT_PATH);
 
 	// Run build program.
