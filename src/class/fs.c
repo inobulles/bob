@@ -27,7 +27,7 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 
 	size_t const depth = 0; // XXX Hardcoded for now.
 
-	char* const path_argv[] = { (char*) path, NULL };
+	char* const path_argv[] = {(char*) path, NULL};
 	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
 
 	if (fts == NULL) {
