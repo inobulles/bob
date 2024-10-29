@@ -4,6 +4,7 @@
 #include <bsys.h>
 #include <logging.h>
 
+#include <class/class.h>
 #include <flamingo/flamingo.h>
 
 #include <assert.h>
@@ -24,7 +25,7 @@ flamingo_t flamingo;
 
 typedef struct {
 	char const* name;
-	int (*cb) (void* data);
+	int (*cb)(void* data);
 	void* data;
 } build_step_t;
 
@@ -35,14 +36,22 @@ static bool identify(void) {
 	return access(BUILD_PATH, F_OK) != -1;
 }
 
-static flamingo_val_t* fs_list = NULL;
-
 static int external_fn_cb(flamingo_t* flamingo, flamingo_val_t* callable, void* data, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	char* const name = callable->name;
 	size_t const name_size = callable->name_size;
 
-	if (callable == fs_list) {
-		return 0; // TODO
+	for (size_t i = 0; i < sizeof(BOB_CLASSES) / sizeof(BOB_CLASSES[0]); i++) {
+		bob_class_t const* const bob_class = BOB_CLASSES[i];
+
+		bool consumed = false;
+
+		if (bob_class->call(callable, &consumed) < 0) {
+			return -1;
+		}
+
+		if (consumed) {
+			return 0;
+		}
 	}
 
 	return flamingo_raise_error(flamingo, "Bob doesn't support the '%.*s' external function call (%zu arguments passed)", (int) name_size, name, args->count);
@@ -53,13 +62,16 @@ static int class_decl_cb(flamingo_t* flamingo, flamingo_val_t* class, void* data
 	size_t const name_size = class->name_size;
 	flamingo_scope_t* const scope = class->fn.scope;
 
-	if (flamingo_cstrcmp(name, "Fs", name_size) == 0) {
-		for (size_t i = 0; i < scope->vars_size; i++) {
-			flamingo_var_t* const var = &scope->vars[i];
+	for (size_t i = 0; i < sizeof(BOB_CLASSES) / sizeof(BOB_CLASSES[0]); i++) {
+		bob_class_t const* const bob_class = BOB_CLASSES[i];
 
-			if (flamingo_cstrcmp(var->key, "list", var->key_size) == 0) {
-				fs_list = var->val;
-			}
+		if (flamingo_cstrcmp(name, bob_class->name, name_size) != 0) {
+			continue;
+		}
+
+		for (size_t j = 0; j < scope->vars_size; j++) {
+			flamingo_var_t* const var = &scope->vars[j];
+			bob_class->populate(var->key, var->key_size, var->val);
 		}
 	}
 
