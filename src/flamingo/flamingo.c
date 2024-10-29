@@ -216,6 +216,11 @@ void flamingo_register_external_fn_cb(flamingo_t* flamingo, flamingo_external_fn
 	flamingo->external_fn_cb_data = data;
 }
 
+void flamingo_register_class_decl_cb(flamingo_t* flamingo, flamingo_class_declaration_cb_t cb, void* data) {
+	flamingo->class_decl_cb = cb;
+	flamingo->class_decl_cb_data = data;
+}
+
 void flamingo_add_import_path(flamingo_t* flamingo, char* path) {
 	char* const duped = strdup(path);
 	assert(duped != NULL);

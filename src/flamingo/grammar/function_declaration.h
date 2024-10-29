@@ -104,9 +104,12 @@ static int parse_function_declaration(flamingo_t* flamingo, TSNode node, flaming
 	// Add function/class to scope.
 
 	flamingo_var_t* const var = scope_add_var(cur_scope, name, size);
+	var->is_static = check_is_static(flamingo, node);
+
 	var_set_val(var, val_alloc());
 
 	var->val->kind = FLAMINGO_VAL_KIND_FN;
+
 	var->val->fn.kind = kind;
 	var->val->fn.env = env_close_over(flamingo->env);
 	var->val->fn.params = NULL;
@@ -142,6 +145,12 @@ static int parse_function_declaration(flamingo_t* flamingo, TSNode node, flaming
 
 	var->val->fn.src = flamingo->src;
 	var->val->fn.src_size = flamingo->src_size;
+
+	// If class, once everything is done, call the class declaration callback if one was registered.
+
+	if (kind == FLAMINGO_FN_KIND_CLASS && flamingo->class_decl_cb) {
+		return flamingo->class_decl_cb(flamingo, var->val, flamingo->class_decl_cb_data);
+	}
 
 	return 0;
 }
