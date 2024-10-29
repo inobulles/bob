@@ -11,13 +11,77 @@
 #include "grammar/block.h"
 #include "grammar/expr.h"
 
-static int call_with_set_args_cb(
+// XXX Right now, there's no way of defining primitive type member parameters, so this is for that.
+// So I'm just ignoring them for now.
+// We need to find a long-term solution at some point.
+
+static int setup_args_no_param(flamingo_t* flamingo, flamingo_arg_list_t* args) {
+	for (size_t i = 0; i < args->count; i++) {
+		// Create parameter variable.
+
+		flamingo_scope_t* const scope = env_cur_scope(flamingo->env);
+		flamingo_var_t* const var = scope_add_var(scope, "nothing to see here!", 0);
+
+		var_set_val(var, args->args[i]);
+	}
+
+	return 0;
+}
+
+static int setup_args(flamingo_t* flamingo, TSNode* params, flamingo_arg_list_t* args) {
+	size_t const param_count = params == NULL ? 0 : ts_node_named_child_count(*params);
+
+	if (args->count != param_count) {
+		return error(flamingo, "callable expected %zu arguments, got %zu instead", param_count, args->count);
+	}
+
+	flamingo_scope_t* const scope = env_cur_scope(flamingo->env);
+
+	for (size_t i = 0; i < args->count; i++) {
+		// Get parameter.
+		// assert: Type should already have been checked when declaring the function/class.
+
+		TSNode const param = ts_node_named_child(*params, i);
+		char const* const param_type = ts_node_type(param);
+		assert(strcmp(param_type, "param") == 0);
+
+		// Get parameter identifier.
+
+		TSNode const identifier = ts_node_child_by_field_name(param, "ident", 5);
+		assert(strcmp(ts_node_type(identifier), "identifier") == 0);
+
+		size_t const start = ts_node_start_byte(identifier);
+		size_t const end = ts_node_end_byte(identifier);
+
+		char const* const name = flamingo->src + start;
+		size_t const size = end - start;
+
+		// Get parameter type if it has one.
+
+		TSNode const type = ts_node_child_by_field_name(param, "type", 4);
+		bool const has_type = !ts_node_is_null(type);
+
+		if (has_type) {
+			assert(strcmp(ts_node_type(type), "type") == 0);
+		}
+
+		(void) type;
+
+		// Create parameter variable, and set to argument list value in same position.
+
+		flamingo_var_t* const var = scope_add_var(scope, name, size);
+		var_set_val(var, args->args[i]);
+	}
+
+	return 0;
+}
+
+static int call(
 	flamingo_t* flamingo,
 	flamingo_val_t* callable,
 	flamingo_val_t* accessed_val,
 	flamingo_val_t** rv,
-	set_args_cb_t set_args_cb,
-	void* set_args_data
+	flamingo_arg_list_t* args
 ) {
 	bool const is_class = callable->fn.kind == FLAMINGO_FN_KIND_CLASS;
 	bool const on_inst = accessed_val != NULL && accessed_val->kind == FLAMINGO_VAL_KIND_INST;
@@ -58,7 +122,13 @@ static int call_with_set_args_cb(
 	flamingo_scope_t* scope = env_push_scope(flamingo->env);
 	scope->class_scope = is_class;
 
-	if (set_args_cb(flamingo, set_args_data) < 0) {
+	if (is_ptm) {
+		if (setup_args_no_param(flamingo, args) < 0) {
+			return -1;
+		}
+	}
+
+	else if (setup_args(flamingo, callable->fn.params, args) < 0) {
 		return -1;
 	}
 
@@ -182,77 +252,4 @@ done:
 
 	flamingo->cur_fn_rv = NULL;
 	return 0;
-}
-
-typedef struct {
-	flamingo_arg_list_t* arg_list;
-	TSNode* params;
-} set_args_from_arg_list_data_t;
-
-// TODO This is really quite similar to 'setup_args', factor out the common code?
-
-static int set_args_from_arg_list(flamingo_t* flamingo, void* _data) {
-	set_args_from_arg_list_data_t* const data = _data;
-
-	size_t n = data->arg_list->count;
-	size_t const param_count = data->params == NULL ? 0 : ts_node_named_child_count(*data->params);
-
-	if (n != param_count) {
-		return error(flamingo, "callable expected %zu arguments, got %zu instead", param_count, n);
-	}
-
-	flamingo_scope_t* const scope = env_cur_scope(flamingo->env);
-
-	for (size_t i = 0; i < n; i++) {
-		// Get parameter.
-		// assert: Type should already have been checked when declaring the function/class.
-
-		TSNode const param = ts_node_named_child(*data->params, i);
-		char const* const param_type = ts_node_type(param);
-		assert(strcmp(param_type, "param") == 0);
-
-		// Get parameter identifier.
-
-		TSNode const identifier = ts_node_child_by_field_name(param, "ident", 5);
-		assert(strcmp(ts_node_type(identifier), "identifier") == 0);
-
-		size_t const start = ts_node_start_byte(identifier);
-		size_t const end = ts_node_end_byte(identifier);
-
-		char const* const name = flamingo->src + start;
-		size_t const size = end - start;
-
-		// Get parameter type if it has one.
-
-		TSNode const type = ts_node_child_by_field_name(param, "type", 4);
-		bool const has_type = !ts_node_is_null(type);
-
-		if (has_type) {
-			assert(strcmp(ts_node_type(type), "type") == 0);
-		}
-
-		(void) type;
-
-		// Create parameter variable, and set to argument list value in same position.
-
-		flamingo_var_t* const var = scope_add_var(scope, name, size);
-		var_set_val(var, data->arg_list->args[i]);
-	}
-
-	return 0;
-}
-
-static int call(
-	flamingo_t* flamingo,
-	flamingo_val_t* callable,
-	flamingo_val_t* accessed_val,
-	flamingo_val_t** rv,
-	flamingo_arg_list_t* args
-) {
-	set_args_from_arg_list_data_t set_args_data = {
-		.arg_list = args,
-		.params = callable->fn.params,
-	};
-
-	return call_with_set_args_cb(flamingo, callable, accessed_val, rv, set_args_from_arg_list, &set_args_data);
 }
