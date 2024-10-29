@@ -8,6 +8,7 @@
 #include "../common.h"
 #include "../env.h"
 #include "../scope.h"
+#include "static.h"
 
 static int parse_var_decl(flamingo_t* flamingo, TSNode node) {
 	size_t const child_count = ts_node_named_child_count(node);
@@ -67,6 +68,7 @@ static int parse_var_decl(flamingo_t* flamingo, TSNode node) {
 	// Now, we can add our variable to the scope.
 
 	flamingo_var_t* const var = scope_add_var(cur_scope, name, name_size);
+	var->is_static = check_is_static(flamingo, node);
 
 	// And parse the initial expression if there is one to the variable's value.
 

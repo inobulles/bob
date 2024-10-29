@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #define BUILD_PATH "build.fl"
+#define BOB_IMPORT_PATH "/Users/aymeric/bob/bob"
 
 bool consistent = false;
 
@@ -21,8 +22,48 @@ size_t src_size;
 
 flamingo_t flamingo;
 
+typedef struct {
+	char const* name;
+	int (*cb) (void* data);
+	void* data;
+} build_step_t;
+
+size_t build_step_count;
+build_step_t* build_steps;
+
 static bool identify(void) {
 	return access(BUILD_PATH, F_OK) != -1;
+}
+
+static flamingo_val_t* fs_list = NULL;
+
+static int external_fn_cb(flamingo_t* flamingo, flamingo_val_t* callable, void* data, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	char* const name = callable->name;
+	size_t const name_size = callable->name_size;
+
+	if (callable == fs_list) {
+		return 0; // TODO
+	}
+
+	return flamingo_raise_error(flamingo, "Bob doesn't support the '%.*s' external function call (%zu arguments passed)", (int) name_size, name, args->count);
+}
+
+static int class_decl_cb(flamingo_t* flamingo, flamingo_val_t* class, void* data) {
+	char* const name = class->name;
+	size_t const name_size = class->name_size;
+	flamingo_scope_t* const scope = class->fn.scope;
+
+	if (flamingo_cstrcmp(name, "Fs", name_size) == 0) {
+		for (size_t i = 0; i < scope->vars_size; i++) {
+			flamingo_var_t* const var = &scope->vars[i];
+
+			if (flamingo_cstrcmp(var->key, "list", var->key_size) == 0) {
+				fs_list = var->val;
+			}
+		}
+	}
+
+	return 0;
 }
 
 static int setup(void) {
@@ -61,7 +102,9 @@ static int setup(void) {
 		goto err_flamingo_create;
 	}
 
-	flamingo_add_import_path(&flamingo, "bob");
+	flamingo_register_external_fn_cb(&flamingo, external_fn_cb, NULL);
+	flamingo_register_class_decl_cb(&flamingo, class_decl_cb, NULL);
+	flamingo_add_import_path(&flamingo, BOB_IMPORT_PATH);
 
 	// Run build program.
 
@@ -77,7 +120,7 @@ static int setup(void) {
 	for (size_t i = 0; i < scope->vars_size; i++) {
 		flamingo_var_t const* const var = &scope->vars[i];
 
-		if (strncmp(var->key, "__bob_has_been_imported__", var->key_size) == 0) {
+		if (flamingo_cstrcmp(var->key, "__bob_has_been_imported__", var->key_size) == 0) {
 			goto found;
 		}
 	}
@@ -116,6 +159,8 @@ err_fopen:
 }
 
 static int build(void) {
+	// TODO Run build steps.
+
 	return 0;
 }
 

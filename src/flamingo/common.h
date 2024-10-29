@@ -36,6 +36,9 @@ static inline int parse_import(flamingo_t* flamingo, TSNode node);
 static inline int parse_function_declaration(flamingo_t* flamingo, TSNode node, flamingo_fn_kind_t kind);
 static inline int parse_lambda(flamingo_t* flamingo, TSNode node, flamingo_val_t** val);
 
+static inline bool check_is_static(flamingo_t* flamingo, TSNode node);
+static inline int find_static_members_in_class(flamingo_t* flamingo, flamingo_scope_t* scope, TSNode body);
+
 // Environment prototypes.
 
 static inline flamingo_env_t* env_alloc(void);

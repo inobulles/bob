@@ -50,14 +50,18 @@ static int access_find_var(flamingo_t* flamingo, TSNode node, flamingo_var_t** v
 	flamingo_val_kind_t const kind = (*accessed_val)->kind;
 
 	bool const is_inst = kind == FLAMINGO_VAL_KIND_INST;
-	bool const is_static = kind == FLAMINGO_VAL_KIND_FN && (*accessed_val)->fn.kind == FLAMINGO_FN_KIND_CLASS;
+	bool const is_static_access = kind == FLAMINGO_VAL_KIND_FN && (*accessed_val)->fn.kind == FLAMINGO_FN_KIND_CLASS;
 
-	if (is_inst || is_static) {
+	if (is_inst || is_static_access) {
 		flamingo_scope_t* const scope = is_inst ? (*accessed_val)->inst.scope : (*accessed_val)->fn.scope;
 		*var = scope_shallow_find_var(scope, accessor, size);
 
 		if (*var == NULL) {
-			return error(flamingo, "member '%.*s' was never in declared", (int) size, accessor);
+			return error(flamingo, "%smember '%.*s' was never declared", is_static_access ? "static " : "", (int) size, accessor);
+		}
+
+		if (is_inst && (*var)->is_static) {
+			return error(flamingo, "member '%.*s' is static and can't be accessed through an instance", (int) size, accessor);
 		}
 
 		return 0;

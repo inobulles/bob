@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2023 Aymeric Wibo
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +93,7 @@ int main(int argc, char* argv[]) {
 
 	// If project path wasn't set, set it to the current working directory.
 	// Then, make it absolute.
+	// Finally, actually change to that directory.
 
 	if (!project_path) {
 		project_path = ".";
@@ -102,6 +104,11 @@ int main(int argc, char* argv[]) {
 
 	if (!project_path) {
 		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
+		return EXIT_FAILURE;
+	}
+
+	if (chdir(project_path) < 0) {
+		LOG_FATAL("chdir(\"%s\"): %s", project_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
 

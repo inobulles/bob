@@ -96,7 +96,7 @@ static int call_with_set_args_cb(
 
 		assert(flamingo->cur_fn_rv == NULL);
 
-		if (is_extern && flamingo->external_fn_cb(flamingo, callable->name_size, callable->name, flamingo->external_fn_cb_data, &arg_list, &flamingo->cur_fn_rv) < 0) {
+		if (is_extern && flamingo->external_fn_cb(flamingo, callable, flamingo->external_fn_cb_data, &arg_list, &flamingo->cur_fn_rv) < 0) {
 			return -1;
 		}
 
