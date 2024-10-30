@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static size_t cookie_index = 0;
+size_t cookie_index = 0;
 
 static inline char* gen_cookie(char* path, size_t path_size) {
 	char* cookie = NULL;
