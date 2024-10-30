@@ -42,15 +42,16 @@ no_last:
 
 	build_steps = realloc(build_steps, (build_step_count + 1) * sizeof *build_steps);
 	assert(build_steps != NULL);
+	build_step_t* const step = &build_steps[build_step_count++];
 
-	build_steps[build_step_count].name = name;
-	build_steps[build_step_count].cb = cb;
-	build_steps[build_step_count].data_count = 1;
+	step->name = name;
+	step->cb = cb;
+	step->data_count = 1;
 
-	build_steps[build_step_count].data = malloc(sizeof *build_steps->data);
-	assert(build_steps[build_step_count].data != NULL);
+	step->data = malloc(sizeof *build_steps->data);
+	assert(step->data != NULL);
 
-	build_steps[build_step_count].data[0] = data;
+	step->data[0] = data;
 
 	return 0;
 }
@@ -66,4 +67,16 @@ void free_build_steps(void) {
 
 	free(build_steps);
 	build_steps = NULL;
+}
+
+int run_build_steps(void) {
+	for (size_t i = 0; i < build_step_count; i++) {
+		build_step_t* const step = &build_steps[i];
+
+		if (step->cb(step->data_count, step->data) < 0) {
+			return -1;
+		}
+	}
+
+	return 0;
 }

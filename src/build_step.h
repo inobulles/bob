@@ -18,3 +18,5 @@ typedef struct {
 
 int add_build_step(uint64_t unique, char const* name, build_step_cb_t cb, void* data);
 void free_build_steps(void);
+
+int run_build_steps(void);
