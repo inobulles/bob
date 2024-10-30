@@ -61,6 +61,8 @@ found:
 
 void pool_init(pool_t* pool, size_t worker_count) {
 	pthread_mutex_init(&pool->lock, NULL);
+	pthread_mutex_lock(&pool->lock);
+
 	pool->error = false;
 
 	pool->worker_count = worker_count;
@@ -73,6 +75,8 @@ void pool_init(pool_t* pool, size_t worker_count) {
 
 	pool->task_count = 0;
 	pool->tasks = NULL;
+
+	pthread_mutex_unlock(&pool->lock);
 }
 
 void pool_free(pool_t* pool) {
@@ -93,7 +97,7 @@ void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
 	pool->tasks = realloc(pool->tasks, (pool->task_count + 1) * sizeof *pool->tasks);
 	assert(pool->tasks != NULL);
 
-	task_t* const task = &pool->tasks[pool->task_count];
+	task_t* const task = &pool->tasks[pool->task_count++];
 
 	task->done = false;
 	task->fn = cb;
