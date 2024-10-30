@@ -3,6 +3,7 @@
 
 #include <bsys.h>
 #include <logging.h>
+#include <build_step.h>
 
 #include <class/class.h>
 #include <flamingo/flamingo.h>
@@ -208,9 +209,7 @@ err_fopen:
 }
 
 static int build(void) {
-	printf("build steps.\n");
-
-	return 0;
+	return run_build_steps();
 }
 
 static void destroy(void) {
