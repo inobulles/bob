@@ -70,9 +70,11 @@ static int compile_step(size_t data_count, void** data) {
 		}
 	}
 
+	int const rv = pool_wait(&pool);
+
 	pool_free(&pool);
 
-	return 0;
+	return rv;
 }
 
 static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
