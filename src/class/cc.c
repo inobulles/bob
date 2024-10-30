@@ -2,6 +2,7 @@
 // Copyright (c) 2024 Aymeric Wibo
 
 #include <class/class.h>
+#include <cookie.h>
 #include <logging.h>
 
 #include <assert.h>
@@ -15,7 +16,9 @@ typedef struct {
 	flamingo_val_t* flags;
 } state_t;
 
-static int compile(flamingo_arg_list_t* args, flamingo_val_t** rv) {
+static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	// Validate sources argument.
+
 	if (args->count != 1) {
 		LOG_FATAL(CC ".compile: Expected 1 argument, got %zu", args->count);
 		return -1;
@@ -28,6 +31,17 @@ static int compile(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 
 	flamingo_val_t* const srcs = args->args[0];
 
+	// Return list of output cookies.
+
+	*rv = flamingo_val_make_none();
+	(*rv)->kind = FLAMINGO_VAL_KIND_VEC;
+
+	(*rv)->vec.count = srcs->vec.count;
+	(*rv)->vec.elems = malloc((*rv)->vec.count * sizeof *(*rv)->vec.elems);
+	assert((*rv)->vec.elems != NULL);
+
+	// Generate each output cookie and validate members of source vector.
+
 	for (size_t i = 0; i < srcs->vec.count; i++) {
 		flamingo_val_t* const src = srcs->vec.elems[i];
 
@@ -36,8 +50,19 @@ static int compile(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 			return -1;
 		}
 
-		printf("TODO Compile source: %.*s\n", (int) src->str.size, src->str.str);
+		char* const cookie = gen_cookie(src->str.str, src->str.size);
+		flamingo_val_t* const cookie_val = flamingo_val_make_cstr(cookie);
+		free(cookie);
+
+		(*rv)->vec.elems[i] = cookie_val;
 	}
+
+	// Strategy:
+	// - Get an output cookie for each source file.
+	// - Return a vector of these output cookies.
+	// - Add a build step for this compile command.
+	// - If the previous build step was also a compile command, merge them (should this be handled automatically?).
+	// - We're going to need a few utilities for this, maybe like 'cookie.h' and 'build_step.h'.
 
 	return 0;
 }
@@ -45,8 +70,10 @@ static int compile(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
 	*consumed = true;
 
+	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
+
 	if (flamingo_cstrcmp(callable->name, "compile", callable->name_size) == 0) {
-		return compile(args, rv);
+		return compile(state, args, rv);
 	}
 
 	*consumed = false;
