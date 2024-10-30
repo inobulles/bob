@@ -5,6 +5,7 @@
 #include <class/class.h>
 #include <cookie.h>
 #include <logging.h>
+#include <task.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -22,8 +23,54 @@ typedef struct {
 	flamingo_val_t* out_vec;
 } build_step_state_t;
 
+typedef struct {
+	flamingo_val_t* src;
+	flamingo_val_t* out;
+} compile_task_t;
+
+static bool compile_task(void* data) {
+	compile_task_t* const task = data;
+
+	// TODO.
+
+	printf("compile %.*s -> %.*s\n", (int) task->src->str.size, task->src->str.str, (int) task->out->str.size, task->out->str.str);
+
+	free(task);
+	return false;
+}
+
 static int compile_step(size_t data_count, void** data) {
-	printf("TODO\n");
+	// Strategy:
+	// - Figure out if the source file is newer than the output file or the options have changed.
+	// - I do realize that if we wanna compare output files correctly, we're going to have to be a little smarter about how we generate the cookies. Probably going to have to do it by path.
+	// - Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
+	// - If so, add compilation task to the task queue.
+	// - Once everything has been added to the async task queue, we must wait for all tasks to finish before moving onto the next step.
+
+	// Task queue strategy:
+	// - Immediately start compilation process, piping stdout and stderr to the same place.
+	// - If there's an error, cancel all the other tasks in the task queue somehow and spit out combined stdout and stderr log.
+	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
+	// - Also if there's no error, write out the flags used.
+
+	pool_t pool;
+	pool_init(&pool, 11);
+
+	for (size_t i = 0; i < data_count; i++) {
+		build_step_state_t* const bss = data[i];
+
+		for (size_t j = 0; j < bss->src_vec->vec.count; j++) {
+			compile_task_t* const data = malloc(sizeof *data);
+			assert(data != NULL);
+
+			data->src = bss->src_vec->vec.elems[j];
+			data->out = bss->out_vec->vec.elems[j];
+
+			pool_add_task(&pool, compile_task, data);
+		}
+	}
+
+	pool_free(&pool);
 
 	return 0;
 }
