@@ -103,7 +103,7 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 	return 0;
 }
 
-bob_class_t const BOB_CLASS_FS = {
+bob_class_t BOB_CLASS_FS = {
 	.name = "Fs",
 	.populate = populate,
 	.call = call,
