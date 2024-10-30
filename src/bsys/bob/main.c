@@ -208,7 +208,7 @@ err_fopen:
 }
 
 static int build(void) {
-	// TODO Run build steps.
+	printf("build steps.\n");
 
 	return 0;
 }

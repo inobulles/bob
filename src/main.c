@@ -138,8 +138,6 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	printf("%s\n", bsys->name);
-
 	if (bsys->setup && bsys->setup() < 0) {
 		return EXIT_FAILURE;
 	}
@@ -152,7 +150,9 @@ int main(int argc, char* argv[]) {
 		cur_instr = *argv++;
 
 		if (strcmp(cur_instr, "build") == 0) {
-			// TODO rv = do_build();
+			if (bsys->build && bsys->build() == 0) {
+				rv = EXIT_SUCCESS;
+			}
 		}
 
 		else if (strcmp(cur_instr, "lsp") == 0) {
