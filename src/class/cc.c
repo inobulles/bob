@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <build_step.h>
 #include <class/class.h>
 #include <cookie.h>
 #include <logging.h>
@@ -15,6 +16,17 @@
 typedef struct {
 	flamingo_val_t* flags;
 } state_t;
+
+typedef struct {
+	flamingo_val_t* src_vec;
+	flamingo_val_t* out_vec;
+} build_step_state_t;
+
+static int compile_step(size_t data_count, void** data) {
+	printf("TODO\n");
+
+	return 0;
+}
 
 static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	// Validate sources argument.
@@ -57,14 +69,15 @@ static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** r
 		(*rv)->vec.elems[i] = cookie_val;
 	}
 
-	// Strategy:
-	// - Get an output cookie for each source file.
-	// - Return a vector of these output cookies.
-	// - Add a build step for this compile command.
-	// - If the previous build step was also a compile command, merge them (should this be handled automatically?).
-	// - We're going to need a few utilities for this, maybe like 'cookie.h' and 'build_step.h'.
+	// Add build step.
 
-	return 0;
+	build_step_state_t* const bss = malloc(sizeof *bss);
+	assert(bss != NULL);
+
+	bss->src_vec = srcs;
+	bss->out_vec = *rv;
+
+	return add_build_step((uint64_t) state, "C source file compilation", compile_step, bss);
 }
 
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {

@@ -23,15 +23,6 @@ size_t src_size;
 
 flamingo_t flamingo;
 
-typedef struct {
-	char const* name;
-	int (*cb)(void* data);
-	void* data;
-} build_step_t;
-
-size_t build_step_count;
-build_step_t* build_steps;
-
 static bool identify(void) {
 	return access(BUILD_PATH, F_OK) != -1;
 }

@@ -13,6 +13,7 @@
 #endif
 
 #include <bsys.h>
+#include <build_step.h>
 #include <logging.h>
 
 // Global options go here so they're accessible by everyone.
@@ -200,6 +201,8 @@ int main(int argc, char* argv[]) {
 	}
 
 done:
+
+	free_build_steps();
 
 	return rv;
 }
