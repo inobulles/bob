@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fts.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #define CC "CC"
 
@@ -24,8 +25,8 @@ typedef struct {
 } build_step_state_t;
 
 typedef struct {
-	flamingo_val_t* src;
-	flamingo_val_t* out;
+	char* src;
+	char* out;
 } compile_task_t;
 
 static bool compile_task(void* data) {
@@ -33,10 +34,54 @@ static bool compile_task(void* data) {
 
 	// TODO.
 
-	printf("compile %.*s -> %.*s\n", (int) task->src->str.size, task->src->str.str, (int) task->out->str.size, task->out->str.str);
+	printf("compile %s -> %s\n", task->src, task->out);
+
+	free(task->src);
+	free(task->out);
 
 	free(task);
 	return false;
+}
+
+typedef enum {
+	VALIDATION_RES_ERR,
+	VALIDATION_RES_SKIP,
+	VALIDATION_RES_COMPILE,
+} validation_res_t;
+
+static validation_res_t validate_requirements(char* src, char* out) {
+	// Get last modification times of source and output files.
+	// If output file doesn't exist, we need to compile.
+
+	struct stat src_sb;
+
+	if (stat(src, &src_sb) < 0) {
+		LOG_FATAL(CC ".compile: Failed to stat source file '%s': %s", src, strerror(errno));
+		return VALIDATION_RES_ERR;
+	}
+
+	struct stat out_sb;
+
+	if (stat(out, &out_sb) < 0) {
+		if (errno != ENOENT) {
+			LOG_FATAL(CC ".compile: Failed to stat output file '%s': %s", out, strerror(errno));
+			return VALIDATION_RES_ERR;
+		}
+
+		return VALIDATION_RES_COMPILE;
+	}
+
+	// If source file is newer than output file, we need to compile.
+	// Strict comparison because if b is built right after a, we don't want to rebuild b d'office.
+	// XXX There is a case where we could build, modify, and build again in the space of one minute in which case changes won't be reflected, but that's such a small edgecase I don't think it's worth letting the complexity spirit demon enter.
+
+	if (src_sb.st_mtime > out_sb.st_mtime) {
+		return VALIDATION_RES_COMPILE;
+	}
+
+	// TODO Compile if flags have changed.
+
+	return VALIDATION_RES_SKIP;
 }
 
 static int compile_step(size_t data_count, void** data) {
@@ -54,26 +99,49 @@ static int compile_step(size_t data_count, void** data) {
 	// - Also if there's no error, write out the flags used.
 
 	pool_t pool;
-	pool_init(&pool, 11);
+	pool_init(&pool, 11); // TODO 11 should be figured out automatically or come from a '-j' flag.
+	int rv = -1;
 
 	for (size_t i = 0; i < data_count; i++) {
 		build_step_state_t* const bss = data[i];
 
 		for (size_t j = 0; j < bss->src_vec->vec.count; j++) {
-			compile_task_t* const data = malloc(sizeof *data);
-			assert(data != NULL);
+			flamingo_val_t* const src_val = bss->src_vec->vec.elems[j];
+			flamingo_val_t* const out_val = bss->out_vec->vec.elems[j];
 
-			data->src = bss->src_vec->vec.elems[j];
-			data->out = bss->out_vec->vec.elems[j];
+			char* const src = strndup(src_val->str.str, src_val->str.size);
+			char* const out = strndup(out_val->str.str, out_val->str.size);
 
-			pool_add_task(&pool, compile_task, data);
+			assert(src != NULL);
+			assert(out != NULL);
+
+			validation_res_t const vres = validate_requirements(src, out);
+
+			if (vres == VALIDATION_RES_COMPILE) {
+				compile_task_t* const data = malloc(sizeof *data);
+				assert(data != NULL);
+
+				data->src = src;
+				data->out = out;
+
+				pool_add_task(&pool, compile_task, data);
+				continue;
+			}
+
+			free(src);
+			free(out);
+
+			if (vres == VALIDATION_RES_ERR) {
+				goto done;
+			}
 		}
 	}
 
-	int const rv = pool_wait(&pool);
+	rv = pool_wait(&pool);
+
+done:
 
 	pool_free(&pool);
-
 	return rv;
 }
 
