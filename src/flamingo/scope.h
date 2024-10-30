@@ -17,6 +17,9 @@ static flamingo_scope_t* scope_alloc(void) {
 	scope->vars_size = 0;
 	scope->vars = NULL;
 
+	scope->owner = NULL;
+	scope->class_scope = false;
+
 	return scope;
 }
 

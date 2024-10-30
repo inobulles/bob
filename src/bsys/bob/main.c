@@ -40,8 +40,21 @@ static int external_fn_cb(flamingo_t* flamingo, flamingo_val_t* callable, void* 
 	char* const name = callable->name;
 	size_t const name_size = callable->name_size;
 
+	flamingo_val_t* const owner = callable->owner->owner;
+
+	bool const is_static = owner != NULL && owner->kind == FLAMINGO_VAL_KIND_FN && owner->fn.kind == FLAMINGO_FN_KIND_CLASS;
+	bool const is_inst = owner != NULL && owner->kind == FLAMINGO_VAL_KIND_INST;
+
 	for (size_t i = 0; i < sizeof(BOB_CLASSES) / sizeof(BOB_CLASSES[0]); i++) {
 		bob_class_t const* const bob_class = BOB_CLASSES[i];
+
+		if (is_static && owner != bob_class->class_val) {
+			continue;
+		}
+
+		if (is_inst && owner->inst.class != bob_class->class_val) {
+			continue;
+		}
 
 		bool consumed = false;
 
@@ -63,15 +76,20 @@ static int class_decl_cb(flamingo_t* flamingo, flamingo_val_t* class, void* data
 	flamingo_scope_t* const scope = class->fn.scope;
 
 	for (size_t i = 0; i < sizeof(BOB_CLASSES) / sizeof(BOB_CLASSES[0]); i++) {
-		bob_class_t const* const bob_class = BOB_CLASSES[i];
+		bob_class_t* const bob_class = BOB_CLASSES[i];
 
 		if (flamingo_cstrcmp(name, bob_class->name, name_size) != 0) {
 			continue;
 		}
 
+		bob_class->class_val = class;
+
 		for (size_t j = 0; j < scope->vars_size; j++) {
 			flamingo_var_t* const var = &scope->vars[j];
-			bob_class->populate(var->key, var->key_size, var->val);
+
+			if (bob_class->populate != NULL) {
+				bob_class->populate(var->key, var->key_size, var->val);
+			}
 		}
 	}
 

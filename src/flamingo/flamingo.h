@@ -71,6 +71,10 @@ struct flamingo_val_t {
 	flamingo_val_kind_t kind;
 	size_t ref_count;
 
+	// The scope this value was created in.
+
+	flamingo_scope_t* owner;
+
 	// All the type-specific data.
 
 	union {
@@ -153,6 +157,10 @@ struct flamingo_scope_t {
 
 	size_t vars_size;
 	flamingo_var_t* vars;
+
+	// If scope is an instance's scope or a class' static scope, this will be set to that instance or class.
+
+	flamingo_val_t* owner;
 
 	// Used for return to know what it can and can't return.
 

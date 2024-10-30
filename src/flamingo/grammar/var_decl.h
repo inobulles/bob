@@ -83,5 +83,7 @@ static int parse_var_decl(flamingo_t* flamingo, TSNode node) {
 		var->val->kind = FLAMINGO_VAL_KIND_NONE;
 	}
 
+	var->val->owner = cur_scope;
+
 	return 0;
 }

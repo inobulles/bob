@@ -225,6 +225,8 @@ static int call(
 		(*rv)->inst.data = NULL;
 		(*rv)->inst.free_data = NULL;
 
+		inner_scope->owner = *rv;
+
 		// XXX A small quirk to note regarding this: an instance won't be created if it isn't assigned to anything.
 		// That means that the class instantiation callback will never be called either, even if the constructor code itself is.
 
