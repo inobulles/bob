@@ -2,8 +2,8 @@
 // Copyright (c) 2024 Aymeric Wibo
 
 #include <bsys.h>
-#include <logging.h>
 #include <build_step.h>
+#include <logging.h>
 
 #include <class/class.h>
 #include <flamingo/flamingo.h>
