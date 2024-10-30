@@ -32,9 +32,20 @@ typedef struct {
 static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 
-	// TODO.
+	// Stuff I still need to get done for this:
+	// - Creating output file structure (as defined in PR description).
+	// - Bringing over 'exec_args' from old Bob (choose a new name because 'exec_args' sucks).
+	// - Actually do the compiling.
+	// - Logging (need to think about how to make this as cool and useful as possible - I don't like the idea of progress bars anymore really, a fraction is probably better).
+	// - Address the TODO's in 'validate_requirements'.
 
-	printf("compile %s -> %s\n", task->src, task->out);
+	// Task queue strategy:
+	// - Immediately start compilation process, piping stdout and stderr to the same place.
+	// - If there's an error, cancel all the other tasks in the task queue somehow and spit out combined stdout and stderr log.
+	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
+	// - Also if there's no error, write out the flags used.
+
+	printf("TODO compile %s -> %s\n", task->src, task->out);
 
 	free(task->src);
 	free(task->out);
@@ -50,6 +61,9 @@ typedef enum {
 } validation_res_t;
 
 static validation_res_t validate_requirements(char* src, char* out) {
+	// TODO I do realize that if we wanna compare output files correctly, we're going to have to be a little smarter about how we generate the cookies. Probably going to have to do it by path.
+	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
+
 	// Get last modification times of source and output files.
 	// If output file doesn't exist, we need to compile.
 
@@ -85,19 +99,6 @@ static validation_res_t validate_requirements(char* src, char* out) {
 }
 
 static int compile_step(size_t data_count, void** data) {
-	// Strategy:
-	// - Figure out if the source file is newer than the output file or the options have changed.
-	// - I do realize that if we wanna compare output files correctly, we're going to have to be a little smarter about how we generate the cookies. Probably going to have to do it by path.
-	// - Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
-	// - If so, add compilation task to the task queue.
-	// - Once everything has been added to the async task queue, we must wait for all tasks to finish before moving onto the next step.
-
-	// Task queue strategy:
-	// - Immediately start compilation process, piping stdout and stderr to the same place.
-	// - If there's an error, cancel all the other tasks in the task queue somehow and spit out combined stdout and stderr log.
-	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
-	// - Also if there's no error, write out the flags used.
-
 	pool_t pool;
 	pool_init(&pool, 11); // TODO 11 should be figured out automatically or come from a '-j' flag.
 	int rv = -1;
