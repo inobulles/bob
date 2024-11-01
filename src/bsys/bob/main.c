@@ -223,6 +223,7 @@ static void destroy(void) {
 
 bsys_t const BSYS_BOB = {
 	.name = "Bob",
+	.key = "bob",
 	.identify = identify,
 	.setup = setup,
 	.build = build,

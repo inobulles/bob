@@ -15,3 +15,19 @@
 #endif
 
 #define COMMON_INCLUDED
+
+extern char const* out_path;
+
+#include <stdlib.h>
+
+__attribute__((unused)) static void strfree(char* const* str_ref) {
+	char* const str = *str_ref;
+
+	if (!str) {
+		return;
+	}
+
+	free(str);
+}
+
+#define CLEANUP_STR __attribute__((cleanup(strfree)))
