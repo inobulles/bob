@@ -31,7 +31,7 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
 
 	if (fts == NULL) {
-		LOG_FATAL("fts_open(\"%s\"): %s", path, strerror(errno))
+		LOG_FATAL("fts_open(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
 
