@@ -3,6 +3,8 @@
 
 #include <build_step.h>
 #include <class/class.h>
+#include <cmd.h>
+#include <common.h>
 #include <cookie.h>
 #include <logging.h>
 #include <task.h>
@@ -33,9 +35,6 @@ static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 
 	// Stuff I still need to get done for this:
-	// - Creating output file structure (as defined in PR description).
-	// - Bringing over 'exec_args' from old Bob (choose a new name because 'exec_args' sucks).
-	// - Actually do the compiling.
 	// - Logging (need to think about how to make this as cool and useful as possible - I don't like the idea of progress bars anymore really, a fraction is probably better).
 	// - Address the TODO's in 'validate_requirements'.
 
@@ -45,13 +44,23 @@ static bool compile_task(void* data) {
 	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
 	// - Also if there's no error, write out the flags used.
 
-	printf("TODO compile %s -> %s\n", task->src, task->out);
+	bool stop = false;
+
+	cmd_t cmd;
+	cmd_create(&cmd, "cc", "-c", task->src, "-o", NULL);
+	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
+
+	if (cmd_exec(&cmd) < 0) {
+		stop = true;
+	}
+
+	cmd_free(&cmd);
 
 	free(task->src);
 	free(task->out);
 
 	free(task);
-	return false;
+	return stop;
 }
 
 typedef enum {
