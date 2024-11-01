@@ -44,7 +44,7 @@ found:
 			continue;
 		}
 
-		// There was an error; re-acquire lock and cancel all threads.
+		// We were asked to stop; re-acquire lock and cancel all threads.
 
 		pthread_mutex_lock(&pool->lock);
 		pool->error = true;
