@@ -151,13 +151,14 @@ int main(int argc, char* argv[]) {
 
 	// Parse instructions.
 
-	int rv = EXIT_FAILURE; // I'm a pessimist.
+	int rv;
 
 	while (argc-- > 0) {
+		rv = EXIT_FAILURE;
 		cur_instr = *argv++;
 
 		if (strcmp(cur_instr, "build") == 0) {
-			if (bsys->build && bsys->build() == 0) {
+			if (bsys_build(bsys) == 0) {
 				rv = EXIT_SUCCESS;
 			}
 		}

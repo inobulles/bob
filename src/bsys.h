@@ -9,6 +9,7 @@ typedef struct bsys_t bsys_t;
 
 struct bsys_t {
 	char const* name;
+	char const* key;
 
 	bool (*identify)(void);
 	int (*setup)(void);
@@ -37,3 +38,4 @@ static bsys_t const* const BSYS[] = {
 };
 
 bsys_t const* bsys_identify(void);
+int bsys_build(bsys_t const* bsys);
