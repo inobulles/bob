@@ -5,6 +5,7 @@
 #include <common.h>
 #include <logging.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +31,7 @@ int bsys_build(bsys_t const* bsys) {
 	if (bsys->key != NULL) {
 		char* CLEANUP_STR path;
 		asprintf(&path, "%s/%s", out_path, bsys->key);
+		assert(path != NULL);
 
 		if (mkdir(path, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
