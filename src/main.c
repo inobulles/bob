@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #if defined(__linux__)
@@ -18,8 +19,7 @@
 
 // Global options go here so they're accessible by everyone.
 
-char const* rel_bin_path = ".bob"; // Default output path.
-char* bin_path = NULL;
+char const* out_path = ".bob"; // Default output path.
 char const* init_name = "bob";
 char const* prefix = NULL;
 char const* project_path = NULL;
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (c == 'o') {
-			rel_bin_path = optarg;
+			out_path = optarg;
 		}
 
 		else if (c == 'p') {
@@ -110,6 +110,13 @@ int main(int argc, char* argv[]) {
 
 	if (chdir(project_path) < 0) {
 		LOG_FATAL("chdir(\"%s\"): %s", project_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	// Ensure the output path exists.
+
+	if (mkdir(out_path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
