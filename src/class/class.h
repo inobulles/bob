@@ -16,8 +16,10 @@ typedef struct {
 
 extern bob_class_t BOB_CLASS_FS;
 extern bob_class_t BOB_CLASS_CC;
+extern bob_class_t BOB_CLASS_LINKER;
 
 static bob_class_t* const BOB_CLASSES[] = {
 	&BOB_CLASS_FS,
 	&BOB_CLASS_CC,
+	&BOB_CLASS_LINKER,
 };
