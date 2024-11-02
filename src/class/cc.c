@@ -82,7 +82,6 @@ typedef enum {
 } validation_res_t;
 
 static validation_res_t validate_requirements(char* src, char* out) {
-	// TODO I do realize that if we wanna compare output files correctly, we're going to have to be a little smarter about how we generate the cookies. Probably going to have to do it by path.
 	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
 
 	// Get last modification times of source and output files.
