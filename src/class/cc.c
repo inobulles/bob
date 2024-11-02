@@ -40,10 +40,7 @@ static bool compile_task(void* data) {
 	bool stop = true;
 	cmd_t cmd;
 
-	if (cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL) < 0) {
-		goto err;
-	}
-
+	cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
 
 	if (cmd_exec(&cmd) < 0) {
@@ -65,8 +62,6 @@ static bool compile_task(void* data) {
 	stop = false;
 
 	cmd_free(&cmd);
-
-err:
 
 	free(task->src);
 	free(task->out);
@@ -168,7 +163,7 @@ done:
 	return rv;
 }
 
-static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	// Validate sources argument.
 
 	if (args->count != 1) {
@@ -228,7 +223,7 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "compile", callable->name_size) == 0) {
-		return compile(state, args, rv);
+		return prep_compile(state, args, rv);
 	}
 
 	*consumed = false;

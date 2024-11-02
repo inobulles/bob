@@ -1,5 +1,5 @@
 #!/bin/sh
-set -xe
+set -e
 
 if [ -z "$CC" ]; then
 	CC=cc
