@@ -37,6 +37,10 @@ int cmd_create(cmd_t* cmd, ...) {
 	}
 
 	va_end(va);
+
+	cmd->in = -1;
+	cmd->out = -1;
+
 	return 0;
 }
 
@@ -232,4 +236,12 @@ void cmd_free(cmd_t* cmd) {
 
 	cmd->len = 0;
 	cmd->args = NULL;
+
+	if (cmd->in >= 0) {
+		close(cmd->in);
+	}
+
+	if (cmd->out >= 0) {
+		close(cmd->out);
+	}
 }
