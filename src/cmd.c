@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int cmd_create(cmd_t* cmd, ...) {
+void cmd_create(cmd_t* cmd, ...) {
 	va_list va;
 	va_start(va, cmd);
 
@@ -41,8 +41,6 @@ int cmd_create(cmd_t* cmd, ...) {
 
 	cmd->in = -1;
 	cmd->out = -1;
-
-	return 0;
 }
 
 __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char const* fmt, ...) {
