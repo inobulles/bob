@@ -37,12 +37,7 @@ typedef struct {
 
 static bool compile_task(void* data) {
 	compile_task_t* const task = data;
-
-	// Stuff I still need to get done for this:
-	// - Address the TODO's in 'validate_requirements'.
-
 	bool stop = true;
-
 	cmd_t cmd;
 
 	if (cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL) < 0) {
