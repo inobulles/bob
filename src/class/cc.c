@@ -47,18 +47,18 @@ static bool compile_task(void* data) {
 	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
 	// - Also if there's no error, write out the flags used.
 
-	bool stop = false;
+	bool stop = true;
 
 	cmd_t cmd;
 
 	if (cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL) < 0) {
-		// TODO.
+		goto err_create;
 	}
 
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
 
 	if (cmd_exec(&cmd) < 0) {
-		stop = true;
+		goto err_exec;
 	}
 
 	// Logging.
@@ -72,7 +72,14 @@ static bool compile_task(void* data) {
 	// Cleanup.
 
 	free(out);
+
+	stop = false;
+
+err_exec:
+
 	cmd_free(&cmd);
+
+err_create:
 
 	free(task->src);
 	free(task->out);
