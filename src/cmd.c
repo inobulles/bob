@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void cmd_create(cmd_t* cmd, ...) {
+int cmd_create(cmd_t* cmd, ...) {
 	va_list va;
 	va_start(va, cmd);
 
@@ -37,6 +37,7 @@ void cmd_create(cmd_t* cmd, ...) {
 	}
 
 	va_end(va);
+	return 0;
 }
 
 __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char const* fmt, ...) {
@@ -54,6 +55,20 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 }
 
 pid_t cmd_exec_async(cmd_t* cmd) {
+	// Create pipes.
+
+	int fd[2];
+
+	if (pipe(fd) < 0) {
+		LOG_FATAL("pipe: %s", strerror(errno));
+		return -1;
+	}
+
+	cmd->in = fd[1];
+	cmd->out = fd[0];
+
+	// Find and start process.
+
 	pid_t const pid = fork();
 
 	if (pid < 0) {
@@ -64,6 +79,20 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	char** const args = cmd->args;
 
 	if (!pid) {
+		// Handle pipe (child).
+		// Close input side of pipe if it exists, as we wanna send output.
+		// Then, redirect 'stdout'/'stderr' of process to pipe input.
+		// TODO the above two comments are clearly wrong.
+
+		close(cmd->out);
+
+		for (size_t fileno = STDOUT_FILENO; fileno <= STDERR_FILENO; fileno++) {
+			if (dup2(cmd->in, fileno) < 0) {
+				LOG_ERROR("dup2(%d, %d): %s", cmd->in, fileno, strerror(errno));
+				_exit(EXIT_FAILURE);
+			}
+		}
+
 		// Attempt first to execute at the path passed.
 
 		if (!execv(args[0], args)) {
@@ -109,6 +138,9 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		_exit(EXIT_FAILURE);
 	}
 
+	// Handle pipe (parent).
+
+	close(cmd->in);
 	return pid;
 }
 
@@ -138,6 +170,35 @@ int cmd_exec(cmd_t* cmd) {
 	return wait_for_process(pid);
 }
 
+char* cmd_read_out(cmd_t* cmd) {
+	int const pipe = cmd->out;
+
+	char* out = strdup("");
+	assert(out != NULL);
+
+	size_t total = 0;
+
+	char chunk[4096];
+	ssize_t bytes;
+
+	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
+		total += bytes;
+
+		out = realloc(out, total + 1);
+		assert(out != NULL);
+		out[total] = '\0';
+
+		memcpy(out + total - bytes, chunk, bytes);
+	}
+
+	if (bytes < 0) {
+		LOG_WARN("%s: Failed to read from %d: %s", __func__, pipe, strerror(errno));
+	}
+
+	out[total] = '\0';
+	return out;
+}
+
 __attribute__((unused)) void cmd_print(cmd_t* cmd) {
 	printf("cmd(%p) = {\n", cmd);
 
@@ -158,7 +219,7 @@ void cmd_free(cmd_t* cmd) {
 	for (size_t i = 0; i < cmd->len - 1 /* Don't free NULL sentinel. */; i++) {
 		char* const arg = cmd->args[i];
 
-		if (!arg) { // Shouldn't happen but let's be defensive...
+		if (arg == NULL) { // Shouldn't happen but let's be defensive...
 			continue;
 		}
 
@@ -168,4 +229,7 @@ void cmd_free(cmd_t* cmd) {
 	if (cmd->args != NULL) {
 		free(cmd->args);
 	}
+
+	cmd->len = 0;
+	cmd->args = NULL;
 }
