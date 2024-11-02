@@ -41,24 +41,18 @@ static bool compile_task(void* data) {
 	// Stuff I still need to get done for this:
 	// - Address the TODO's in 'validate_requirements'.
 
-	// Task queue strategy:
-	// - Immediately start compilation process, piping stdout and stderr to the same place.
-	// - If there's an error, cancel all the other tasks in the task queue somehow and spit out combined stdout and stderr log.
-	// - If there's no error, spit out combined stdout and stderr log (for warnings and the like).
-	// - Also if there's no error, write out the flags used.
-
 	bool stop = true;
 
 	cmd_t cmd;
 
 	if (cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL) < 0) {
-		goto err_create;
+		goto err;
 	}
 
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
 
 	if (cmd_exec(&cmd) < 0) {
-		goto err_exec;
+		stop = true;
 	}
 
 	// Logging.
@@ -75,11 +69,9 @@ static bool compile_task(void* data) {
 
 	stop = false;
 
-err_exec:
-
 	cmd_free(&cmd);
 
-err_create:
+err:
 
 	free(task->src);
 	free(task->out);
