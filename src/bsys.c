@@ -4,6 +4,7 @@
 #include <bsys.h>
 #include <common.h>
 #include <logging.h>
+#include <str.h>
 
 #include <assert.h>
 #include <errno.h>

@@ -6,12 +6,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-size_t cookie_index = 0;
+#include <str.h>
 
 static inline char* gen_cookie(char* path, size_t path_size) {
 	char* cookie = NULL;
-	asprintf(&cookie, "%.*s.cookie.%zu", (int) path_size, path, cookie_index++);
+	asprintf(&cookie, "%.*s.cookie.%llx", (int) path_size, path, str_hash(path));
 	assert(cookie != NULL);
 
 	for (size_t i = 0; i < path_size; i++) {
