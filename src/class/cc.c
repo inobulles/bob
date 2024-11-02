@@ -22,11 +22,15 @@ typedef struct {
 } state_t;
 
 typedef struct {
+	pthread_mutex_t out_lock;
+
 	flamingo_val_t* src_vec;
 	flamingo_val_t* out_vec;
 } build_step_state_t;
 
 typedef struct {
+	build_step_state_t* bss;
+
 	char* src;
 	char* out;
 } compile_task_t;
@@ -35,7 +39,6 @@ static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 
 	// Stuff I still need to get done for this:
-	// - Logging (need to think about how to make this as cool and useful as possible - I don't like the idea of progress bars anymore really, a fraction is probably better).
 	// - Address the TODO's in 'validate_requirements'.
 
 	// Task queue strategy:
@@ -47,13 +50,28 @@ static bool compile_task(void* data) {
 	bool stop = false;
 
 	cmd_t cmd;
-	cmd_create(&cmd, "cc", "-c", task->src, "-o", NULL);
+
+	if (cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL) < 0) {
+		// TODO.
+	}
+
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
 	}
 
+	// Logging.
+
+	char* const out = cmd_read_out(&cmd);
+
+	pthread_mutex_lock(&task->bss->out_lock);
+	printf("%s", out);
+	pthread_mutex_unlock(&task->bss->out_lock);
+
+	// Cleanup.
+
+	free(out);
 	cmd_free(&cmd);
 
 	free(task->src);
@@ -131,6 +149,8 @@ static int compile_step(size_t data_count, void** data) {
 				compile_task_t* const data = malloc(sizeof *data);
 				assert(data != NULL);
 
+				data->bss = bss;
+
 				data->src = src;
 				data->out = out;
 
@@ -200,6 +220,8 @@ static int compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** r
 
 	build_step_state_t* const bss = malloc(sizeof *bss);
 	assert(bss != NULL);
+
+	pthread_mutex_init(&bss->out_lock, NULL);
 
 	bss->src_vec = srcs;
 	bss->out_vec = *rv;
