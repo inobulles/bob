@@ -7,11 +7,11 @@ class Fs {
 	static proto list(path: str) -> vec<str>
 }
 
-class CC(args: vec<str>) {
+class CC(flags: vec<str>) {
 	proto compile(src: vec<str>) -> vec<str>
 }
 
-class Linker {
+class Linker(flags: vec<str>) {
 	proto link(obj: vec<str>) -> str
 }
 
