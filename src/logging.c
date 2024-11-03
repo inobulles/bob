@@ -8,6 +8,7 @@
 # define _GNU_SOURCE
 #endif
 
+#include <assert.h>
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
@@ -15,7 +16,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "logging.h"
+#include <logging.h>
+#include <str.h>
 
 bool colour_support = false;
 
@@ -127,4 +129,35 @@ void progress_update(progress_t* self, size_t numerator, size_t _denominator, ch
 	fflush(stdout);
 
 	va_end(args);
+}
+
+void log_already_done(char const* cookie, char const* prefix, char const* past) {
+	char* CLEANUP_STR path;
+	asprintf(&path, "%s.log", cookie);
+	assert(path != NULL);
+
+	char* CLEANUP_STR out = NULL;
+	FILE* const f = fopen(path, "r");
+
+	if (f != NULL) {
+		fseek(f, 0, SEEK_END);
+		size_t const size = ftell(f);
+
+		out = malloc(size + 1);
+		assert(out != NULL);
+
+		rewind(f);
+		fread(out, 1, size, f);
+		out[size] = '\0';
+
+		fclose(f);
+	}
+
+	char* const suffix = out ? ":" : ".";
+
+	LOG_SUCCESS("%s%sAlready %s%s", prefix ? prefix : "", prefix ? ": " : "", past, suffix);
+
+	if (out) {
+		printf("%s", out);
+	}
 }

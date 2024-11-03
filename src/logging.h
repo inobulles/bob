@@ -35,6 +35,10 @@ void progress_complete(progress_t* self);
 __attribute__((__format__(__printf__, 4, 0))) void
 progress_update(progress_t* self, size_t numerator, size_t denominator, char const* fmt, ...);
 
+// Other logging utilities.
+
+void log_already_done(char const* cookie, char const* prefix, char const* past);
+
 // kinda replicate the umber API
 
 #define CLEAR "\033[0m"
