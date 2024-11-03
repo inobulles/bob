@@ -14,7 +14,7 @@ struct bsys_t {
 	bool (*identify)(void);
 	int (*setup)(void);
 	int (*build)(void);
-	int (*install)(char const* prefix);
+	int (*install)(char const* prefix, bool create_tree);
 	void (*destroy)(void);
 };
 

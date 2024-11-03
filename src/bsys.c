@@ -65,12 +65,12 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	// Actually install.
 
-	return bsys->install(path);
+	return bsys->install(path, to_prefix);
 }
 
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 	if (install(bsys, true) < 0) {
-		return 0;
+		return -1;
 	}
 
 	return 0; // TODO Actually run (check for 'bob->run').
