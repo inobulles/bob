@@ -16,6 +16,7 @@ typedef struct {
 } cmd_t;
 
 void cmd_create(cmd_t* cmd, ...);
+void cmd_add(cmd_t* cmd, char const* arg);
 __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char const* fmt, ...);
 pid_t cmd_exec_async(cmd_t* cmd);
 int cmd_exec(cmd_t* cmd);
