@@ -2,8 +2,9 @@
 // Copyright (c) 2024 Aymeric Wibo
 
 #include <bsys.h>
-#include <common.h>
 #include <build_step.h>
+#include <common.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <str.h>
 
@@ -12,11 +13,11 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <libgen.h>
 
 #define BUILD_PATH "build.fl"
 #define BOB_IMPORT_PATH "/Users/aymeric/bob/bob"
@@ -279,10 +280,19 @@ found:
 		// Figure out if source is a cookie or a regular path.
 
 		bool const is_cookie = (strstr(path, abs_out_path) == path);
+		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
+
+		if (is_cookie) {
+			LOG_INFO("%s: installing from cookie...", val);
+		}
+
+		else {
+			LOG_INFO("%s: installing from '%s'...", val, key);
+		}
 
 		// Make sure destination directory exists.
 
-		char* parent = dirname(val_val->str.str); // XXX 'dirname' uses internal storage.
+		char* parent = dirname(val); // XXX 'dirname' uses internal storage.
 		char* bit;
 		char* CLEANUP_STR accum = strdup(prefix);
 
@@ -305,7 +315,20 @@ found:
 			assert(accum != NULL);
 		}
 
-		printf("%d Installing %s to %s\n", is_cookie, path, prefix);
+		// TODO Check modification times.
+
+		// Actually copy over files.
+
+		char* CLEANUP_STR install_path = NULL;
+		asprintf(&install_path, "%s/%s", prefix, val);
+		assert(install_path != NULL);
+
+		if (copy(key, install_path) < 0) {
+			LOG_ERROR("Failed to copy '%s' to '%s'.", key, install_path);
+			return -1;
+		}
+
+		LOG_SUCCESS("%s: Successfully installed.", val);
 	}
 
 	return 0;
