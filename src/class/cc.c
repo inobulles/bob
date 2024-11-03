@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#define CC "CC"
+#define CC "Cc"
 
 typedef struct {
 	flamingo_val_t* flags;
