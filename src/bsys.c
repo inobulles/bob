@@ -52,6 +52,12 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 		return 0;
 	}
 
+	// Run build step.
+
+	if (bsys_build(bsys) < 0) {
+		return -1;
+	}
+
 	// Ensure the output path exists.
 
 	char* CLEANUP_STR path;
