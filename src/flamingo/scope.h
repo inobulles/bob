@@ -56,10 +56,6 @@ static flamingo_var_t* scope_shallow_find_var(flamingo_scope_t* scope, char cons
 	for (size_t i = 0; i < scope->vars_size; i++) {
 		flamingo_var_t* const var = &scope->vars[i];
 
-		if (var->anonymous) {
-			continue;
-		}
-
 		if (var->key_size == key_size && memcmp(var->key, key, key_size) == 0) {
 			return var;
 		}

@@ -143,7 +143,6 @@ struct flamingo_val_t {
 };
 
 struct flamingo_var_t {
-	bool anonymous;
 	bool is_static;
 
 	char* key;
