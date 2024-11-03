@@ -16,7 +16,9 @@ typedef struct {
 
 typedef struct {
 	pthread_mutex_t lock;
+
 	bool error;
+	bool started;
 
 	// (Lazy) task queue.
 
@@ -33,4 +35,5 @@ void pool_init(pool_t* pool, size_t worker_count);
 void pool_free(pool_t* pool);
 
 void pool_add_task(pool_t* pool, task_fn_t cb, void* data);
+int pool_start(pool_t* pool);
 int pool_wait(pool_t* pool);

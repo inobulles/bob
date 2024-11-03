@@ -59,14 +59,11 @@ void pool_init(pool_t* pool, size_t worker_count) {
 	pthread_mutex_lock(&pool->lock);
 
 	pool->error = false;
+	pool->started = false;
 
 	pool->worker_count = worker_count;
 	pool->workers = malloc(worker_count * sizeof(pthread_t));
 	assert(pool->workers != NULL);
-
-	for (size_t i = 0; i < worker_count; i++) {
-		pthread_create(&pool->workers[i], NULL, worker, pool);
-	}
 
 	pool->task_count = 0;
 	pool->tasks = NULL;
@@ -75,9 +72,8 @@ void pool_init(pool_t* pool, size_t worker_count) {
 }
 
 void pool_free(pool_t* pool) {
-	for (size_t i = 0; i < pool->worker_count; i++) {
-		pthread_join(pool->workers[i], NULL);
-	}
+	pool->error = true; // Make sure we end as quickly as possible.
+	pool_wait(pool);
 
 	free(pool->workers);
 
@@ -101,7 +97,22 @@ void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
 	pthread_mutex_unlock(&pool->lock);
 }
 
+int pool_start(pool_t* pool) {
+	if (pool->started == true) {
+		return 0;
+	}
+
+	for (size_t i = 0; i < pool->worker_count; i++) {
+		pthread_create(&pool->workers[i], NULL, worker, pool);
+	}
+
+	pool->started = true;
+	return 0;
+}
+
 int pool_wait(pool_t* pool) {
+	pool_start(pool);
+
 	for (size_t i = 0; i < pool->worker_count; i++) {
 		pthread_t* const worker = &pool->workers[i];
 		pthread_join(*worker, NULL);

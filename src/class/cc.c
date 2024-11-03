@@ -133,6 +133,7 @@ static int compile_step(size_t data_count, void** data) {
 
 	for (size_t i = 0; i < data_count; i++) {
 		build_step_state_t* const bss = data[i];
+		assert(bss->src_vec->vec.count == bss->out_vec->vec.count);
 
 		for (size_t j = 0; j < bss->src_vec->vec.count; j++) {
 			flamingo_val_t* const src_val = bss->src_vec->vec.elems[j];
