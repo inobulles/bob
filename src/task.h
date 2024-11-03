@@ -9,7 +9,7 @@
 typedef bool (*task_fn_t)(void* data);
 
 typedef struct {
-	bool done;
+	bool started;
 	task_fn_t fn;
 	void* data;
 } task_t;

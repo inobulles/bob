@@ -9,7 +9,7 @@
 static void* worker(void* data) {
 	pool_t* const pool = data;
 
-	for (;;) {
+	while (!pool->error) {
 		// We must lock on task iteration to prevent race conditions.
 
 		pthread_mutex_lock(&pool->lock);
@@ -18,7 +18,7 @@ static void* worker(void* data) {
 		for (size_t i = 0; i < pool->task_count; i++) {
 			task = &pool->tasks[i];
 
-			if (!task->done) {
+			if (!task->started) {
 				goto found;
 			}
 		}
@@ -33,7 +33,7 @@ found:
 		// Run found task.
 		// Get the stuff inside of the task pointer because it may move due to a realloc once we release the lock.
 
-		task->done = true;
+		task->started = true;
 
 		task_fn_t const fn = task->fn;
 		void* const data = task->data;
@@ -44,16 +44,11 @@ found:
 			continue;
 		}
 
-		// We were asked to stop; re-acquire lock and cancel all threads.
+		// We were asked to stop; cancel all workers.
+		// We can't cancel them directly because they might still hold the logging lock, and locking a mutex is not a cancellation point.
+		// Instead, rely on each worker to stop when 'pool->error' is set.
 
-		pthread_mutex_lock(&pool->lock);
 		pool->error = true;
-
-		for (size_t i = 0; i < pool->task_count; i++) {
-			pthread_cancel(pool->workers[i]); // TODO What happens with the heap memory here?
-		}
-
-		pthread_mutex_unlock(&pool->lock);
 	}
 
 	return NULL;
@@ -80,15 +75,15 @@ void pool_init(pool_t* pool, size_t worker_count) {
 }
 
 void pool_free(pool_t* pool) {
-	if (pool->tasks != NULL) {
-		free(pool->tasks);
-	}
-
 	for (size_t i = 0; i < pool->worker_count; i++) {
-		pthread_cancel(pool->workers[i]);
+		pthread_join(pool->workers[i], NULL);
 	}
 
 	free(pool->workers);
+
+	if (pool->tasks != NULL) {
+		free(pool->tasks);
+	}
 }
 
 void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
@@ -99,7 +94,7 @@ void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
 
 	task_t* const task = &pool->tasks[pool->task_count++];
 
-	task->done = false;
+	task->started = false;
 	task->fn = cb;
 	task->data = data;
 
