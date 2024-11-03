@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
-#include <task.h>
+#include <pool.h>
 
 #include <assert.h>
 #include <stdlib.h>

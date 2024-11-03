@@ -8,7 +8,7 @@
 #include <cookie.h>
 #include <logging.h>
 #include <ncpu.h>
-#include <task.h>
+#include <pool.h>
 
 #include <assert.h>
 #include <errno.h>
