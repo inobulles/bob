@@ -43,6 +43,15 @@ void cmd_create(cmd_t* cmd, ...) {
 	cmd->out = -1;
 }
 
+void cmd_add(cmd_t* cmd, char const* arg) {
+	cmd->args = realloc(cmd->args, ++cmd->len * sizeof *cmd->args);
+	assert(cmd->args != NULL);
+
+	cmd->args[cmd->len - 2] = strdup(arg);
+	assert(cmd->args[cmd->len - 2] != NULL);
+	cmd->args[cmd->len - 1] = NULL;
+}
+
 __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char const* fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
