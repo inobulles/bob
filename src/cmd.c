@@ -92,9 +92,8 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 
 	if (!pid) {
 		// Handle pipe (child).
-		// Close input side of pipe if it exists, as we wanna send output.
+		// Close output side of pipe, as we're the ones writing to it
 		// Then, redirect 'stdout'/'stderr' of process to pipe input.
-		// TODO the above two comments are clearly wrong.
 
 		close(cmd->out);
 
@@ -151,8 +150,11 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	}
 
 	// Handle pipe (parent).
+	// Just close input side of the pipe, as we just read from the output.
 
 	close(cmd->in);
+	cmd->in = -1;
+
 	return pid;
 }
 
