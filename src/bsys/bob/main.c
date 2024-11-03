@@ -279,7 +279,31 @@ found:
 		// Figure out if source is a cookie or a regular path.
 
 		bool const is_cookie = (strstr(path, abs_out_path) == path);
-		(void) is_cookie;
+
+		// Make sure destination directory exists.
+
+		char* parent = dirname(val_val->str.str); // XXX 'dirname' uses internal storage.
+		char* bit;
+		char* CLEANUP_STR accum = strdup(prefix);
+
+		while ((bit = strsep(&parent, "/"))) {
+			if (bit[0] == '\0') {
+				continue;
+			}
+
+			char* CLEANUP_STR path = NULL;
+			asprintf(&path, "%s/%s", accum, bit);
+			assert(path != NULL);
+
+			if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+				LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+				return -1;
+			}
+
+			free(accum);
+			accum = strdup(path);
+			assert(accum != NULL);
+		}
 
 		printf("%d Installing %s to %s\n", is_cookie, path, prefix);
 	}
