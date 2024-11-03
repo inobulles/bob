@@ -343,6 +343,9 @@ static int run(int argc, char* argv[]) {
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
 	flamingo_var_t* vec = NULL;
 
+	cmd_t __attribute__((cleanup(cmd_free))) cmd = {0};
+	cmd_create(&cmd, NULL);
+
 	for (size_t i = 0; i < scope->vars_size; i++) {
 		vec = &scope->vars[i];
 
@@ -351,8 +354,7 @@ static int run(int argc, char* argv[]) {
 		}
 
 		if (vec->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			LOG_WARN("Run vector not set; nothing to run!");
-			return 0;
+			goto no_default;
 		}
 
 		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
@@ -368,9 +370,6 @@ static int run(int argc, char* argv[]) {
 
 found:;
 
-	cmd_t cmd;
-	cmd_create(&cmd, NULL);
-
 	// Start by adding the arguments in the run vector.
 
 	for (size_t i = 0; i < vec->val->vec.count; i++) {
@@ -385,6 +384,9 @@ found:;
 	}
 
 	// Then, add the arguments passed to the Bob frontend.
+	// If there is no default runner, just pass the arguments from the frontend onwards.
+
+no_default:
 
 	for (ssize_t i = 0; i < argc; i++) {
 		cmd_add(&cmd, argv[i]);
@@ -398,8 +400,6 @@ found:;
 	}
 
 	LOG_SUCCESS("Successfully ran command.");
-
-	cmd_free(&cmd);
 	return 0;
 }
 

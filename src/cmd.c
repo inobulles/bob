@@ -98,8 +98,10 @@ int cmd_exec_inplace(cmd_t* cmd) {
 		asprintf(&path, "%s/%s", tok, query);
 		assert(path != NULL);
 
+		char* const prev = cmd->args[0];
 		cmd->args[0] = path;
 		execv(cmd->args[0], cmd->args);
+		cmd->args[0] = prev;
 	}
 
 	// Error if all else fails.
@@ -260,26 +262,16 @@ __attribute__((unused)) void cmd_print(cmd_t* cmd) {
 	printf("cmd(%p) = {\n", cmd);
 
 	for (size_t i = 0; i < cmd->len - 1 /* Don't print NULL sentinel. */; i++) {
-		char* const arg = cmd->args[i];
-
-		if (!arg) { // Shouldn't happen but let's be defensive...
-			continue;
-		}
-
-		printf("\t\"%s\",\n", arg);
+		printf("\t\"%s\",\n", cmd->args[i]);
 	}
 
 	printf("}\n");
 }
 
 void cmd_free(cmd_t* cmd) {
-	for (size_t i = 0; i < cmd->len - 1 /* Don't free NULL sentinel. */; i++) {
+	for (ssize_t i = 0; i < (ssize_t) cmd->len - 1 /* Don't free NULL sentinel. */; i++) {
 		char* const arg = cmd->args[i];
-
-		if (arg == NULL) { // Shouldn't happen but let's be defensive...
-			continue;
-		}
-
+		assert(arg != NULL);
 		free(arg);
 	}
 
