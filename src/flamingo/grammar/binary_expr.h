@@ -230,7 +230,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 			(*val)->kind = FLAMINGO_VAL_KIND_STR;
 
 			(*val)->str.size = left_val->str.size + right_val->str.size;
-			(*val)->str.str = malloc((*val)->str.size);
+			(*val)->str.str = malloc((*val)->str.size * sizeof *(*val)->str.str);
 			assert((*val)->str.str != NULL);
 
 			memcpy((*val)->str.str, left_val->str.str, left_val->str.size);
@@ -251,7 +251,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 			(*val)->kind = FLAMINGO_VAL_KIND_VEC;
 
 			(*val)->vec.count = left_val->vec.count + right_val->vec.count;
-			(*val)->vec.elems = malloc((*val)->vec.count);
+			(*val)->vec.elems = malloc((*val)->vec.count * sizeof *(*val)->vec.elems);
 			assert((*val)->vec.elems != NULL);
 
 			// Copy all the elements from the left vector.
@@ -283,10 +283,10 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 
 			(*val)->map.count = left_val->map.count + right_val->map.count;
 
-			(*val)->map.keys = malloc((*val)->map.count);
+			(*val)->map.keys = malloc((*val)->map.count * sizeof *(*val)->map.keys);
 			assert((*val)->map.keys != NULL);
 
-			(*val)->map.vals = malloc((*val)->map.count);
+			(*val)->map.vals = malloc((*val)->map.count * sizeof *(*val)->map.vals);
 			assert((*val)->map.vals != NULL);
 
 			// Copy all key-value pairs from the left vector.

@@ -95,9 +95,8 @@ static flamingo_val_t* val_copy(flamingo_val_t* val) {
 	memcpy(copy, val, sizeof *val);
 	copy->ref_count = 1;
 
-	copy->name = malloc(val->name_size);
+	copy->name = strndup(val->name, val->name_size);
 	assert(copy->name != NULL);
-	memcpy(copy->name, val->name, val->name_size);
 
 	switch (copy->kind) {
 	case FLAMINGO_VAL_KIND_NONE:
@@ -105,9 +104,8 @@ static flamingo_val_t* val_copy(flamingo_val_t* val) {
 	case FLAMINGO_VAL_KIND_INT:
 		break;
 	case FLAMINGO_VAL_KIND_STR:
-		copy->str.str = malloc(val->str.size);
+		copy->str.str = strndup(val->str.str, val->str.size);
 		assert(copy->str.str != NULL);
-		memcpy(copy->str.str, val->str.str, val->str.size);
 		break;
 	case FLAMINGO_VAL_KIND_VEC:
 	case FLAMINGO_VAL_KIND_MAP:
