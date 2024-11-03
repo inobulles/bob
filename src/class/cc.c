@@ -46,8 +46,7 @@ static bool compile_task(void* data) {
 	cc = cc == NULL ? "cc" : cc;
 
 	cmd_t cmd;
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
-	cmd_add(&cmd, task->out);
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 
 	// Add flags.
 
@@ -69,7 +68,7 @@ static bool compile_task(void* data) {
 	}
 
 	pthread_mutex_lock(&task->bss->out_lock);
-	cmd_log(&cmd, task->src, "compile", "compiled");
+	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
 
 	// If we're going to stop all other tasks, keep the logging mutex locked so no other messages are printed.
 

@@ -115,7 +115,7 @@ link:;
 
 	LOG_INFO("Linking...");
 	rv = cmd_exec(&cmd);
-	cmd_log(&cmd, NULL, "link", "linked");
+	cmd_log(&cmd, out, NULL, "link", "linked");
 	cmd_free(&cmd);
 
 done:
