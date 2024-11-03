@@ -76,7 +76,7 @@ static bool compile_task(void* data) {
 
 	free(out);
 
-	stop = false;
+	stop = false; // TODO ??? also, should we lock the logging thing so that nothing is shown after there's an error?
 
 	cmd_free(&cmd);
 
