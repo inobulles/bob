@@ -164,7 +164,7 @@ static int compile_step(size_t data_count, void** data) {
 			}
 
 			if (vres == VALIDATION_RES_SKIP) {
-				LOG_SUCCESS("%s: Already compiled.", src);
+				log_already_done(out, src, "compiled");
 			}
 
 			free(src);

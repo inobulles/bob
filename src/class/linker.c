@@ -79,10 +79,8 @@ static int link_step(size_t data_count, void** data) {
 	}
 
 	// Already linked.
-	// TODO Here, print out the previous output if found.
 
-	LOG_SUCCESS("Already linked.");
-
+	log_already_done(out, NULL, "linked");
 	rv = 0;
 	goto done;
 
