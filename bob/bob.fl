@@ -16,3 +16,4 @@ class Linker(flags: vec<str>) {
 }
 
 let install: map<str, str>
+let run: vec<str>
