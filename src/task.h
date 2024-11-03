@@ -27,11 +27,11 @@ typedef struct {
 
 	// Worker pool.
 
-	size_t worker_count;
-	pthread_t* workers;
+	size_t businessman_count;
+	pthread_t* businessmen;
 } pool_t;
 
-void pool_init(pool_t* pool, size_t worker_count);
+void pool_init(pool_t* pool, size_t businessman_count);
 void pool_free(pool_t* pool);
 
 void pool_add_task(pool_t* pool, task_fn_t cb, void* data);
