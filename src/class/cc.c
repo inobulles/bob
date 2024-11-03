@@ -38,9 +38,12 @@ typedef struct {
 static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 	bool stop = true;
-	cmd_t cmd;
 
-	cmd_create(&cmd, "cc", "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
+	char* cc = getenv("CC");
+	cc = cc == NULL ? "cc" : cc;
+
+	cmd_t cmd;
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
 
 	if (cmd_exec(&cmd) < 0) {

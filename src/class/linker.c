@@ -32,7 +32,6 @@ static int link_step(size_t data_count, void** data) {
 
 	build_step_state_t* const bss = *data;
 	int rv = -1;
-	cmd_t cmd;
 
 	// Make everything C strings.
 
@@ -82,9 +81,13 @@ static int link_step(size_t data_count, void** data) {
 	rv = 0;
 	goto done;
 
-link:
+link:;
 
-	cmd_create(&cmd, "cc", "-o", NULL);
+	char* cc = getenv("CC");
+	cc = cc == NULL ? "cc" : cc;
+
+	cmd_t cmd;
+	cmd_create(&cmd, cc, "-o", NULL);
 	cmd_addf(&cmd, "%s/bob/%s", out_path, out);
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
