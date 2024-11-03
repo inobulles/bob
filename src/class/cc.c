@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct {
 	state_t* state;
-	pthread_mutex_t out_lock;
+	pthread_mutex_t logging_lock;
 
 	flamingo_val_t* src_vec;
 	flamingo_val_t* out_vec;
@@ -60,22 +60,17 @@ static bool compile_task(void* data) {
 
 	// Actually execute it.
 
-	pthread_mutex_lock(&task->bss->out_lock);
+	pthread_mutex_lock(&task->bss->logging_lock);
 	LOG_INFO("%s: compiling...", task->src);
-	pthread_mutex_unlock(&task->bss->out_lock);
+	pthread_mutex_unlock(&task->bss->logging_lock);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
 	}
 
-	pthread_mutex_lock(&task->bss->out_lock);
+	pthread_mutex_lock(&task->bss->logging_lock);
 	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
-
-	// If we're going to stop all other tasks, keep the logging mutex locked so no other messages are printed.
-
-	if (!stop) {
-		pthread_mutex_unlock(&task->bss->out_lock);
-	}
+	pthread_mutex_unlock(&task->bss->logging_lock);
 
 	// Cleanup.
 
@@ -232,7 +227,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	assert(bss != NULL);
 
 	bss->state = state;
-	pthread_mutex_init(&bss->out_lock, NULL);
+	pthread_mutex_init(&bss->logging_lock, NULL);
 
 	bss->src_vec = srcs;
 	bss->out_vec = *rv;
