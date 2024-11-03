@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-static void* worker(void* data) {
+static void* businessman(void* data) {
 	pool_t* const pool = data;
 
 	while (!pool->error) {
@@ -44,9 +44,9 @@ found:
 			continue;
 		}
 
-		// We were asked to stop; cancel all workers.
+		// We were asked to stop; cancel all businessmen.
 		// We can't cancel them directly because they might still hold the logging lock, and locking a mutex is not a cancellation point.
-		// Instead, rely on each worker to stop when 'pool->error' is set.
+		// Instead, rely on each businessman to stop when 'pool->error' is set.
 
 		pool->error = true;
 	}
@@ -54,16 +54,16 @@ found:
 	return NULL;
 }
 
-void pool_init(pool_t* pool, size_t worker_count) {
+void pool_init(pool_t* pool, size_t businessman_count) {
 	pthread_mutex_init(&pool->lock, NULL);
 	pthread_mutex_lock(&pool->lock);
 
 	pool->error = false;
 	pool->started = false;
 
-	pool->worker_count = worker_count;
-	pool->workers = malloc(worker_count * sizeof(pthread_t));
-	assert(pool->workers != NULL);
+	pool->businessman_count = businessman_count;
+	pool->businessmen = malloc(businessman_count * sizeof(pthread_t));
+	assert(pool->businessmen != NULL);
 
 	pool->task_count = 0;
 	pool->tasks = NULL;
@@ -75,7 +75,7 @@ void pool_free(pool_t* pool) {
 	pool->error = true; // Make sure we end as quickly as possible.
 	pool_wait(pool);
 
-	free(pool->workers);
+	free(pool->businessmen);
 
 	if (pool->tasks != NULL) {
 		free(pool->tasks);
@@ -102,8 +102,8 @@ int pool_start(pool_t* pool) {
 		return 0;
 	}
 
-	for (size_t i = 0; i < pool->worker_count; i++) {
-		pthread_create(&pool->workers[i], NULL, worker, pool);
+	for (size_t i = 0; i < pool->businessman_count; i++) {
+		pthread_create(&pool->businessmen[i], NULL, businessman, pool);
 	}
 
 	pool->started = true;
@@ -113,9 +113,8 @@ int pool_start(pool_t* pool) {
 int pool_wait(pool_t* pool) {
 	pool_start(pool);
 
-	for (size_t i = 0; i < pool->worker_count; i++) {
-		pthread_t* const worker = &pool->workers[i];
-		pthread_join(*worker, NULL);
+	for (size_t i = 0; i < pool->businessman_count; i++) {
+		pthread_join(pool->businessmen[i], NULL);
 	}
 
 	return pool->error ? -1 : 0;
