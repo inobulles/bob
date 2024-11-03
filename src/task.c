@@ -101,11 +101,11 @@ void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
 	pthread_mutex_unlock(&pool->lock);
 }
 
-bool pool_wait(pool_t* pool) {
+int pool_wait(pool_t* pool) {
 	for (size_t i = 0; i < pool->worker_count; i++) {
 		pthread_t* const worker = &pool->workers[i];
 		pthread_join(*worker, NULL);
 	}
 
-	return pool->error;
+	return pool->error ? -1 : 0;
 }
