@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2023 Aymeric Wibo
 
+#include <bsys.h>
+#include <build_step.h>
+#include <logging.h>
+#include <ncpu.h>
+
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,14 +19,10 @@
 # include <sys/prctl.h>
 #endif
 
-#include <bsys.h>
-#include <build_step.h>
-#include <logging.h>
-#include <ncpu.h>
-
 // Global options go here so they're accessible by everyone.
 
 char const* out_path = ".bob"; // Default output path.
+char const* abs_out_path = NULL;
 char const* init_name = "bob";
 char const* prefix = NULL;
 char const* project_path = NULL;
@@ -122,6 +124,16 @@ int main(int argc, char* argv[]) {
 
 	if (mkdir(out_path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	// Get absolute output path;
+
+	abs_out_path = realpath(out_path, NULL);
+
+	if (abs_out_path == NULL) {
+		assert(errno != ENOMEM);
+		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
 

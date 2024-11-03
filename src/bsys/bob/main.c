@@ -2,17 +2,21 @@
 // Copyright (c) 2024 Aymeric Wibo
 
 #include <bsys.h>
+#include <common.h>
 #include <build_step.h>
 #include <logging.h>
+#include <str.h>
 
 #include <class/class.h>
 #include <flamingo/flamingo.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #define BUILD_PATH "build.fl"
 #define BOB_IMPORT_PATH "/Users/aymeric/bob/bob"
@@ -212,25 +216,25 @@ static int build(void) {
 	return run_build_steps();
 }
 
-static int install(char const* prefix, bool create_tree) {
+static int install(char const* prefix) {
 	// Find install map.
 
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
-	flamingo_var_t* install_var = NULL;
+	flamingo_var_t* map = NULL;
 
 	for (size_t i = 0; i < scope->vars_size; i++) {
-		install_var = &scope->vars[i];
+		map = &scope->vars[i];
 
-		if (flamingo_cstrcmp(install_var->key, "install", install_var->key_size) != 0) {
+		if (flamingo_cstrcmp(map->key, "install", map->key_size) != 0) {
 			continue;
 		}
 
-		if (install_var->val->kind == FLAMINGO_VAL_KIND_NONE) {
+		if (map->val->kind == FLAMINGO_VAL_KIND_NONE) {
 			LOG_WARN("Install map not set; nothing to install!");
 			return 0;
 		}
 
-		if (install_var->val->kind != FLAMINGO_VAL_KIND_MAP) {
+		if (map->val->kind != FLAMINGO_VAL_KIND_MAP) {
 			LOG_FATAL("Install map must be a map");
 			return -1;
 		}
@@ -243,7 +247,24 @@ static int install(char const* prefix, bool create_tree) {
 
 found:
 
-	LOG_SUCCESS("TODO");
+	// Go through install map.
+
+	for (size_t i = 0; i < map->val->map.count; i++) {
+		// Input validation.
+
+		flamingo_val_t* const key_val = map->val->map.keys[i];
+		flamingo_val_t* const val_val = map->val->map.vals[i];
+
+		if (key_val->kind != FLAMINGO_VAL_KIND_STR) {
+			LOG_FATAL("Install map key must be a string");
+			return -1;
+		}
+
+		if (val_val->kind != FLAMINGO_VAL_KIND_STR) {
+			LOG_FATAL("Install map value must be a string");
+			return -1;
+		}
+	}
 
 	return 0;
 }
