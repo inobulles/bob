@@ -58,14 +58,14 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 	asprintf(&path, "%s/prefix", out_path);
 	assert(path != NULL);
 
-	if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+	if (to_prefix && mkdir(path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
 
 	// Actually install.
 
-	return bsys->install(path, to_prefix);
+	return bsys->install(path);
 }
 
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {

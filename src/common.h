@@ -17,3 +17,4 @@
 #define COMMON_INCLUDED
 
 extern char const* out_path;
+extern char const* abs_out_path;
