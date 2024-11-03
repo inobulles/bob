@@ -212,6 +212,42 @@ static int build(void) {
 	return run_build_steps();
 }
 
+static int install(char const* prefix, bool create_tree) {
+	// Find install map.
+
+	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
+	flamingo_var_t* install_var = NULL;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		install_var = &scope->vars[i];
+
+		if (flamingo_cstrcmp(install_var->key, "install", install_var->key_size) != 0) {
+			continue;
+		}
+
+		if (install_var->val->kind == FLAMINGO_VAL_KIND_NONE) {
+			LOG_WARN("Install map not set; nothing to install!");
+			return 0;
+		}
+
+		if (install_var->val->kind != FLAMINGO_VAL_KIND_MAP) {
+			LOG_FATAL("Install map must be a map");
+			return -1;
+		}
+
+		goto found;
+	}
+
+	LOG_FATAL("Install map was never declared. This is a serious issue, please report it!");
+	return -1;
+
+found:
+
+	LOG_SUCCESS("TODO");
+
+	return 0;
+}
+
 static void destroy(void) {
 	if (!consistent) {
 		return;
@@ -227,5 +263,6 @@ bsys_t const BSYS_BOB = {
 	.identify = identify,
 	.setup = setup,
 	.build = build,
+	.install = install,
 	.destroy = destroy,
 };
