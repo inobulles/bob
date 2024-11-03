@@ -323,8 +323,10 @@ found:
 		asprintf(&install_path, "%s/%s", prefix, val);
 		assert(install_path != NULL);
 
-		if (copy(key, install_path) < 0) {
-			LOG_ERROR("Failed to copy '%s' to '%s'.", key, install_path);
+		char* CLEANUP_STR err = NULL;
+
+		if (copy(key, install_path, &err) < 0) {
+			LOG_ERROR("Failed to copy '%s' to '%s': %s", key, install_path, err);
 			return -1;
 		}
 
