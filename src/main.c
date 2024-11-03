@@ -177,7 +177,10 @@ int main(int argc, char* argv[]) {
 		// We don't know how many arguments there'll still be.
 
 		else if (strcmp(cur_instr, "run") == 0) {
-			// TODO rv = do_run(argc, argv);
+			if (bsys_run(bsys, argc, argv) == 0) {
+				rv = EXIT_SUCCESS;
+			}
+
 			goto done;
 		}
 

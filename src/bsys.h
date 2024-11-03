@@ -40,5 +40,5 @@ static bsys_t const* const BSYS[] = {
 
 bsys_t const* bsys_identify(void);
 int bsys_build(bsys_t const* bsys);
-int bsys_run(bsys_t const* bsys);
+int bsys_run(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_install(bsys_t const* bsys);
