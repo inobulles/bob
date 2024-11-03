@@ -16,6 +16,7 @@
 #include <bsys.h>
 #include <build_step.h>
 #include <logging.h>
+#include <ncpu.h>
 
 // Global options go here so they're accessible by everyone.
 
@@ -65,20 +66,24 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:o:p:")) != -1) {
-		if (c == 'C') {
+	while ((c = getopt(argc, argv, "C:j:o:p:")) != -1) {
+		switch (c) {
+		case 'C':
 			project_path = optarg;
-		}
+			break;
+		case 'j':
+			if (set_max_jobs(atoi(optarg)) < 0) {
+				exit(EXIT_FAILURE);
+			}
 
-		else if (c == 'o') {
+			break;
+		case 'o':
 			out_path = optarg;
-		}
-
-		else if (c == 'p') {
+			break;
+		case 'p':
 			prefix = optarg;
-		}
-
-		else {
+			break;
+		default:
 			usage();
 		}
 	}
