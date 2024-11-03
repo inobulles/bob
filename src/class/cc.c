@@ -22,6 +22,7 @@ typedef struct {
 } state_t;
 
 typedef struct {
+	state_t* state;
 	pthread_mutex_t out_lock;
 
 	flamingo_val_t* src_vec;
@@ -39,12 +40,25 @@ static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 	bool stop = true;
 
+	// Create command.
+
 	char* cc = getenv("CC");
 	cc = cc == NULL ? "cc" : cc;
 
 	cmd_t cmd;
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
 	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
+
+	// Add flags.
+
+	flamingo_val_t* const flags = task->bss->state->flags;
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		cmd_addf(&cmd, "%.*s", (int) flag->str.size, flag->str.str);
+	}
+
+	// Actually execute it.
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -212,6 +226,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	build_step_state_t* const bss = malloc(sizeof *bss);
 	assert(bss != NULL);
 
+	bss->state = state;
 	pthread_mutex_init(&bss->out_lock, NULL);
 
 	bss->src_vec = srcs;

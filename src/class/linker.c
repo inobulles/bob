@@ -23,6 +23,8 @@ typedef struct {
 } state_t;
 
 typedef struct {
+	state_t* state;
+
 	flamingo_val_t* src_vec;
 	flamingo_val_t* out_str;
 } build_step_state_t;
@@ -83,6 +85,8 @@ static int link_step(size_t data_count, void** data) {
 
 link:;
 
+	// Create command.
+
 	char* cc = getenv("CC");
 	cc = cc == NULL ? "cc" : cc;
 
@@ -94,6 +98,17 @@ link:;
 		char* const src = srcs[i];
 		cmd_addf(&cmd, "%s/bob/%s.o", out_path, src);
 	}
+
+	// Add flags.
+
+	flamingo_val_t* const flags = bss->state->flags;
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		cmd_addf(&cmd, "%.*s", (int) flag->str.size, flag->str.str);
+	}
+
+	// Actually execute it and log output.
 
 	rv = cmd_exec(&cmd);
 
@@ -155,6 +170,8 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 
 	build_step_state_t* const bss = malloc(sizeof *bss);
 	assert(bss != NULL);
+
+	bss->state = state;
 
 	bss->src_vec = srcs;
 	bss->out_str = *rv;
