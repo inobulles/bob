@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-int rm(char const* path) {
+int rm(char const* path, char** err) {
 	// Same comment as for 'copy'.
 
 	cmd_t cmd;
@@ -21,16 +21,15 @@ int rm(char const* path) {
 
 	int const rv = cmd_exec(&cmd);
 
-	if (rv < 0) {
-		char* CLEANUP_STR out = cmd_read_out(&cmd);
-		printf("%s", out);
+	if (rv < 0 && *err != NULL) {
+		*err = cmd_read_out(&cmd);
 	}
 
 	cmd_free(&cmd);
 	return rv;
 }
 
-int copy(char const* src, char const* dst) {
+int copy(char const* src, char const* dst, char** err) {
 	// It's unfortunate, but to be as cross-platform as possible, we must shell out execution to the 'cp' binary.
 	// Would've loved to use libcopyfile but, alas, POSIX is missing features :(
 
@@ -55,7 +54,7 @@ int copy(char const* src, char const* dst) {
 	// Also, if 'src' is a directory, we'd like to start off by recursively removing it.
 	// This is so the copy overwrites the destination rather than preserving the original files.
 
-	if (is_dir && rm(dst) < 0) {
+	if (is_dir && rm(dst, err) < 0) {
 		return -1;
 	}
 
@@ -66,9 +65,8 @@ int copy(char const* src, char const* dst) {
 
 	int const rv = cmd_exec(&cmd);
 
-	if (rv < 0) {
-		char* CLEANUP_STR out = cmd_read_out(&cmd);
-		printf("%s", out);
+	if (rv < 0 && *err != NULL) {
+		*err = cmd_read_out(&cmd);
 	}
 
 	cmd_free(&cmd);

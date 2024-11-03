@@ -3,5 +3,5 @@
 
 #pragma once
 
-int rm(char const* path);
-int copy(char const* src, char const* dst);
+int rm(char const* path, char** err);
+int copy(char const* src, char const* dst, char** err);
