@@ -60,30 +60,16 @@ static bool compile_task(void* data) {
 
 	// Actually execute it.
 
-	if (cmd_exec(&cmd) < 0) {
-		stop = true;
-	}
-
-	// Logging.
-
 	pthread_mutex_lock(&task->bss->out_lock);
 	LOG_INFO("%s: compiling...", task->src);
 	pthread_mutex_unlock(&task->bss->out_lock);
 
-	char* const out = cmd_read_out(&cmd);
-	char* const suffix = strlen(out) > 0 ? ":" : ".";
+	if (cmd_exec(&cmd) < 0) {
+		stop = true;
+	}
 
 	pthread_mutex_lock(&task->bss->out_lock);
-
-	if (stop) {
-		LOG_ERROR("%s: failed to compile%s", task->src, suffix);
-	}
-
-	else {
-		LOG_SUCCESS("%s: compiled%s", task->src, suffix);
-	}
-
-	printf("%s", out);
+	cmd_log(&cmd, task->src, "compile", "compiled");
 
 	// If we're going to stop all other tasks, keep the logging mutex locked so no other messages are printed.
 
@@ -92,8 +78,6 @@ static bool compile_task(void* data) {
 	}
 
 	// Cleanup.
-
-	free(out);
 
 	cmd_free(&cmd);
 
@@ -181,7 +165,7 @@ static int compile_step(size_t data_count, void** data) {
 			}
 
 			if (vres == VALIDATION_RES_SKIP) {
-				LOG_SUCCESS("%s: already compiled.", src);
+				LOG_SUCCESS("%s: Already compiled.", src);
 			}
 
 			free(src);
