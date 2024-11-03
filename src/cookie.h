@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <str.h>
 #include <common.h>
+#include <str.h>
 
 static inline char* gen_cookie(char* path, size_t path_size, char const* ext) {
 	char* cookie = NULL;

@@ -118,14 +118,14 @@ link:;
 	rv = cmd_exec(&cmd);
 
 	char* const cmd_out = cmd_read_out(&cmd);
-	char* const colon = strlen(cmd_out) > 0 ? ":" : "";
+	char* const suffix = strlen(cmd_out) > 0 ? ":" : ".";
 
 	if (rv < 0) {
-		LOG_ERROR("Failed to link%s", colon);
+		LOG_ERROR("Failed to link%s", suffix);
 	}
 
 	else {
-		LOG_SUCCESS("Linked%s", colon);
+		LOG_SUCCESS("Linked%s", suffix);
 	}
 
 	printf("%s", cmd_out);

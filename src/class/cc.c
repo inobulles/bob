@@ -38,7 +38,7 @@ typedef struct {
 
 static bool compile_task(void* data) {
 	compile_task_t* const task = data;
-	bool stop = true;
+	bool stop = false;
 
 	// Create command.
 
@@ -66,17 +66,34 @@ static bool compile_task(void* data) {
 
 	// Logging.
 
+	pthread_mutex_lock(&task->bss->out_lock);
+	LOG_INFO("%s: compiling...", task->src);
+	pthread_mutex_unlock(&task->bss->out_lock);
+
 	char* const out = cmd_read_out(&cmd);
+	char* const suffix = strlen(out) > 0 ? ":" : ".";
 
 	pthread_mutex_lock(&task->bss->out_lock);
+
+	if (stop) {
+		LOG_ERROR("%s: failed to compile%s", task->src, suffix);
+	}
+
+	else {
+		LOG_SUCCESS("%s: compiled%s", task->src, suffix);
+	}
+
 	printf("%s", out);
-	pthread_mutex_unlock(&task->bss->out_lock);
+
+	// If we're going to stop all other tasks, keep the logging mutex locked so no other messages are printed.
+
+	if (!stop) {
+		pthread_mutex_unlock(&task->bss->out_lock);
+	}
 
 	// Cleanup.
 
 	free(out);
-
-	stop = false; // TODO ??? also, should we lock the logging thing so that nothing is shown after there's an error?
 
 	cmd_free(&cmd);
 
@@ -161,6 +178,10 @@ static int compile_step(size_t data_count, void** data) {
 
 				pool_add_task(&pool, compile_task, data);
 				continue;
+			}
+
+			if (vres == VALIDATION_RES_SKIP) {
+				LOG_SUCCESS("%s: already compiled.", src);
 			}
 
 			free(src);
