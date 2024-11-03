@@ -7,7 +7,7 @@ class Fs {
 	static proto list(path: str) -> vec<str>
 }
 
-class CC(flags: vec<str>) {
+class Cc(flags: vec<str>) {
 	proto compile(src: vec<str>) -> vec<str>
 }
 
