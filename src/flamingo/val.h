@@ -95,8 +95,10 @@ static flamingo_val_t* val_copy(flamingo_val_t* val) {
 	memcpy(copy, val, sizeof *val);
 	copy->ref_count = 1;
 
-	copy->name = strndup(val->name, val->name_size);
-	assert(copy->name != NULL);
+	if (val->name != NULL) {
+		copy->name = strndup(val->name, val->name_size);
+		assert(copy->name != NULL);
+	}
 
 	switch (copy->kind) {
 	case FLAMINGO_VAL_KIND_NONE:
@@ -192,6 +194,8 @@ static bool val_eq(flamingo_val_t* x, flamingo_val_t* y) {
 	case FLAMINGO_VAL_KIND_COUNT:
 		return false;
 	}
+
+	return false; // XXX To make GCC happy.
 }
 
 static void val_free(flamingo_val_t* val) {

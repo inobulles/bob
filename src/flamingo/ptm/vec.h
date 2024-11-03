@@ -40,7 +40,7 @@ static inline int vec_map(flamingo_t* flamingo, flamingo_val_t* self, flamingo_a
 	flamingo_val_t* const vec = val_alloc();
 	vec->kind = FLAMINGO_VAL_KIND_VEC;
 	vec->vec.count = self->vec.count;
-	vec->vec.elems = malloc(vec->vec.count * sizeof *vec->vec.elems);
+	vec->vec.elems = calloc(vec->vec.count, sizeof *vec->vec.elems);
 	assert(vec->vec.elems != NULL);
 
 	for (size_t i = 0; i < vec->vec.count; i++) {
