@@ -92,11 +92,11 @@ link:;
 
 	cmd_t cmd;
 	cmd_create(&cmd, cc, "-o", NULL);
-	cmd_addf(&cmd, "%s/bob/%s", out_path, out);
+	cmd_add(&cmd, out);
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
 		char* const src = srcs[i];
-		cmd_addf(&cmd, "%s/bob/%s.o", out_path, src);
+		cmd_add(&cmd, src);
 	}
 
 	// Add flags.
@@ -162,7 +162,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	}
 
 	char* cookie = NULL;
-	asprintf(&cookie, "linker.link.cookie.%llx", total_hash);
+	asprintf(&cookie, "%s/bob/linker.link.cookie.%llx.exe", out_path, total_hash);
 	assert(cookie != NULL);
 	*rv = flamingo_val_make_cstr(cookie);
 
