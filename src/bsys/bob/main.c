@@ -264,6 +264,24 @@ found:
 			LOG_FATAL("Install map value must be a string");
 			return -1;
 		}
+
+		// Get absolute path of source.
+
+		char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
+		char* const CLEANUP_STR path = realpath(key, NULL);
+
+		if (path == NULL) {
+			assert(errno != ENOMEM);
+			LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
+			return -1;
+		}
+
+		// Figure out if source is a cookie or a regular path.
+
+		bool const is_cookie = (strstr(path, abs_out_path) == path);
+		(void) is_cookie;
+
+		printf("%d Installing %s to %s\n", is_cookie, path, prefix);
 	}
 
 	return 0;
