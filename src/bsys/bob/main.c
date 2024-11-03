@@ -3,6 +3,7 @@
 
 #include <bsys.h>
 #include <build_step.h>
+#include <cmd.h>
 #include <common.h>
 #include <fsutil.h>
 #include <logging.h>
@@ -236,7 +237,7 @@ static int install(char const* prefix) {
 		}
 
 		if (map->val->kind != FLAMINGO_VAL_KIND_MAP) {
-			LOG_FATAL("Install map must be a map");
+			LOG_FATAL("Install map must be a map.");
 			return -1;
 		}
 
@@ -257,12 +258,12 @@ found:
 		flamingo_val_t* const val_val = map->val->map.vals[i];
 
 		if (key_val->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL("Install map key must be a string");
+			LOG_FATAL("Install map key must be a string.");
 			return -1;
 		}
 
 		if (val_val->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL("Install map value must be a string");
+			LOG_FATAL("Install map value must be a string.");
 			return -1;
 		}
 
@@ -336,6 +337,72 @@ found:
 	return 0;
 }
 
+static int run(int argc, char* argv[]) {
+	// Find run vector.
+
+	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
+	flamingo_var_t* vec = NULL;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		vec = &scope->vars[i];
+
+		if (flamingo_cstrcmp(vec->key, "run", vec->key_size) != 0) {
+			continue;
+		}
+
+		if (vec->val->kind == FLAMINGO_VAL_KIND_NONE) {
+			LOG_WARN("Run vector not set; nothing to run!");
+			return 0;
+		}
+
+		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
+			LOG_FATAL("Run vector must be a vector.");
+			return -1;
+		}
+
+		goto found;
+	}
+
+	LOG_FATAL("Run vector was never declared. This is a serious issue, please report it!");
+	return -1;
+
+found:;
+
+	cmd_t cmd;
+	cmd_create(&cmd, NULL);
+
+	// Start by adding the arguments in the run vector.
+
+	for (size_t i = 0; i < vec->val->vec.count; i++) {
+		flamingo_val_t* const val = vec->val->vec.elems[i];
+
+		if (val->kind != FLAMINGO_VAL_KIND_STR) {
+			LOG_FATAL("Run vector element must be a string.");
+			return -1;
+		}
+
+		cmd_addf(&cmd, "%.*s", (int) val->str.size, val->str.str);
+	}
+
+	// Then, add the arguments passed to the Bob frontend.
+
+	for (ssize_t i = 0; i < argc; i++) {
+		cmd_add(&cmd, argv[i]);
+	}
+
+	// Finally, actually run the command.
+
+	if (cmd_exec_inplace(&cmd) < 0) {
+		LOG_ERROR("Failed to run command.");
+		return -1;
+	}
+
+	LOG_SUCCESS("Successfully ran command.");
+
+	cmd_free(&cmd);
+	return 0;
+}
+
 static void destroy(void) {
 	if (!consistent) {
 		return;
@@ -352,5 +419,6 @@ bsys_t const BSYS_BOB = {
 	.setup = setup,
 	.build = build,
 	.install = install,
+	.run = run,
 	.destroy = destroy,
 };

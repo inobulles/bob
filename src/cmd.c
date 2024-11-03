@@ -66,6 +66,48 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 	va_end(va);
 }
 
+int cmd_exec_inplace(cmd_t* cmd) {
+	// Attempt first to execute at the path passed.
+	// "If any of the exec() functions returns, an error will have occurred."
+
+	execv(cmd->args[0], cmd->args);
+
+	// If we can't, search for a binary in our '$PATH'.
+	// Only take into account the last component of the query path.
+
+	char* query = strrchr(cmd->args[0], '/');
+
+	if (query == NULL) {
+		query = cmd->args[0];
+	}
+
+	char* const path = getenv("PATH");
+
+	if (path == NULL) {
+		LOG_FATAL("getenv(\"PATH\"): couldn't find '$PATH'");
+		_exit(EXIT_FAILURE);
+	}
+
+	char* CLEANUP_STR search = strdup(getenv("PATH"));
+	assert(search != NULL);
+
+	char* tok;
+
+	while ((tok = strsep(&search, ":"))) {
+		char* CLEANUP_STR path = NULL;
+		asprintf(&path, "%s/%s", tok, query);
+		assert(path != NULL);
+
+		cmd->args[0] = path;
+		execv(cmd->args[0], cmd->args);
+	}
+
+	// Error if all else fails.
+
+	LOG_FATAL("execv(\"%s\" and searched in PATH): %s", query, strerror(errno));
+	return -1;
+}
+
 pid_t cmd_exec_async(cmd_t* cmd) {
 	// Create pipes.
 
@@ -88,8 +130,6 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		return -1;
 	}
 
-	char** const args = cmd->args;
-
 	if (!pid) {
 		// Handle pipe (child).
 		// Close output side of pipe, as we're the ones writing to it
@@ -104,49 +144,9 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 			}
 		}
 
-		// Attempt first to execute at the path passed.
+		// Replace this process.
 
-		if (!execv(args[0], args)) {
-			_exit(EXIT_SUCCESS);
-		}
-
-		// If we can't, search for a binary in our '$PATH'.
-		// Only take into account the last component of the query path.
-
-		char* query = strrchr(args[0], '/');
-
-		if (query == NULL) {
-			query = args[0];
-		}
-
-		char* const path = getenv("PATH");
-
-		if (path == NULL) {
-			LOG_FATAL("getenv(\"PATH\"): couldn't find '$PATH'");
-			_exit(EXIT_FAILURE);
-		}
-
-		char* CLEANUP_STR search = strdup(getenv("PATH"));
-		assert(search != NULL);
-
-		char* tok;
-
-		while ((tok = strsep(&search, ":"))) {
-			char* CLEANUP_STR path = NULL;
-			asprintf(&path, "%s/%s", tok, query);
-			assert(path != NULL);
-
-			args[0] = path;
-
-			if (!execv(args[0], args)) {
-				_exit(EXIT_SUCCESS);
-			}
-		}
-
-		// Error if all else fails.
-
-		LOG_FATAL("execv(\"%s\" and searched in PATH): %s", query, strerror(errno));
-		_exit(EXIT_FAILURE);
+		_exit(cmd_exec_inplace(cmd) < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 	}
 
 	// Handle pipe (parent).

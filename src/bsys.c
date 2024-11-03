@@ -24,6 +24,7 @@ bsys_t const* bsys_identify(void) {
 
 int bsys_build(bsys_t const* bsys) {
 	if (bsys->build == NULL) {
+		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
 	}
 
@@ -49,6 +50,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 	assert(to_prefix == true); // TODO Installing to system.
 
 	if (bsys->install == NULL) {
+		LOG_WARN("%s: build system does not have an install step; nothing to install!", bsys->name);
 		return 0;
 	}
 
@@ -79,7 +81,12 @@ int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 		return -1;
 	}
 
-	return 0; // TODO Actually run (check for 'bob->run').
+	if (bsys->run == NULL) {
+		LOG_WARN("%s: build system does not have a run step; nothing to run!", bsys->name);
+		return 0;
+	}
+
+	return bsys->run(argc, argv);
 }
 
 int bsys_install(bsys_t const* bsys) {
