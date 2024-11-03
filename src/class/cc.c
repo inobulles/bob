@@ -172,7 +172,7 @@ static int compile_step(size_t data_count, void** data) {
 		}
 	}
 
-	rv = pool_wait(&pool) ? -1 : 0;
+	rv = pool_wait(&pool);
 
 done:
 

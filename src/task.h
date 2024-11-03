@@ -33,4 +33,4 @@ void pool_init(pool_t* pool, size_t worker_count);
 void pool_free(pool_t* pool);
 
 void pool_add_task(pool_t* pool, task_fn_t cb, void* data);
-bool pool_wait(pool_t* pool);
+int pool_wait(pool_t* pool);
