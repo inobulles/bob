@@ -7,6 +7,7 @@
 #include <common.h>
 #include <cookie.h>
 #include <logging.h>
+#include <ncpu.h>
 #include <task.h>
 
 #include <assert.h>
@@ -132,7 +133,7 @@ static validation_res_t validate_requirements(char* src, char* out) {
 
 static int compile_step(size_t data_count, void** data) {
 	pool_t pool;
-	pool_init(&pool, 11); // TODO 11 should be figured out automatically or come from a '-j' flag.
+	pool_init(&pool, ncpu());
 	int rv = -1;
 
 	for (size_t i = 0; i < data_count; i++) {
