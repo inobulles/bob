@@ -179,7 +179,8 @@ int cmd_exec(cmd_t* cmd) {
 		return -1;
 	}
 
-	return wait_for_process(pid);
+	cmd->rv = wait_for_process(pid);
+	return cmd->rv;
 }
 
 char* cmd_read_out(cmd_t* cmd) {
@@ -209,6 +210,26 @@ char* cmd_read_out(cmd_t* cmd) {
 
 	out[total] = '\0';
 	return out;
+}
+
+void cmd_log(cmd_t* cmd, char const* prefix, char const* infinitive, char const* past) {
+	char* const out = cmd_read_out(cmd);
+	char* const suffix = out[0] ? ":" : ".";
+
+#define P prefix ? prefix : "", prefix ? ": " : ""
+
+	if (cmd->rv < 0) {
+		LOG_ERROR("%s%sFailed to %s%s", P, infinitive, suffix);
+	}
+
+	else {
+		LOG_SUCCESS("%s%sSuccessfully %s%s", P, past, suffix);
+	}
+
+#undef P
+
+	printf("%s", out);
+	free(out);
 }
 
 __attribute__((unused)) void cmd_print(cmd_t* cmd) {
