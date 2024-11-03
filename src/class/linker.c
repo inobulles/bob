@@ -7,8 +7,8 @@
 #include <common.h>
 #include <cookie.h>
 #include <logging.h>
-#include <str.h>
 #include <pool.h>
+#include <str.h>
 
 #include <assert.h>
 #include <errno.h>
