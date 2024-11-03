@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Aymeric Wibo
+
+import bob
+
+let src = Fs.list("src").where(|path| path.endswith(".c") && !path.startswith("src/flamingo")) + ["src/flamingo/flamingo.c"]
+
+let obj = Cc(["-std=c11", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter", "-Isrc"]).compile(src)
+let cmd = Linker([]).link(obj)
+
+install = {
+	cmd: "bin/bob",
+	"skeletons": "share/bob/skeletons",
+}
+
+run = ["bob"]
