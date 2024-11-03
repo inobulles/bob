@@ -46,6 +46,37 @@ int bsys_build(bsys_t const* bsys) {
 	return bsys->build();
 }
 
+static void append_env(char const* name, char const* fmt, ...) {
+	va_list args;
+
+	va_start(args, fmt);
+
+	char* CLEANUP_STR val;
+	vasprintf(&val, fmt, args);
+	assert(val != NULL);
+
+	va_end(args);
+
+	char* const prev = getenv(name);
+	int rv = -1;
+
+	if (prev == NULL) {
+		rv = setenv(name, val, 1);
+	}
+
+	else {
+		char* CLEANUP_STR new;
+		asprintf(&new, "%s:%s", prev, val);
+		assert(new != NULL);
+
+		rv = setenv(name, new, 1);
+	}
+
+	if (rv < 0) {
+		LOG_WARN("setenv(\"%s\", \"%s\"): %s", name, val, strerror(errno));
+	}
+}
+
 static int install(bsys_t const* bsys, bool to_prefix) {
 	assert(to_prefix == true); // TODO Installing to system.
 
@@ -85,6 +116,13 @@ int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 		LOG_WARN("%s: build system does not have a run step; nothing to run!", bsys->name);
 		return 0;
 	}
+
+	// Set up environment to be inside the prefix.
+
+	append_env("PATH", "%s/prefix/bin", out_path);
+	append_env("LD_LIBRARY_PATH", "%s/prefix/lib", out_path);
+
+	// Actually run.
 
 	return bsys->run(argc, argv);
 }
