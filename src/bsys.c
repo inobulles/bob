@@ -44,3 +44,38 @@ int bsys_build(bsys_t const* bsys) {
 
 	return bsys->build();
 }
+
+static int install(bsys_t const* bsys, bool to_prefix) {
+	assert(to_prefix == true); // TODO Installing to system.
+
+	if (bsys->install == NULL) {
+		return 0;
+	}
+
+	// Ensure the output path exists.
+
+	char* CLEANUP_STR path;
+	asprintf(&path, "%s/prefix", out_path);
+	assert(path != NULL);
+
+	if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+		return -1;
+	}
+
+	// Actually install.
+
+	return bsys->install(path);
+}
+
+int bsys_run(bsys_t const* bsys) {
+	if (install(bsys, true) < 0) {
+		return 0;
+	}
+
+	return 0; // TODO Actually run.
+}
+
+int bsys_install(bsys_t const* bsys) {
+	return install(bsys, false);
+}
