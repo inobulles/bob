@@ -15,6 +15,7 @@ struct bsys_t {
 	int (*setup)(void);
 	int (*build)(void);
 	int (*install)(char const* prefix);
+	int (*run)(int argc, char* argv[]);
 	void (*destroy)(void);
 };
 
