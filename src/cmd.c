@@ -212,9 +212,10 @@ char* cmd_read_out(cmd_t* cmd) {
 	return out;
 }
 
-void cmd_log(cmd_t* cmd, char const* prefix, char const* infinitive, char const* past) {
-	char* const out = cmd_read_out(cmd);
-	char* const suffix = out[0] ? ":" : ".";
+void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past) {
+	char* const CLEANUP_STR out = cmd_read_out(cmd);
+	bool const is_out = out[0] != '\0';
+	char* const suffix = is_out ? ":" : ".";
 
 #define P prefix ? prefix : "", prefix ? ": " : ""
 
@@ -229,7 +230,28 @@ void cmd_log(cmd_t* cmd, char const* prefix, char const* infinitive, char const*
 #undef P
 
 	printf("%s", out);
-	free(out);
+
+	// Write out log to file, only if there is one.
+	// If not, attempt to remove the existing one anyway.
+
+	char* CLEANUP_STR path;
+	asprintf(&path, "%s.log", cookie);
+	assert(path != NULL);
+
+	if (!is_out) {
+		remove(path);
+		return;
+	}
+
+	FILE* const f = fopen(path, "w");
+
+	if (f == NULL) {
+		LOG_WARN("fopen(\"%s\", \"w\"): %s", path, strerror(errno));
+		return;
+	}
+
+	fprintf(f, "%s", out);
+	fclose(f);
 }
 
 __attribute__((unused)) void cmd_print(cmd_t* cmd) {
