@@ -52,4 +52,5 @@ progress_update(progress_t* self, size_t numerator, size_t denominator, char con
 #define LOG_FATAL(...) vlog(stderr, "💀 " BOLD PURPLE, __VA_ARGS__)
 #define LOG_ERROR(...) vlog(stderr, "🔴 " BOLD RED, __VA_ARGS__)
 #define LOG_WARN(...) vlog(stderr, "⚠️  " REGULAR YELLOW, __VA_ARGS__)
+#define LOG_INFO(...) vlog(stderr, "🔵 " REGULAR BLUE, __VA_ARGS__)
 #define LOG_SUCCESS(...) vlog(stderr, "🟢 " REGULAR GREEN, __VA_ARGS__)

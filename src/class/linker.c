@@ -78,7 +78,10 @@ static int link_step(size_t data_count, void** data) {
 		}
 	}
 
-	// Nothing to do in this code path.
+	// Already linked.
+	// TODO Here, print out the previous output if found.
+
+	LOG_SUCCESS("Already linked.");
 
 	rv = 0;
 	goto done;
@@ -91,7 +94,7 @@ link:;
 	cc = cc == NULL ? "cc" : cc;
 
 	cmd_t cmd;
-	cmd_create(&cmd, cc, "-o", NULL);
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", NULL);
 	cmd_add(&cmd, out);
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
@@ -110,9 +113,21 @@ link:;
 
 	// Actually execute it and log output.
 
+	LOG_INFO("Linking...");
+
 	rv = cmd_exec(&cmd);
 
 	char* const cmd_out = cmd_read_out(&cmd);
+	char* const colon = strlen(cmd_out) > 0 ? ":" : "";
+
+	if (rv < 0) {
+		LOG_ERROR("Failed to link%s", colon);
+	}
+
+	else {
+		LOG_SUCCESS("Linked%s", colon);
+	}
+
 	printf("%s", cmd_out);
 
 	free(cmd_out);
