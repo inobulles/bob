@@ -47,7 +47,7 @@ static bool compile_task(void* data) {
 
 	cmd_t cmd;
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", NULL);
-	cmd_addf(&cmd, "%s/bob/%s.o", out_path, task->out);
+	cmd_add(&cmd, task->out);
 
 	// Add flags.
 
@@ -214,7 +214,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 			return -1;
 		}
 
-		char* const cookie = gen_cookie(src->str.str, src->str.size);
+		char* const cookie = gen_cookie(src->str.str, src->str.size, "o");
 		flamingo_val_t* const cookie_val = flamingo_val_make_cstr(cookie);
 		free(cookie);
 
