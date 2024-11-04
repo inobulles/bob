@@ -11,23 +11,27 @@
 
 bool frugal_flags(flamingo_val_t* flags, char* out) {
 	char path[strlen(out) + 7];
-	sprintf(path, "%s.flags", out);
+	snprintf(path, sizeof path, "%s.flags", out);
 
 	// Turn flags into string.
 
 	assert(flags->kind == FLAMINGO_VAL_KIND_VEC);
 
-	char* CLEANUP_STR flag_str = NULL;
+	char* CLEANUP_STR flag_str = calloc(1, 1);
+	assert(flag_str != NULL);
+
 	size_t size = 0;
 
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
 		assert(flag->kind == FLAMINGO_VAL_KIND_STR);
 
-		flag_str = realloc(flag_str, size + flag->str.size + 1);
+		size_t const extra = flag->str.size + 1;
+
+		flag_str = realloc(flag_str, size + extra + 1);
 		assert(flag_str != NULL);
-		sprintf(flag_str + size, "%.*s\n", (int) flag->str.size, flag->str.str);
-		size += flag->str.size + 1;
+		snprintf(flag_str + size, extra + 1, "%.*s\n", (int) flag->str.size, flag->str.str);
+		size += extra;
 	}
 
 	// Read previous flags file.
@@ -42,12 +46,13 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 	}
 
 	fseek(f, 0, SEEK_END);
-	size_t const prev_size = ftell(f) + 1;
+	size_t const prev_size = ftell(f);
 	rewind(f);
 
-	prev_flag_str = malloc(prev_size);
+	prev_flag_str = malloc(prev_size + 1);
 	assert(prev_flag_str != NULL);
 	fread(prev_flag_str, 1, prev_size, f);
+	prev_flag_str[prev_size] = '\0';
 
 	fclose(f);
 
