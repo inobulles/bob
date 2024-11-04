@@ -93,6 +93,14 @@ typedef enum {
 static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, char* out) {
 	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
 
+	// Compile if flags have changed.
+	// Do this first as 'frugal_flags' also writes out the flags file.
+	// We can't do this at the level of the 'Cc' instance, because that wouldn't handle the case where we move a source file between different 'Cc's without changing their flags (but from the point of view of the source file the flags have indeed changed).
+
+	if (frugal_flags(flags, out)) {
+		return VALIDATION_RES_COMPILE;
+	}
+
 	// Get last modification times of source and output files.
 	// If output file doesn't exist, we need to compile.
 
@@ -119,13 +127,6 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	// XXX There is a case where we could build, modify, and build again in the space of one minute in which case changes won't be reflected, but that's such a small edgecase I don't think it's worth letting the complexity spirit demon enter.
 
 	if (src_sb.st_mtime > out_sb.st_mtime) {
-		return VALIDATION_RES_COMPILE;
-	}
-
-	// Compile if flags have changed.
-	// We can't do this at the level of the 'Cc' instance, because that wouldn't handle the case where we move a source file between different 'Cc's without changing their flags (but from the point of view of the source file the flags have indeed changed).
-
-	if (frugal_flags(flags, out)) {
 		return VALIDATION_RES_COMPILE;
 	}
 
