@@ -102,7 +102,7 @@ link:;
 
 	// Actually execute it.
 
-	LOG_INFO("Linking...");
+	LOG_INFO(CLEAR "Linking...");
 	rv = cmd_exec(&cmd);
 	cmd_log(&cmd, out, NULL, "link", "linked");
 	cmd_free(&cmd);

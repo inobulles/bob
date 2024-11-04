@@ -224,11 +224,11 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 #define P prefix ? prefix : "", prefix ? ": " : ""
 
 	if (cmd->rv < 0) {
-		LOG_ERROR("%s%sFailed to %s%s", P, infinitive, suffix);
+		LOG_ERROR("%s" CLEAR "%sFailed to %s%s", P, infinitive, suffix);
 	}
 
 	else {
-		LOG_SUCCESS("%s%sSuccessfully %s%s", P, past, suffix);
+		LOG_SUCCESS("%s" CLEAR "%sSuccessfully %s%s", P, past, suffix);
 	}
 
 #undef P

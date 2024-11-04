@@ -155,7 +155,7 @@ void log_already_done(char const* cookie, char const* prefix, char const* past) 
 
 	char* const suffix = out ? ":" : ".";
 
-	LOG_SUCCESS("%s%sAlready %s%s", prefix ? prefix : "", prefix ? ": " : "", past, suffix);
+	LOG_SUCCESS("%s" CLEAR "%sAlready %s%s", prefix ? prefix : "", prefix ? ": " : "", past, suffix);
 
 	if (out) {
 		printf("%s", out);

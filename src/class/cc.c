@@ -62,7 +62,7 @@ static bool compile_task(void* data) {
 	// Actually execute it.
 
 	pthread_mutex_lock(&task->bss->logging_lock);
-	LOG_INFO("%s: compiling...", task->src);
+	LOG_INFO("%s" CLEAR ": Compiling...", task->src);
 	pthread_mutex_unlock(&task->bss->logging_lock);
 
 	if (cmd_exec(&cmd) < 0) {
