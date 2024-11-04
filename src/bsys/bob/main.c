@@ -5,6 +5,7 @@
 #include <build_step.h>
 #include <cmd.h>
 #include <common.h>
+#include <frugal.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -278,21 +279,9 @@ found:
 			return -1;
 		}
 
-		// Figure out if source is a cookie or a regular path.
-
-		bool const is_cookie = (strstr(path, abs_out_path) == path);
-		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
-
-		if (is_cookie) {
-			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
-		}
-
-		else {
-			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
-		}
-
 		// Make sure destination directory exists.
 
+		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
 		char* parent = dirname(val); // XXX 'dirname' uses internal storage.
 		char* bit;
 		char* CLEANUP_STR accum = strdup(prefix);
@@ -316,18 +305,40 @@ found:
 			assert(accum != NULL);
 		}
 
-		// TODO Check modification times.
-
-		// Actually copy over files.
+		// Check modification times.
+		// TODO When 'key' is a directory, we should recursively check all files in it.
 
 		char* CLEANUP_STR install_path = NULL;
 		asprintf(&install_path, "%s/%s", prefix, val);
 		assert(install_path != NULL);
 
+		bool do_install = false;
+
+		if (frugal_mtime(&do_install, "install", 1, &key, install_path) < 0) {
+			return -1;
+		}
+
+		if (!do_install) {
+			LOG_SUCCESS("%s" CLEAR ": Already installed.", val);
+			continue;
+		}
+
+		// Actually copy over files.
+
+		bool const is_cookie = (strstr(path, abs_out_path) == path);
+
+		if (is_cookie) {
+			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
+		}
+
+		else {
+			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
+		}
+
 		char* CLEANUP_STR err = NULL;
 
 		if (copy(key, install_path, &err) < 0) {
-			LOG_ERROR("Failed to copy '%s' to '%s': %s", key, install_path, err);
+			LOG_FATAL("Failed to copy '%s' to '%s': %s", key, install_path, err);
 			return -1;
 		}
 
