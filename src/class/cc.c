@@ -6,6 +6,7 @@
 #include <cmd.h>
 #include <common.h>
 #include <cookie.h>
+#include <frugal.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
@@ -89,7 +90,7 @@ typedef enum {
 	VALIDATION_RES_COMPILE,
 } validation_res_t;
 
-static validation_res_t validate_requirements(char* src, char* out) {
+static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, char* out) {
 	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
 
 	// Get last modification times of source and output files.
@@ -121,7 +122,12 @@ static validation_res_t validate_requirements(char* src, char* out) {
 		return VALIDATION_RES_COMPILE;
 	}
 
-	// TODO Compile if flags have changed.
+	// Compile if flags have changed.
+	// We can't do this at the level of the 'Cc' instance, because that wouldn't handle the case where we move a source file between different 'Cc's without changing their flags (but from the point of view of the source file the flags have indeed changed).
+
+	if (frugal_flags(flags, out)) {
+		return VALIDATION_RES_COMPILE;
+	}
 
 	return VALIDATION_RES_SKIP;
 }
@@ -145,7 +151,7 @@ static int compile_step(size_t data_count, void** data) {
 			assert(src != NULL);
 			assert(out != NULL);
 
-			validation_res_t const vres = validate_requirements(src, out);
+			validation_res_t const vres = validate_requirements(bss->state->flags, src, out);
 
 			if (vres == VALIDATION_RES_COMPILE) {
 				compile_task_t* const data = malloc(sizeof *data);
