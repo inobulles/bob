@@ -163,7 +163,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 
 		char* const CLEANUP_STR tmp = strndup(src->str.str, src->str.size);
 		assert(tmp != NULL);
-		total_hash ^= str_hash(src->str.str);
+		total_hash ^= str_hash(tmp);
 	}
 
 	char* cookie = NULL;
