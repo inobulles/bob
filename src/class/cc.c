@@ -91,8 +91,6 @@ typedef enum {
 } validation_res_t;
 
 static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, char* out) {
-	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
-
 	// Compile if flags have changed.
 	// Do this first as 'frugal_flags' also writes out the flags file.
 	// We can't do this at the level of the 'Cc' instance, because that wouldn't handle the case where we move a source file between different 'Cc's without changing their flags (but from the point of view of the source file the flags have indeed changed).
@@ -101,36 +99,15 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 		return VALIDATION_RES_COMPILE;
 	}
 
-	// Get last modification times of source and output files.
-	// If output file doesn't exist, we need to compile.
+	// Check modification times between dependencies and target.
 
-	struct stat src_sb;
+	bool do_compile;
 
-	if (stat(src, &src_sb) < 0) {
-		LOG_FATAL(CC ".compile: Failed to stat source file '%s': %s", src, strerror(errno));
+	if (frugal_mtime(&do_compile, CC ".compile", 1, &src, out) < 0) {
 		return VALIDATION_RES_ERR;
 	}
 
-	struct stat out_sb;
-
-	if (stat(out, &out_sb) < 0) {
-		if (errno != ENOENT) {
-			LOG_FATAL(CC ".compile: Failed to stat output file '%s': %s", out, strerror(errno));
-			return VALIDATION_RES_ERR;
-		}
-
-		return VALIDATION_RES_COMPILE;
-	}
-
-	// If source file is newer than output file, we need to compile.
-	// Strict comparison because if b is built right after a, we don't want to rebuild b d'office.
-	// XXX There is a case where we could build, modify, and build again in the space of one minute in which case changes won't be reflected, but that's such a small edgecase I don't think it's worth letting the complexity spirit demon enter.
-
-	if (src_sb.st_mtime > out_sb.st_mtime) {
-		return VALIDATION_RES_COMPILE;
-	}
-
-	return VALIDATION_RES_SKIP;
+	return do_compile ? VALIDATION_RES_COMPILE : VALIDATION_RES_SKIP;
 }
 
 static int compile_step(size_t data_count, void** data) {
