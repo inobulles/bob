@@ -6,6 +6,7 @@
 #include <cmd.h>
 #include <common.h>
 #include <cookie.h>
+#include <frugal.h>
 #include <logging.h>
 #include <pool.h>
 #include <str.h>
@@ -47,6 +48,12 @@ static int link_step(size_t data_count, void** data) {
 		flamingo_val_t* const src_val = bss->src_vec->vec.elems[i];
 		srcs[i] = strndup(src_val->str.str, src_val->str.size);
 		assert(srcs[i] != NULL);
+	}
+
+	// Re-link if flags have changed.
+
+	if (frugal_flags(bss->state->flags, out)) {
+		goto link;
 	}
 
 	// Get last modification time of output.
