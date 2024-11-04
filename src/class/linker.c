@@ -41,10 +41,11 @@ static int link_step(size_t data_count, void** data) {
 	char* const CLEANUP_STR out = strndup(bss->out_str->str.str, bss->out_str->str.size);
 	assert(out != NULL);
 
-	char* srcs[bss->src_vec->vec.count];
+	size_t const src_count = bss->src_vec->vec.count;
+	char* srcs[src_count];
 	memset(srcs, 0, sizeof srcs);
 
-	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
+	for (size_t i = 0; i < src_count; i++) {
 		flamingo_val_t* const src_val = bss->src_vec->vec.elems[i];
 		srcs[i] = strndup(src_val->str.str, src_val->str.size);
 		assert(srcs[i] != NULL);
@@ -56,33 +57,16 @@ static int link_step(size_t data_count, void** data) {
 		goto link;
 	}
 
-	// Get last modification time of output.
+	// Check modification times.
 
-	struct stat out_sb;
+	bool do_link;
 
-	if (stat(out, &out_sb) < 0) {
-		if (errno == ENOENT) {
-			goto link;
-		}
-
-		LOG_FATAL(LINKER ".link: Failed to stat output file '%s': %s", out, strerror(errno));
-		goto done;
+	if (frugal_mtime(&do_link, LINKER ".link", src_count, srcs, out) < 0) {
+		goto link;
 	}
 
-	// Get last modification times of sources.
-
-	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
-		char* const src = srcs[i];
-		struct stat src_sb;
-
-		if (stat(src, &src_sb) < 0) {
-			LOG_FATAL(LINKER ".link: Failed to stat source file '%s': %s", src, strerror(errno));
-			goto done;
-		}
-
-		if (src_sb.st_mtime > out_sb.st_mtime) {
-			goto link;
-		}
+	if (do_link) {
+		goto link;
 	}
 
 	// Already linked.
