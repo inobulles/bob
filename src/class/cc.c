@@ -10,6 +10,7 @@
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
+#include <str.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -38,32 +39,93 @@ typedef struct {
 	char* out;
 } compile_task_t;
 
-static bool compile_task(void* data) {
-	compile_task_t* const task = data;
-	bool stop = false;
-
-	// Create command.
-
-	char* cc = getenv("CC");
-	cc = cc == NULL ? "cc" : cc;
-
-	cmd_t cmd;
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
-
-	// Add flags.
-
+static void add_flags(cmd_t* cmd, compile_task_t* task) {
 	flamingo_val_t* const flags = task->bss->state->flags;
 
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
-		cmd_addf(&cmd, "%.*s", (int) flag->str.size, flag->str.str);
+		cmd_addf(cmd, "%.*s", (int) flag->str.size, flag->str.str);
+	}
+}
+
+static void get_include_deps(compile_task_t* task, char* cc) {
+	// Figure out the include dependencies.
+	// For this, parse the Makefile rule output by the preprocessor.
+	// See: https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html#Preprocessor-Options
+	// Also see: https://wiki.sei.cmu.edu/confluence/display/c/STR06-C.+Do+not+assume+that+strtok%28%29+leaves+the+parse+string+unchanged
+	// TODO Can we do this in parallel easily with 'cmd_exec_async'?
+
+	cmd_t __attribute__((cleanup(cmd_free))) cmd;
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-MM", "-MT", "", task->src, NULL);
+	add_flags(&cmd, task);
+
+	int const rv = cmd_exec(&cmd);
+	char* CLEANUP_STR out = cmd_read_out(&cmd);
+
+	if (rv < 0) {
+		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild! Does your compiler (CC = '%s') support this?", task->src, cc);
+		printf("%s", out);
+		return;
 	}
 
-	// Actually execute it.
+	// Open file for writing out include deps.
+
+	char deps_path[strlen(task->out) + 6];
+	snprintf(deps_path, sizeof deps_path, "%s.deps", task->out);
+
+	FILE* const f = fopen(deps_path, "w");
+
+	if (f == NULL) {
+		LOG_WARN("Failed to open '%s' for writing: %s", deps_path, strerror(errno));
+		return;
+	}
+
+	// Now, actually parse.
+
+	char* headers = out;
+	char* header;
+
+	while ((header = strsep(&headers, " ")) != NULL) {
+		if (*header == ':' || *header == '\\' || !*header) {
+			continue;
+		}
+
+		size_t const len = strlen(header);
+
+		if (header[len - 1] == '\n') {
+			header[len - 1] = '\0';
+		}
+
+		fprintf(f, "%s\n", header);
+	}
+
+	fclose(f);
+}
+
+static bool compile_task(void* data) {
+	compile_task_t* const task = data;
+	bool stop = false;
+
+	// Log that we're compiling.
 
 	pthread_mutex_lock(&task->bss->logging_lock);
 	LOG_INFO("%s" CLEAR ": Compiling...", task->src);
 	pthread_mutex_unlock(&task->bss->logging_lock);
+
+	// Get compiler command to use.
+
+	char* cc = getenv("CC");
+	cc = cc == NULL ? "cc" : cc;
+
+	// Get the include dependencies.
+
+	get_include_deps(task, cc);
+
+	// Run compilation command.
+
+	cmd_t cmd;
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
+	add_flags(&cmd, task);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -73,9 +135,9 @@ static bool compile_task(void* data) {
 	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
 	pthread_mutex_unlock(&task->bss->logging_lock);
 
-	// Cleanup.
-
 	cmd_free(&cmd);
+
+	// Cleanup.
 
 	free(task->src);
 	free(task->out);
@@ -99,14 +161,61 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 		return VALIDATION_RES_COMPILE;
 	}
 
+	// Create initial dependency list with just the source.
+	// Make sure this one is first so it short-circuits 'frugal_mtime'.
+
+	size_t dep_count = 1;
+	char** deps = malloc(sizeof *deps);
+	assert(deps != NULL);
+	deps[0] = src;
+
+	// Look for include dependencies and add them as dependencies.
+
+	char deps_path[strlen(out) + 6];
+	snprintf(deps_path, sizeof deps_path, "%s.deps", out);
+
+	FILE* const f = fopen(deps_path, "r");
+
+	if (f == NULL) {
+		free(deps);
+		return VALIDATION_RES_COMPILE;
+	}
+
+	fseek(f, 0, SEEK_END);
+	long const deps_size = ftell(f);
+
+	char* CLEANUP_STR headers = malloc(deps_size + 1);
+	assert(headers != NULL);
+
+	rewind(f);
+	fread(headers, 1, deps_size, f);
+	headers[deps_size] = '\0';
+
+	fclose(f);
+
+	char* header;
+
+	while ((header = strsep(&headers, "\n")) != NULL) {
+		if (*header == '\0') {
+			continue;
+		}
+
+		deps = realloc(deps, (dep_count + 1) * sizeof *deps);
+		assert(deps != NULL);
+
+		deps[dep_count++] = header;
+	}
+
 	// Check modification times between dependencies and target.
 
 	bool do_compile;
 
-	if (frugal_mtime(&do_compile, CC ".compile", 1, &src, out) < 0) {
+	if (frugal_mtime(&do_compile, CC ".compile", dep_count, deps, out) < 0) {
+		free(deps);
 		return VALIDATION_RES_ERR;
 	}
 
+	free(deps);
 	return do_compile ? VALIDATION_RES_COMPILE : VALIDATION_RES_SKIP;
 }
 
