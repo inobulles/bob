@@ -16,6 +16,7 @@ cc_flags="
 	-Wall -Wextra -Werror -Wno-unused-parameter
 	-Wno-unused-command-line-argument
 	-lm
+	-fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 "
 
 srcs=$(find src -name "*.c" -o -path src/flamingo -prune -type f)
