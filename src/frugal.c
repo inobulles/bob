@@ -6,8 +6,10 @@
 #include <str.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 bool frugal_flags(flamingo_val_t* flags, char* out) {
 	char path[strlen(out) + 7];
@@ -77,4 +79,49 @@ write_out:
 	fclose(f);
 
 	return true;
+}
+
+int frugal_mtime(bool* do_work, char const prefix[static 1], size_t dep_count, char** deps, char* target) {
+	assert(prefix != NULL);
+	*do_work = true; // When in doubt, do the work.
+
+	// If target file doesn't exist yet, we need to do work.
+
+	struct stat target_sb;
+
+	if (stat(target, &target_sb) < 0) {
+		if (errno != ENOENT) {
+			LOG_FATAL("%s: Failed to stat target '%s': %s", prefix, target, strerror(errno));
+			return -1;
+		}
+
+		*do_work = true;
+		return 0;
+	}
+
+	// If any dependency is newer than target, we need to do work.
+	// TODO There is a case where we could build, modify, and build again in the space of one minute in which case changes won't be reflected, but that's such a small edgecase I don't think it's worth letting the complexity spirit demon enter.
+	// TODO Another thing to consider is that I'm not sure if a moved file also updates its modification timestamp (i.e. src/main.c is updated by 'mv src/{other,main}.c').
+
+	for (size_t i = 0; i < dep_count; i++) {
+		char* const dep = deps[i];
+		struct stat dep_sb;
+
+		if (stat(dep, &dep_sb) < 0) {
+			LOG_FATAL("%s: Failed to stat dependency '%s': %s", prefix, dep, strerror(errno));
+			return -1;
+		}
+
+		// Strict comparison because if b is built right after a, we don't want to rebuild b d'office.
+
+		if (dep_sb.st_mtime > target_sb.st_mtime) {
+			*do_work = true;
+			return 0;
+		}
+	}
+
+	// All conditions passed not to do work.
+
+	*do_work = false;
+	return 0;
 }
