@@ -284,11 +284,11 @@ found:
 		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
 
 		if (is_cookie) {
-			LOG_INFO("%s: installing from cookie...", val);
+			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
 		}
 
 		else {
-			LOG_INFO("%s: installing from '%s'...", val, key);
+			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
 		}
 
 		// Make sure destination directory exists.
@@ -331,7 +331,7 @@ found:
 			return -1;
 		}
 
-		LOG_SUCCESS("%s: Successfully installed.", val);
+		LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
 	}
 
 	return 0;
@@ -399,8 +399,7 @@ no_default:
 		return -1;
 	}
 
-	LOG_SUCCESS("Successfully ran command.");
-	return 0;
+	assert(false); // This should never be reached if 'cmd_exec_inplace' succeeds.
 }
 
 static void destroy(void) {
