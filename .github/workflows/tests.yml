@@ -1,0 +1,37 @@
+name: Run tests
+
+on: [push, workflow_dispatch]
+
+jobs:
+  run_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up compiler
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: x64
+      - name: Build
+        run: sh build.sh
+      - name: Test building Bob using Bob
+        run: sh-bin/bob build
+      - name: Test running the version of Bob built with Bob
+        run: |
+          rm -rf .bob
+          sh-bin/bob run build
+      - name: Test installing Bob
+        run: |
+          rm -rf .bob
+          sh-bin/bob install
+      - name: Test running the installed version of Bob
+        run: |
+          rm -rf .bob
+          bob build
+      - name: Set up tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5
+        with:
+          limit-access-to-actor: true
+          detached: true
