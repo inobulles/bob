@@ -114,6 +114,12 @@ int pool_wait(pool_t* pool) {
 	pool_start(pool);
 
 	for (size_t i = 0; i < pool->businessman_count; i++) {
+		// XXX Joining the same thread twice is UB.
+
+		if (pool->businessmen[i] == 0) {
+			continue;
+		}
+
 		pthread_join(pool->businessmen[i], NULL);
 		pool->businessmen[i] = 0;
 	}
