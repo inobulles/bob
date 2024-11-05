@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <sys/types.h>
 
 int rm(char const* path, char** err);
 int copy(char const* src, char const* dst, char** err);

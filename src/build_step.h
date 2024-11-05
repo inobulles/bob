@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <stdlib.h>
 
 typedef int (*build_step_cb_t)(size_t data_count, void** data);
