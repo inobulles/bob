@@ -3,6 +3,7 @@
 
 #include <bsys.h>
 #include <common.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <str.h>
 
@@ -35,10 +36,12 @@ int bsys_build(bsys_t const* bsys) {
 		asprintf(&path, "%s/%s", out_path, bsys->key);
 		assert(path != NULL);
 
-		if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+		if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
 			return -1;
 		}
+
+		set_owner(path);
 	}
 
 	// Actually build.
@@ -103,7 +106,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	assert(path != NULL);
 
-	if (to_prefix && mkdir(path, 0755) < 0 && errno != EEXIST) {
+	if (to_prefix && mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}

@@ -295,7 +295,7 @@ found:
 			asprintf(&path, "%s/%s", accum, bit);
 			assert(path != NULL);
 
-			if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+			if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 				LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
 				return -1;
 			}

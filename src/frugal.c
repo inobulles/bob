@@ -2,6 +2,7 @@
 // Copyright (c) 2024 Aymeric Wibo
 
 #include <frugal.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <str.h>
 
@@ -77,6 +78,7 @@ write_out:
 
 	fprintf(f, "%s", flag_str);
 	fclose(f);
+	set_owner(path);
 
 	return true;
 }

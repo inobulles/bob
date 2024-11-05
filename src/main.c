@@ -3,6 +3,7 @@
 
 #include <bsys.h>
 #include <build_step.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <ncpu.h>
 
@@ -23,10 +24,16 @@
 
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
-char const* init_name = "bob";
 char const* install_prefix = NULL;
-char const* project_path = NULL;
-char* cur_instr = NULL;
+
+bool running_as_root = false;
+uid_t owner = 0;
+
+// TODO Put this in the main function, simply?
+
+static char const* init_name = "bob";
+static char const* project_path = NULL;
+static char* cur_instr = NULL;
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -120,9 +127,24 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Get the owner of the project directory.
+	// If running as root, we'll use this owner for the binary output directory.
+
+	if (getuid() == 0) {
+		struct stat sb;
+
+		if (stat(".", &sb) < 0) {
+			LOG_FATAL("stat(\"%s\"): %s", project_path, strerror(errno));
+			return EXIT_FAILURE;
+		}
+
+		running_as_root = true;
+		owner = sb.st_uid;
+	}
+
 	// Ensure the output path exists.
 
-	if (mkdir(out_path, 0755) < 0 && errno != EEXIST) {
+	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
