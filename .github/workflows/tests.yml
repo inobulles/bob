@@ -25,7 +25,7 @@ jobs:
       - name: Test installing Bob
         run: |
           rm -rf .bob
-          sudo sh-bin/bob install
+          sudo -E sh-bin/bob install
       - name: Test running the installed version of Bob
         run: |
           rm -rf .bob
