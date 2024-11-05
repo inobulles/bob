@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #define BUILD_PATH "build.fl"
-#define BOB_IMPORT_PATH "/Users/aymeric/bob/bob"
+#define BOB_IMPORT_PATH "bob" // TODO
 
 bool consistent = false;
 
