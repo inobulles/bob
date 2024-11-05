@@ -15,7 +15,7 @@ jobs:
       - name: Install intercept-build
         run: sudo apt install clang-tools
       - name: Get all source files
-        run: echo "SRC='$(find src -name "*.[ch]" -print0 -o -path src/flamingo -prune -type f | xargs -0 echo)'" >> $GITHUB_ENV
+        run: echo "SRC=$(find src -name "*.[ch]" -print0 -o -path src/flamingo -prune -type f | xargs -0 echo)" >> $GITHUB_ENV
       - name: Build (with LSP output)
         run: intercept-build-15 sh build.sh
       - name: Run clang-tidy
