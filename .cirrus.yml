@@ -4,8 +4,8 @@ task:
     image: gcc:latest
   env:
     ASAN_OPTIONS: detect_leaks=0
-  build_script:
-    - sh build.sh
+  bootstrap_script:
+    - sh boostrap.sh
   test_build_bob_with_bob_script:
     - $(realpath .bootstrap/bob) build
   test_run_bob_with_bob_script:
@@ -26,8 +26,8 @@ task:
     image: gcc:latest
   env:
     ASAN_OPTIONS: detect_leaks=0
-  build_script:
-    - sh build.sh
+  bootstrap_script:
+    - sh boostrap.sh
   test_build_bob_with_bob_script:
     - $(realpath .bootstrap/bob) build
   test_run_bob_with_bob_script:
