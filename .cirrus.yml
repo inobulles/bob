@@ -2,8 +2,6 @@ task:
   timeout_in: 5m
   container:
     image: gcc:latest
-  env:
-    CLICOLOR_FORCE:
   build_script:
     - sh build.sh
   test_build_bob_with_bob_script:
@@ -13,7 +11,7 @@ task:
     - $(realpath sh-bin/bob) run build
   test_install_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) install
+    - sudo $(realpath sh-bin/bob) install
   test_run_installed_bob_script:
     - rm -rf .bob
     - bob build
@@ -24,8 +22,6 @@ task:
   timeout_in: 5m
   arm_container:
     image: gcc:latest
-  env:
-    CLICOLOR_FORCE:
   build_script:
     - sh build.sh
   test_build_bob_with_bob_script:
@@ -35,7 +31,7 @@ task:
     - $(realpath sh-bin/bob) run build
   test_install_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) install
+    - sudo $(realpath sh-bin/bob) install
   test_run_installed_bob_script:
     - rm -rf .bob
     - bob build
