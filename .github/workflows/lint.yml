@@ -7,27 +7,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 5
-        with:
-          limit-access-to-actor: true
-          detached: true
       - name: Set up compiler
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
           platform: x64
-      - name: Find intercept-build
-        run: |
-          echo $PATH
-          ls /bin
-          ls /usr/bin
-          ls /usr/local/bin
+      - name: Install intercept-build
+        run: sudo apt install clang-tools
       - name: Get all source files
         run: echo "SRC='$(find src -name "*.[ch]" -print0 -o -path src/flamingo -prune -type f | xargs -0 echo)'" >> $GITHUB_ENV
       - name: Build (with LSP output)
-        run: intercept-build sh build.sh
+        run: intercept-build-15 sh build.sh
       - name: Run clang-tidy
         run: clang-tidy $SRC
       - name: Make sure 'mkdir_wrapped' is used everywhere (except for once for 'fsutils.c')
@@ -36,3 +26,10 @@ jobs:
             echo "Error: 'mkdir' is used in multiple places. Use 'mkdir_wrapped' instead."
             exit 1
           fi
+      - name: Set up tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5
+        with:
+          limit-access-to-actor: true
+          detached: true
