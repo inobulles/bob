@@ -3,7 +3,7 @@ name: Linting and extra checks
 on: [push, workflow_dispatch]
 
 jobs:
-  run_lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
