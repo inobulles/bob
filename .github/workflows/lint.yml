@@ -12,8 +12,14 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Find intercept-build
+        run: |
+          echo $PATH
+          ls /bin
+          ls /usr/bin
+          ls /usr/local/bin
       - name: Get all source files
-        run: echo "SRC='$(find src -name "*.[ch]" -o -path src/flamingo -prune -type f)'" >> $GITHUB_ENV
+        run: echo "SRC='$(find src -name "*.[ch]" -print0 -o -path src/flamingo -prune -type f | xargs -0 echo)'" >> $GITHUB_ENV
       - name: Build (with LSP output)
         run: intercept-build sh build.sh
       - name: Run clang-tidy
