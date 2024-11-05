@@ -23,7 +23,7 @@ size_t ncpu(void) {
 		return max_jobs;
 	}
 
-	size_t const n = sysconf(_SC_NPROCESSORS_ONLN);
+	ssize_t const n = sysconf(_SC_NPROCESSORS_ONLN);
 
 	if (n < 0) {
 		LOG_WARN("Couldn't get number of CPU's, defaulting to 1");
