@@ -24,7 +24,7 @@
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* init_name = "bob";
-char const* prefix = NULL;
+char const* install_prefix = NULL;
 char const* project_path = NULL;
 char* cur_instr = NULL;
 
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 			out_path = optarg;
 			break;
 		case 'p':
-			prefix = optarg;
+			install_prefix = optarg;
 			break;
 		default:
 			usage();
@@ -127,13 +127,30 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// Get absolute output path;
+	// Get absolute output path.
 
 	abs_out_path = realpath(out_path, NULL);
 
 	if (abs_out_path == NULL) {
 		assert(errno != ENOMEM);
 		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	// Get system install prefix.
+
+	if (install_prefix == NULL) {
+		install_prefix = getenv("PREFIX");
+	}
+
+	if (install_prefix == NULL) {
+		install_prefix = "/usr/local";
+	}
+
+	// Ensure it exists.
+
+	if (access(install_prefix, F_OK) < 0) {
+		LOG_FATAL("Installation prefix \"%s\" does not exist", install_prefix);
 		return EXIT_FAILURE;
 	}
 
@@ -167,6 +184,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Parse instructions.
+	// TODO Currently, you can chain an arbitrary number of instructions. Is this really a necessary feature or is this confusing?
 
 	int rv;
 
@@ -197,7 +215,9 @@ int main(int argc, char* argv[]) {
 		}
 
 		else if (strcmp(cur_instr, "install") == 0) {
-			// TODO rv = do_install();
+			if (bsys_install(bsys) == 0) {
+				rv = EXIT_SUCCESS;
+			}
 		}
 
 		// Everything stops if we run the 'skeleton' command.

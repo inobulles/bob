@@ -78,8 +78,6 @@ static void append_env(char const* name, char const* fmt, ...) {
 }
 
 static int install(bsys_t const* bsys, bool to_prefix) {
-	assert(to_prefix == true); // TODO Installing to system.
-
 	if (bsys->install == NULL) {
 		LOG_WARN("%s: build system does not have an install step; nothing to install!", bsys->name);
 		return 0;
@@ -94,7 +92,15 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 	// Ensure the output path exists.
 
 	char* CLEANUP_STR path;
-	asprintf(&path, "%s/prefix", out_path);
+
+	if (to_prefix) {
+		asprintf(&path, "%s/prefix", out_path);
+	}
+
+	else {
+		asprintf(&path, "%s", install_prefix);
+	}
+
 	assert(path != NULL);
 
 	if (to_prefix && mkdir(path, 0755) < 0 && errno != EEXIST) {
