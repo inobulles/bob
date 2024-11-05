@@ -17,15 +17,15 @@ jobs:
       - name: Build
         run: sh build.sh
       - name: Test building Bob using Bob
-        run: sh-bin/bob build
+        run: .bootstrap/bob build
       - name: Test running the version of Bob built with Bob
         run: |
           rm -rf .bob
-          sh-bin/bob run build
+          .bootstrap/bob run build
       - name: Test installing Bob
         run: |
           rm -rf .bob
-          sudo -E sh-bin/bob install
+          sudo -E .bootstrap/bob install
       - name: Test running the installed version of Bob
         run: |
           rm -rf .bob

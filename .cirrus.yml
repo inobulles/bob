@@ -7,13 +7,13 @@ task:
   build_script:
     - sh build.sh
   test_build_bob_with_bob_script:
-    - $(realpath sh-bin/bob) build
+    - $(realpath .bootstrap/bob) build
   test_run_bob_with_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) run build
+    - $(realpath .bootstrap/bob) run build
   test_install_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) install
+    - $(realpath .bootstrap/bob) install
   test_run_installed_bob_script:
     - rm -rf .bob
     - bob build
@@ -29,13 +29,13 @@ task:
   build_script:
     - sh build.sh
   test_build_bob_with_bob_script:
-    - $(realpath sh-bin/bob) build
+    - $(realpath .bootstrap/bob) build
   test_run_bob_with_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) run build
+    - $(realpath .bootstrap/bob) run build
   test_install_bob_script:
     - rm -rf .bob
-    - $(realpath sh-bin/bob) install
+    - $(realpath .bootstrap/bob) install
   test_run_installed_bob_script:
     - rm -rf .bob
     - bob build
