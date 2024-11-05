@@ -1,6 +1,10 @@
 // This Source Form is subject to the terms of the AQUA Software License,
 // v. 1.0. Copyright (c) 2024 Aymeric Wibo
 
+#if __linux__
+# define _GNU_SOURCE
+#endif
+
 #include "parser.c"
 
 // XXX Tree-sitter defines this, but 'features.h' on Linux defines this as well when '_DEFAULT_SOURCE' is set.
