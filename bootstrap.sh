@@ -5,10 +5,9 @@ if [ -z "$CC" ]; then
 	CC=cc
 fi
 
-mkdir -p sh-bin # 'bin' reserved for when compiling bob with bob
+mkdir -p .bootstrap
 
-# compile all objects
-# TODO Should we have to -Isrc/flamingo? Can it be made to just use quote includes?
+# Compile all objects.
 
 cc_flags="
 	-std=c11 -g -O0 -Isrc
@@ -23,15 +22,15 @@ srcs=$(find src -name "*.c" -o -path src/flamingo -prune -type f)
 srcs="$srcs src/flamingo/flamingo.c"
 
 for src in $srcs; do
-	mkdir -p sh-bin/$(dirname $src)
+	mkdir -p .bootstrap/$(dirname $src)
 
-	obj=sh-bin/$src.o
+	obj=.bootstrap/$src.o
 	$CC $cc_flags -c $src -o $obj &
 done
 
 wait
 
-# link everything together
+# Link everything together.
 
-objs=$(find sh-bin -name "*.o" -type f)
-$CC $objs $cc_flags -o sh-bin/bob
+objs=$(find .bootstrap -name "*.o" -type f)
+$CC $objs $cc_flags -o .bootstrap/bob
