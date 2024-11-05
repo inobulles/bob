@@ -281,9 +281,13 @@ found:
 		}
 
 		// Make sure destination directory exists.
+		// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
 
 		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
-		char* parent = dirname(val); // XXX 'dirname' uses internal storage.
+
+		char* CLEANUP_STR parent_backing = strdup(val);
+		char* parent = dirname(parent_backing);
+
 		char* bit;
 		char* CLEANUP_STR accum = strdup(prefix);
 
