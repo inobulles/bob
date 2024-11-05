@@ -3,6 +3,7 @@
 
 #include <cmd.h>
 #include <common.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <str.h>
 
@@ -254,6 +255,7 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 
 	fprintf(f, "%s", out);
 	fclose(f);
+	set_owner(path);
 }
 
 __attribute__((unused)) void cmd_print(cmd_t* cmd) {

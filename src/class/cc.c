@@ -7,6 +7,7 @@
 #include <common.h>
 #include <cookie.h>
 #include <frugal.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
@@ -100,6 +101,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	}
 
 	fclose(f);
+	set_owner(deps_path);
 }
 
 static bool compile_task(void* data) {
@@ -129,6 +131,10 @@ static bool compile_task(void* data) {
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
+	}
+
+	else {
+		set_owner(task->out);
 	}
 
 	pthread_mutex_lock(&task->bss->logging_lock);

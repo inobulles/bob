@@ -77,3 +77,30 @@ int copy(char const* src, char const* dst, char** err) {
 	cmd_free(&cmd);
 	return rv;
 }
+
+extern bool running_as_root;
+extern uid_t owner;
+
+int set_owner(char const* path) {
+	if (!running_as_root) {
+		return 0;
+	}
+
+	if (chown(path, owner, -1) < 0) {
+		LOG_WARN("chown(\"%s\"): %s", path, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
+int mkdir_wrapped(char const* path, mode_t mode) {
+	int const rv = mkdir(path, mode);
+
+	if (rv == 0 || errno == EEXIST) {
+		set_owner(path);
+		return rv;
+	}
+
+	return rv;
+}

@@ -7,6 +7,7 @@
 #include <common.h>
 #include <cookie.h>
 #include <frugal.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <pool.h>
 #include <str.h>
@@ -83,8 +84,7 @@ link:;
 	cc = cc == NULL ? "cc" : cc;
 
 	cmd_t cmd;
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", NULL);
-	cmd_add(&cmd, out);
+	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
 		char* const src = srcs[i];
@@ -104,6 +104,11 @@ link:;
 
 	LOG_INFO(CLEAR "Linking...");
 	rv = cmd_exec(&cmd);
+
+	if (rv == 0) {
+		set_owner(out);
+	}
+
 	cmd_log(&cmd, out, NULL, "link", "linked");
 	cmd_free(&cmd);
 
