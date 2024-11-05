@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <common.h>
+
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
-#include <common.h>
 #include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
@@ -15,6 +16,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fts.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -156,7 +158,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	}
 
 	char* cookie = NULL;
-	asprintf(&cookie, "%s/bob/linker.link.cookie.%llx.exe", out_path, total_hash);
+	asprintf(&cookie, "%s/bob/linker.link.cookie.%" PRIx64 ".exe", out_path, total_hash);
 	assert(cookie != NULL);
 	*rv = flamingo_val_make_cstr(cookie);
 

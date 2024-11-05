@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <common.h>
+
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
-#include <common.h>
 #include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2023 Aymeric Wibo
 
+#include <common.h>
+
 #include <bsys.h>
 #include <build_step.h>
 #include <fsutil.h>

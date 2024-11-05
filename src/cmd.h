@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <sys/types.h>
 #include <unistd.h>
 
 typedef struct {
