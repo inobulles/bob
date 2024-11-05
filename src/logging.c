@@ -68,8 +68,9 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
 
-	char* msg;
+	char* msg = NULL;
 	vasprintf(&msg, fmt, args);
+	assert(msg != NULL);
 
 	va_end(args);
 

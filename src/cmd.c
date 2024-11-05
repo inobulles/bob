@@ -203,8 +203,6 @@ char* cmd_read_out(cmd_t* cmd) {
 
 		out = realloc(out, total + 1);
 		assert(out != NULL);
-		out[total] = '\0';
-
 		memcpy(out + total - bytes, chunk, bytes);
 	}
 
