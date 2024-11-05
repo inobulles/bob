@@ -115,6 +115,7 @@ int pool_wait(pool_t* pool) {
 
 	for (size_t i = 0; i < pool->businessman_count; i++) {
 		pthread_join(pool->businessmen[i], NULL);
+		pool->businessmen[i] = 0;
 	}
 
 	return pool->error ? -1 : 0;
