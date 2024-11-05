@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 void cmd_create(cmd_t* cmd, ...) {
 	va_list va;
