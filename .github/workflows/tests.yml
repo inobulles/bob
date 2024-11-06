@@ -37,3 +37,41 @@ jobs:
         with:
           limit-access-to-actor: true
           detached: true
+
+  run_tests_macos:
+    strategy:
+      matrix:
+        os: [macos-13, macos-latest] # 'macos-13' is Intel, 'macos-latest' is M1.
+    runs-on: ${{ matrix.os }}
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up compiler
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: x64
+      - name: Bootstrap
+        run: sh bootstrap.sh
+      - name: Test building Bob using Bob
+        run: .bootstrap/bob build
+      - name: Test running the version of Bob built with Bob
+        run: |
+          rm -rf .bob
+          .bootstrap/bob run build
+      - name: Test installing Bob
+        run: |
+          rm -rf .bob
+          sudo -E .bootstrap/bob install
+      - name: Test running the installed version of Bob
+        run: |
+          rm -rf .bob
+          bob build
+      - name: Set up tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5
+        with:
+          limit-access-to-actor: true
+          detached: true
