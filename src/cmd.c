@@ -10,6 +10,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <spawn.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,51 +70,61 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 	va_end(va);
 }
 
-int cmd_exec_inplace(cmd_t* cmd) {
-	// Attempt first to execute at the path passed.
-	// "If any of the exec() functions returns, an error will have occurred."
-
-	execv(cmd->args[0], cmd->args);
-
-	// If we can't, search for a binary in our '$PATH'.
-	// Only take into account the last component of the query path.
-
-	char* query = strrchr(cmd->args[0], '/');
-
-	if (query == NULL) {
-		query = cmd->args[0];
+static char* find_bin(cmd_t* cmd) {
+	if (access(cmd->args[0], X_OK) == 0) {
+		return strdup(cmd->args[0]);
 	}
+
+	// Look for binary in '$PATH'.
 
 	char* const path = getenv("PATH");
 
 	if (path == NULL) {
-		LOG_FATAL("getenv(\"PATH\"): couldn't find '$PATH'");
+		LOG_ERROR("getenv(\"PATH\"): couldn't find '$PATH' (and binary '%s' was not found)", cmd->args[0]);
 		_exit(EXIT_FAILURE);
 	}
 
-	char* CLEANUP_STR search = strdup(getenv("PATH"));
-	assert(search != NULL);
+	char* const CLEANUP_STR orig_search = strdup(path);
+	assert(orig_search != NULL);
+	char* search = orig_search;
 
 	char* tok;
 
 	while ((tok = strsep(&search, ":"))) {
-		char* CLEANUP_STR path = NULL;
-		asprintf(&path, "%s/%s", tok, query);
-		assert(path != NULL);
+		char* full_path = NULL;
+		asprintf(&full_path, "%s/%s", tok, cmd->args[0]);
+		assert(full_path != NULL);
 
-		char* const prev = cmd->args[0];
-		cmd->args[0] = path;
-		execv(cmd->args[0], cmd->args);
-		cmd->args[0] = prev;
+		if (access(full_path, X_OK) == 0) {
+			return full_path;
+		}
+
+		free(full_path);
 	}
 
-	// Error if all else fails.
+	LOG_ERROR("Couldn't find binary '%s' in '$PATH'", cmd->args[0]);
+	return NULL;
+}
 
-	LOG_FATAL("execv(\"%s\" and searched in PATH): %s", query, strerror(errno));
-	return -1;
+int cmd_exec_inplace(cmd_t* cmd) {
+	char* const CLEANUP_STR path = find_bin(cmd);
+
+	if (path == NULL) {
+		return -1;
+	}
+
+	return execv(path, cmd->args);
 }
 
 pid_t cmd_exec_async(cmd_t* cmd) {
+	// Find binary.
+
+	char* const CLEANUP_STR path = find_bin(cmd);
+
+	if (path == NULL) {
+		return -1;
+	}
+
 	// Create pipes.
 
 	int fd[2];
@@ -126,36 +137,29 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	cmd->in = fd[1];
 	cmd->out = fd[0];
 
-	// Find and start process.
+	// Spawn process.
+	// We can't use 'fork()' here, because we could be called from a multi-threaded context.
+	// https://www.qnx.com/developers/docs/8.0/com.qnx.doc.neutrino.getting_started/topic/s1_procs_Multithreaded_fork.html
 
-	pid_t const pid = fork();
+	posix_spawn_file_actions_t actions;
+	posix_spawn_file_actions_init(&actions);
 
-	if (pid < 0) {
-		LOG_ERROR("fork: %s", strerror(errno));
-		return -1;
-	}
+	posix_spawn_file_actions_addclose(&actions, cmd->out);
 
-	if (!pid) {
-		// Handle pipe (child).
-		// Close output side of pipe, as we're the ones writing to it
-		// Then, redirect 'stdout'/'stderr' of process to pipe input.
+	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
+	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDERR_FILENO);
+
+	pid_t pid;
+
+	if (posix_spawnp(&pid, path, &actions, NULL, cmd->args, NULL) < 0) {
+		LOG_ERROR("posix_spawnp: %s", strerror(errno));
+		pid = -1;
 
 		close(cmd->out);
-
-		for (size_t fileno = STDOUT_FILENO; fileno <= STDERR_FILENO; fileno++) {
-			if (dup2(cmd->in, fileno) < 0) {
-				LOG_ERROR("dup2(%d, %d): %s", cmd->in, fileno, strerror(errno));
-				_exit(EXIT_FAILURE);
-			}
-		}
-
-		// Replace this process.
-
-		_exit(cmd_exec_inplace(cmd) < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+		cmd->out = -1;
 	}
 
-	// Handle pipe (parent).
-	// Just close input side of the pipe, as we just read from the output.
+	posix_spawn_file_actions_destroy(&actions);
 
 	close(cmd->in);
 	cmd->in = -1;
