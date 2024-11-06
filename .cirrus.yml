@@ -1,4 +1,5 @@
 task:
+  name: Test Bob with GCC on Linux (amd64)
   timeout_in: 5m
   container:
     image: gcc:latest
@@ -21,6 +22,7 @@ task:
     path: ".bob/prefix/bin/bob"
 
 task:
+  name: Test Bob with GCC on Linux (arm64)
   timeout_in: 5m
   arm_container:
     image: gcc:latest
@@ -40,4 +42,35 @@ task:
     - rm -rf .bob
     - bob build
   arm64_artifacts:
+    path: ".bob/prefix/bin/bob"
+
+compute_engine_instance:
+  platform: freebsd
+  image_project: freebsd-org-cloud-dev
+  image: freebsd-13-2-release-amd64
+  cpu: 2
+  memory: 4G
+
+task:
+  name: Test Bob with Clang on FreeBSD (x86_64)
+  timeout_in: 30m
+  env:
+    ASAN_OPTIONS: detect_leaks=0
+  setup_script:
+    - uname -a
+    - df -h
+  bootstrap_script:
+    - sh bootstrap.sh
+  test_build_bob_with_bob_script:
+    - $(realpath .bootstrap/bob) build
+  test_run_bob_with_bob_script:
+    - rm -rf .bob
+    - $(realpath .bootstrap/bob) run build
+  test_install_bob_script:
+    - rm -rf .bob
+    - $(realpath .bootstrap/bob) install
+  test_run_installed_bob_script:
+    - rm -rf .bob
+    - bob build
+  amd64_artifacts:
     path: ".bob/prefix/bin/bob"
