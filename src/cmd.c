@@ -151,9 +151,10 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
 	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDERR_FILENO);
 
+	extern char** environ;
 	pid_t pid;
 
-	if (posix_spawnp(&pid, path, &actions, NULL, cmd->args, NULL) < 0) {
+	if (posix_spawnp(&pid, path, &actions, NULL, cmd->args, environ) < 0) {
 		LOG_ERROR("posix_spawnp: %s", strerror(errno));
 		pid = -1;
 
