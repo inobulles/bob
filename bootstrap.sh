@@ -12,6 +12,7 @@ mkdir -p .bootstrap
 cc_flags="
 	-std=c11 -g -O0 -Isrc
 	-isystem=/usr/local/include -L/usr/local/lib
+	-Isrc/flamingo/runtime
 	-Wall -Wextra -Werror -Wno-unused-parameter
 	-Wno-unused-command-line-argument
 	-lm
