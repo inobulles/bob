@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #define BUILD_PATH "build.fl"
-#define BOB_IMPORT_PATH "bob" // TODO
 
 bool consistent = false;
 
@@ -162,7 +161,14 @@ static int setup(void) {
 	flamingo_register_class_decl_cb(&flamingo, class_decl_cb, NULL);
 	flamingo_register_class_inst_cb(&flamingo, class_inst_cb, NULL);
 
-	flamingo_add_import_path(&flamingo, BOB_IMPORT_PATH);
+	char* import_path = NULL;
+	asprintf(&import_path, "%s/flamingo/import", install_prefix);
+	assert(import_path != NULL);
+
+	flamingo_add_import_path(&flamingo, import_path);
+	free(import_path);
+
+	flamingo_add_import_path(&flamingo, "import"); // For when we're bootstrapping.
 
 	// Run build program.
 
