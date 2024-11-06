@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 void cmd_create(cmd_t* cmd, ...) {
@@ -70,8 +71,22 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 	va_end(va);
 }
 
+static bool is_executable(char const* path) {
+	struct stat sb;
+
+	if (stat(path, &sb) < 0) {
+		return false;
+	}
+
+	if (S_ISDIR(sb.st_mode)) {
+		return false;
+	}
+
+	return access(path, X_OK) == 0;
+}
+
 static char* find_bin(cmd_t* cmd) {
-	if (access(cmd->args[0], X_OK) == 0) {
+	if (is_executable(cmd->args[0])) {
 		return strdup(cmd->args[0]);
 	}
 
@@ -95,7 +110,7 @@ static char* find_bin(cmd_t* cmd) {
 		asprintf(&full_path, "%s/%s", tok, cmd->args[0]);
 		assert(full_path != NULL);
 
-		if (access(full_path, X_OK) == 0) {
+		if (is_executable(full_path)) {
 			return full_path;
 		}
 
