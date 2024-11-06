@@ -140,6 +140,8 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	// Spawn process.
 	// We can't use 'fork()' here, because we could be called from a multi-threaded context.
 	// https://www.qnx.com/developers/docs/8.0/com.qnx.doc.neutrino.getting_started/topic/s1_procs_Multithreaded_fork.html
+	// I used the excellent accepted answer here to figure out the piping stuff:
+	// https://stackoverflow.com/questions/13893085/posix-spawnp-and-piping-child-output-to-a-string
 
 	posix_spawn_file_actions_t actions;
 	posix_spawn_file_actions_init(&actions);
