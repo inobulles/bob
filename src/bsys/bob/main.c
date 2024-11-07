@@ -162,7 +162,7 @@ static int setup(void) {
 	flamingo_register_class_inst_cb(&flamingo, class_inst_cb, NULL);
 
 	char* import_path = NULL;
-	asprintf(&import_path, "%s/flamingo/import", install_prefix);
+	asprintf(&import_path, "%s/share/flamingo/import", install_prefix);
 	assert(import_path != NULL);
 
 	flamingo_add_import_path(&flamingo, import_path);
