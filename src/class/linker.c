@@ -28,6 +28,12 @@ typedef struct {
 
 typedef struct {
 	state_t* state;
+	bool archive;
+
+	char const* log_prefix;
+	char const* infinitive;
+	char const* present;
+	char const* past;
 
 	flamingo_val_t* src_vec;
 	flamingo_val_t* out_str;
@@ -64,7 +70,7 @@ static int link_step(size_t data_count, void** data) {
 
 	bool do_link;
 
-	if (frugal_mtime(&do_link, LINKER ".link", src_count, srcs, out) < 0) {
+	if (frugal_mtime(&do_link, bss->log_prefix, src_count, srcs, out) < 0) {
 		goto link;
 	}
 
@@ -74,7 +80,7 @@ static int link_step(size_t data_count, void** data) {
 
 	// Already linked.
 
-	log_already_done(out, NULL, "linked");
+	log_already_done(out, NULL, bss->past);
 	rv = 0;
 	goto done;
 
@@ -82,11 +88,19 @@ link:;
 
 	// Create command.
 
-	char* cc = getenv("CC");
-	cc = cc == NULL ? "cc" : cc;
-
 	cmd_t cmd;
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
+
+	if (bss->archive) {
+		char* ar = getenv("AR");
+		ar = ar == NULL ? "ar" : ar;
+		cmd_create(&cmd, ar, "-rcs", out, NULL);
+	}
+
+	else {
+		char* cc = getenv("CC");
+		cc = cc == NULL ? "cc" : cc;
+		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
+	}
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
 		char* const src = srcs[i];
@@ -104,14 +118,14 @@ link:;
 
 	// Actually execute it.
 
-	LOG_INFO(CLEAR "Linking...");
+	LOG_INFO(CLEAR "%s...", bss->present);
 	rv = cmd_exec(&cmd);
 
 	if (rv == 0) {
 		set_owner(out);
 	}
 
-	cmd_log(&cmd, out, NULL, "link", "linked");
+	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);
 	cmd_free(&cmd);
 
 done:
@@ -123,16 +137,21 @@ done:
 	return rv;
 }
 
-static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv, bool archive) {
+	char const* const log_prefix = archive ? LINKER ".archive" : LINKER ".link";
+	char const* const infinitive = archive ? "archive" : "link";
+	char const* const present = archive ? "Archiving" : "Linking";
+	char const* const past = archive ? "archived" : "linked";
+
 	// Validate sources argument.
 
 	if (args->count != 1) {
-		LOG_FATAL(LINKER ".link: Expected 1 argument, got %zu", args->count);
+		LOG_FATAL("%s: Expected 1 argument, got %zu", log_prefix, args->count);
 		return -1;
 	}
 
 	if (args->args[0]->kind != FLAMINGO_VAL_KIND_VEC) {
-		LOG_FATAL(LINKER ".link: Expected argument to be a vector");
+		LOG_FATAL("%s: Expected argument to be a vector", log_prefix);
 		return -1;
 	}
 
@@ -146,7 +165,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 		flamingo_val_t* const src = srcs->vec.elems[i];
 
 		if (src->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL(LINKER ".link: Expected %zu-th vector element to be a string", i);
+			LOG_FATAL("%s: Expected %zu-th vector element to be a string", log_prefix, i);
 			return -1;
 		}
 
@@ -158,7 +177,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	}
 
 	char* cookie = NULL;
-	asprintf(&cookie, "%s/bob/linker.link.cookie.%" PRIx64 ".exe", out_path, total_hash);
+	asprintf(&cookie, "%s/bob/linker.%s.cookie.%" PRIx64 ".exe", out_path, infinitive, total_hash);
 	assert(cookie != NULL);
 	*rv = flamingo_val_make_cstr(cookie);
 
@@ -168,13 +187,19 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	assert(bss != NULL);
 
 	bss->state = state;
+	bss->archive = archive;
+
+	bss->log_prefix = log_prefix;
+	bss->infinitive = infinitive;
+	bss->present = present;
+	bss->past = past;
 
 	bss->src_vec = srcs;
 	bss->out_str = *rv;
 
 	// We never want to merge these build steps because the output hash from one set of source files to another is (hopefully) always different.
 
-	return add_build_step((uint64_t) bss, "Linking", link_step, bss);
+	return add_build_step((uint64_t) bss, archive ? "Archiving" : "Linking", link_step, bss);
 }
 
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
@@ -183,7 +208,11 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "link", callable->name_size) == 0) {
-		return prep_link(state, args, rv);
+		return prep_link(state, args, rv, false);
+	}
+
+	else if (flamingo_cstrcmp(callable->name, "archive", callable->name_size) == 0) {
+		return prep_link(state, args, rv, true);
 	}
 
 	*consumed = false;
