@@ -13,6 +13,7 @@ class Cc(flags: vec<str>) {
 
 class Linker(flags: vec<str>) {
 	proto link(obj: vec<str>) -> str
+	proto archive(obj: vec<str>) -> str
 }
 
 let install: map<str, str>
