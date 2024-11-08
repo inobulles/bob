@@ -177,7 +177,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	}
 
 	char* cookie = NULL;
-	asprintf(&cookie, "%s/bob/linker.%s.cookie.%" PRIx64 ".exe", out_path, infinitive, total_hash);
+	asprintf(&cookie, "%s/bob/linker.%s.cookie.%" PRIx64 ".%s", out_path, infinitive, total_hash, archive ? "a" : "l");
 	assert(cookie != NULL);
 	*rv = flamingo_val_make_cstr(cookie);
 
