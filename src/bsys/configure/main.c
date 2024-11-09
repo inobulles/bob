@@ -3,13 +3,11 @@
 
 #include <bsys.h>
 
-#include <stdlib.h>
-
 static bool identify(void) {
 	return false;
 }
 
-static int build(void) {
+static int build(char const* preinstall_prefix) {
 	return 0;
 }
 

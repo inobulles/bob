@@ -25,6 +25,7 @@
 
 typedef struct {
 	flamingo_val_t* flags;
+	char const* preinstall_prefix;
 } state_t;
 
 typedef struct {
@@ -40,7 +41,7 @@ typedef struct {
 	flamingo_val_t* out_str;
 } build_step_state_t;
 
-static int link_step(size_t data_count, void** data) {
+static int link_step(size_t data_count, void** data, char const* preinstall_prefix) {
 	assert(data_count == 1); // See comment just before 'add_build_step' in 'prep_link'.
 
 	build_step_state_t* const bss = *data;
@@ -100,9 +101,11 @@ link:;
 	else {
 		char* cc = getenv("CC");
 		cc = cc == NULL ? "cc" : cc;
-
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
-		cmd_addf(&cmd, "-L%s/prefix/lib", out_path);
+
+		if (bss->state->preinstall_prefix) {
+			cmd_addf(&cmd, "-L%s/lib", preinstall_prefix);
+		}
 	}
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {

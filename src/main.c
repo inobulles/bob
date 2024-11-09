@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
 		cur_instr = *argv++;
 
 		if (strcmp(cur_instr, "build") == 0) {
-			if (bsys_build(bsys) == 0) {
+			if (bsys_build(bsys, NULL) == 0) {
 				rv = EXIT_SUCCESS;
 			}
 		}

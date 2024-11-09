@@ -13,9 +13,9 @@
 #include <libgen.h>
 
 static flamingo_val_t* install_map = NULL;
-static char* prefix_path;
+static char const* prefix;
 
-int setup_install_map(flamingo_t* flamingo) {
+int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 	// Find the install map.
 
 	flamingo_scope_t* const scope = flamingo->env->scope_stack[0];
@@ -71,20 +71,12 @@ found:
 	}
 
 	install_map = map->val;
-
-	// Get install prefix path and create it if it doesn't yet exist.
-
-	asprintf(&prefix_path, "%s/prefix", out_path);
-
-	if (mkdir_wrapped(prefix_path, 0755) < 0 && errno != EEXIST) {
-		LOG_FATAL("mkdir(\"%s\"): %s", prefix_path, strerror(errno));
-		return -1;
-	}
+	prefix = _prefix;
 
 	return 0;
 }
 
-static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char const* prefix, bool shut_up) {
+static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool shut_up) {
 	// Get absolute path of source to check it exists.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
@@ -139,6 +131,8 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 		return -1;
 	}
 
+	do_install = true;
+
 	if (!do_install) {
 		if (!shut_up) {
 			LOG_SUCCESS("%s" CLEAR ": Already (pre-)installed.", val);
@@ -175,13 +169,15 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 	return 0;
 }
 
-int install_all(char const* prefix) {
-	if (install_map == NULL) {
+int install_all(char const* _prefix) {
+	assert(_prefix == prefix);
+
+	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
-		if (install_single(install_map->map.keys[i], install_map->map.vals[i], prefix, false) < 0) {
+		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false) < 0) {
 			return -1;
 		}
 	}
@@ -190,7 +186,7 @@ int install_all(char const* prefix) {
 }
 
 int install_cookie(char* cookie) {
-	if (install_map == NULL) {
+	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
 
@@ -205,7 +201,7 @@ int install_cookie(char* cookie) {
 
 		// Found; install it.
 
-		if (install_single(key_val, install_map->map.vals[i], prefix_path, true) < 0) {
+		if (install_single(key_val, install_map->map.vals[i], true) < 0) {
 			return -1;
 		}
 
