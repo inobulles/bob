@@ -138,7 +138,7 @@ static bool compile_task(void* data) {
 	else {
 		set_owner(task->out);
 
-		if (install_cookie(task->out, false) < 0) {
+		if (install_cookie(task->out) < 0) {
 			stop = true;
 		}
 	}
