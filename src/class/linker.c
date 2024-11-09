@@ -100,7 +100,9 @@ link:;
 	else {
 		char* cc = getenv("CC");
 		cc = cc == NULL ? "cc" : cc;
+
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
+		cmd_addf(&cmd, "-L%s/prefix/lib", out_path);
 	}
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
