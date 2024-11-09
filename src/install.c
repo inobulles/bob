@@ -77,8 +77,8 @@ found:
 	return 0;
 }
 
-static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool shut_up, bool dylib) {
-	// Get absolute path of source to check it exists.
+static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool installing_cookie) {
+	// Get absolute path of source.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
 	char* const CLEANUP_STR path = realpath(key, NULL);
@@ -88,6 +88,18 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 		LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
 		return -1;
 	}
+
+	// If is cookie but we're not installing cookies, skip.
+	// When installing a cookie, we're preinstalling, so if the file isn't a cookie something has gone seriously wrong.
+
+	bool const is_cookie = (strstr(path, abs_out_path) == path);
+
+	if (is_cookie && !installing_cookie) {
+		return 0;
+	}
+
+	assert(is_cookie || !installing_cookie);
+	assert((is_cookie ^ installing_cookie) == 0);
 
 	// Make sure destination directory exists.
 	// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
@@ -133,25 +145,19 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 	}
 
 	if (!do_install) {
-		if (!shut_up) {
-			LOG_SUCCESS("%s" CLEAR ": Already (pre-)installed.", val);
-		}
+		LOG_SUCCESS("%s" CLEAR ": Already %sinstalled.", val, is_cookie ? "pre" : "");
 
 		return 0;
 	}
 
 	// Actually copy over files.
 
-	bool const is_cookie = (strstr(path, abs_out_path) == path);
+	if (is_cookie) {
+		LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
+	}
 
-	if (!shut_up) {
-		if (is_cookie) {
-			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
-		}
-
-		else {
-			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
-		}
+	else {
+		LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
 	}
 
 	char* CLEANUP_STR err = NULL;
@@ -165,14 +171,14 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 	free(err);
 	err = NULL;
 
+	bool const dylib = (strstr(val, ".l") == val + strlen(val) - 2);
+
 	if (dylib && apple_set_install_id(install_path, val, &err) < 0) {
-		LOG_WARN("Failed to set Apple install ID for '%s': %s", install_path, err);
+		LOG_WARN("Failed to set Apple install ID for dylib '%s': %s", install_path, err);
 	}
 #endif
 
-	if (!shut_up) {
-		LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
-	}
+	LOG_SUCCESS("%s" CLEAR ": Successfully %sinstalled.", val, is_cookie ? "pre" : "");
 
 	return 0;
 }
@@ -185,7 +191,7 @@ int install_all(char const* _prefix) {
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
-		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false, false) < 0) {
+		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false) < 0) {
 			return -1;
 		}
 	}
@@ -193,7 +199,7 @@ int install_all(char const* _prefix) {
 	return 0;
 }
 
-int install_cookie(char* cookie, bool dylib) {
+int install_cookie(char* cookie) {
 	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
@@ -209,7 +215,7 @@ int install_cookie(char* cookie, bool dylib) {
 
 		// Found; install it.
 
-		if (install_single(key_val, install_map->map.vals[i], true, dylib) < 0) {
+		if (install_single(key_val, install_map->map.vals[i], true) < 0) {
 			return -1;
 		}
 

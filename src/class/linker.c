@@ -135,7 +135,7 @@ link:;
 
 	if (rv == 0) {
 		set_owner(out);
-		rv = install_cookie(out, !bss->archive);
+		rv = install_cookie(out);
 	}
 
 	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);

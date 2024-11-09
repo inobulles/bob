@@ -7,4 +7,4 @@
 
 int setup_install_map(flamingo_t* flamingo, char const* prefix);
 int install_all(char const* prefix);
-int install_cookie(char* cookie, bool dylib);
+int install_cookie(char* cookie);
