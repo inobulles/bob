@@ -106,6 +106,11 @@ link:;
 		if (bss->state->preinstall_prefix) {
 			cmd_addf(&cmd, "-L%s/lib", preinstall_prefix);
 		}
+
+#if defined(__APPLE__)
+		cmd_add(&cmd, "-rpath");
+		cmd_add(&cmd, "@loader_path/..");
+#endif
 	}
 
 	for (size_t i = 0; i < bss->src_vec->vec.count; i++) {
