@@ -9,6 +9,7 @@
 #include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
+#include <install_map.h>
 #include <logging.h>
 #include <pool.h>
 #include <str.h>
@@ -123,6 +124,7 @@ link:;
 
 	if (rv == 0) {
 		set_owner(out);
+		rv = install_cookie(out);
 	}
 
 	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);
