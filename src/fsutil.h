@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 
 int rm(char const* path, char** err);
