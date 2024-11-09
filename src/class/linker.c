@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <apple.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
@@ -134,7 +135,7 @@ link:;
 
 	if (rv == 0) {
 		set_owner(out);
-		rv = install_cookie(out);
+		rv = install_cookie(out, !bss->archive);
 	}
 
 	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);
