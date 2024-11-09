@@ -252,10 +252,14 @@ static int install(char const* prefix) {
 		goto found;
 	}
 
-	LOG_FATAL("Install map was never declared. This is a serious issue, please report it!");
+	LOG_FATAL("Install map was never declared. This is a serious internal issue, please report it!");
 	return -1;
 
 found:
+
+	if (map->val->map.count == 0) {
+		LOG_WARN("Install map is empty; nothing to install!");
+	}
 
 	// Go through install map.
 

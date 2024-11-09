@@ -128,6 +128,7 @@ int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 	}
 
 	// Set up environment to be inside the prefix.
+	// TODO Equivalent `DYLD_*` stuff on macOS.
 
 	append_env("PATH", "%s/prefix/bin", out_path);
 	append_env("LD_LIBRARY_PATH", "%s/prefix/lib", out_path);
