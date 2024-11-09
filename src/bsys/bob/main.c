@@ -8,7 +8,7 @@
 #include <cmd.h>
 #include <frugal.h>
 #include <fsutil.h>
-#include <install_map.h>
+#include <install.h>
 #include <logging.h>
 #include <str.h>
 
