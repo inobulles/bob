@@ -84,7 +84,7 @@ found:
 	return 0;
 }
 
-static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char const* prefix) {
+static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char const* prefix, bool shut_up) {
 	// Get absolute path of source to check it exists.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
@@ -140,7 +140,10 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 	}
 
 	if (!do_install) {
-		LOG_SUCCESS("%s" CLEAR ": Already installed.", val);
+		if (!shut_up) {
+			LOG_SUCCESS("%s" CLEAR ": Already installed.", val);
+		}
+
 		return 0;
 	}
 
@@ -148,12 +151,14 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 
 	bool const is_cookie = (strstr(path, abs_out_path) == path);
 
-	if (is_cookie) {
-		LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
-	}
+	if (!shut_up) {
+		if (is_cookie) {
+			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
+		}
 
-	else {
-		LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
+		else {
+			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
+		}
 	}
 
 	char* CLEANUP_STR err = NULL;
@@ -163,7 +168,9 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 		return -1;
 	}
 
-	LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
+	if (!shut_up) {
+		LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
+	}
 
 	return 0;
 }
@@ -174,7 +181,7 @@ int install_all(char const* prefix) {
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
-		if (install_single(install_map->map.keys[i], install_map->map.vals[i], prefix) < 0) {
+		if (install_single(install_map->map.keys[i], install_map->map.vals[i], prefix, false) < 0) {
 			return -1;
 		}
 	}
@@ -198,7 +205,7 @@ int install_cookie(char* cookie) {
 
 		// Found; install it.
 
-		if (install_single(key_val, install_map->map.vals[i], prefix_path) < 0) {
+		if (install_single(key_val, install_map->map.vals[i], prefix_path, true) < 0) {
 			return -1;
 		}
 
