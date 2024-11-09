@@ -153,7 +153,7 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 	// Actually copy over files.
 
 	if (is_cookie) {
-		LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
+		LOG_INFO("%s" CLEAR ": Preinstalling from cookie...", val);
 	}
 
 	else {

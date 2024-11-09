@@ -137,15 +137,15 @@ static bool compile_task(void* data) {
 
 	else {
 		set_owner(task->out);
-
-		if (install_cookie(task->out) < 0) {
-			stop = true;
-		}
 	}
 
 	pthread_mutex_lock(&task->bss->logging_lock);
 	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
 	pthread_mutex_unlock(&task->bss->logging_lock);
+
+	if (!stop && install_cookie(task->out) < 0) {
+		stop = true;
+	}
 
 	cmd_free(&cmd);
 
@@ -250,7 +250,7 @@ static int compile_step(size_t data_count, void** data, char const* preinstall_p
 			assert(src != NULL);
 			assert(out != NULL);
 
-			validation_res_t const vres = validate_requirements(bss->state->flags, src, out);
+			validation_res_t vres = validate_requirements(bss->state->flags, src, out);
 
 			if (vres == VALIDATION_RES_COMPILE) {
 				compile_task_t* const data = malloc(sizeof *data);
@@ -267,6 +267,10 @@ static int compile_step(size_t data_count, void** data, char const* preinstall_p
 
 			if (vres == VALIDATION_RES_SKIP) {
 				log_already_done(out, src, "compiled");
+
+				if (install_cookie(out) < 0) {
+					vres = VALIDATION_RES_ERR;
+				}
 			}
 
 			free(src);
