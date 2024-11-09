@@ -8,6 +8,7 @@
 #include <cmd.h>
 #include <frugal.h>
 #include <fsutil.h>
+#include <install_map.h>
 #include <logging.h>
 #include <str.h>
 
@@ -24,12 +25,12 @@
 
 #define BUILD_PATH "build.fl"
 
-bool consistent = false;
+static bool consistent = false;
 
-char* src;
-size_t src_size;
+static char* src;
+static size_t src_size;
 
-flamingo_t flamingo;
+static flamingo_t flamingo;
 
 static bool identify(void) {
 	return access(BUILD_PATH, F_OK) != -1;
@@ -223,144 +224,15 @@ err_fopen:
 }
 
 static int build(void) {
+	if (setup_install_map(&flamingo) < 0) {
+		return -1;
+	}
+
 	return run_build_steps();
 }
 
 static int install(char const* prefix) {
-	// Find install map.
-
-	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
-	flamingo_var_t* map = NULL;
-
-	for (size_t i = 0; i < scope->vars_size; i++) {
-		map = &scope->vars[i];
-
-		if (flamingo_cstrcmp(map->key, "install", map->key_size) != 0) {
-			continue;
-		}
-
-		if (map->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			LOG_WARN("Install map not set; nothing to install!");
-			return 0;
-		}
-
-		if (map->val->kind != FLAMINGO_VAL_KIND_MAP) {
-			LOG_FATAL("Install map must be a map.");
-			return -1;
-		}
-
-		goto found;
-	}
-
-	LOG_FATAL("Install map was never declared. This is a serious internal issue, please report it!");
-	return -1;
-
-found:
-
-	if (map->val->map.count == 0) {
-		LOG_WARN("Install map is empty; nothing to install!");
-	}
-
-	// Go through install map.
-
-	for (size_t i = 0; i < map->val->map.count; i++) {
-		// Input validation.
-
-		flamingo_val_t* const key_val = map->val->map.keys[i];
-		flamingo_val_t* const val_val = map->val->map.vals[i];
-
-		if (key_val->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL("Install map key must be a string.");
-			return -1;
-		}
-
-		if (val_val->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL("Install map value must be a string.");
-			return -1;
-		}
-
-		// Get absolute path of source.
-
-		char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
-		char* const CLEANUP_STR path = realpath(key, NULL);
-
-		if (path == NULL) {
-			assert(errno != ENOMEM);
-			LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
-			return -1;
-		}
-
-		// Make sure destination directory exists.
-		// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
-
-		char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
-
-		char* CLEANUP_STR parent_backing = strdup(val);
-		char* parent = dirname(parent_backing);
-
-		char* bit;
-		char* CLEANUP_STR accum = strdup(prefix);
-
-		while ((bit = strsep(&parent, "/"))) {
-			if (bit[0] == '\0') {
-				continue;
-			}
-
-			char* CLEANUP_STR path = NULL;
-			asprintf(&path, "%s/%s", accum, bit);
-			assert(path != NULL);
-
-			if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
-				LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
-				return -1;
-			}
-
-			free(accum);
-			accum = strdup(path);
-			assert(accum != NULL);
-		}
-
-		// Check modification times.
-		// TODO When 'key' is a directory, we should recursively check all files in it.
-
-		char* CLEANUP_STR install_path = NULL;
-		asprintf(&install_path, "%s/%s", prefix, val);
-		assert(install_path != NULL);
-
-		bool do_install = false;
-
-		if (frugal_mtime(&do_install, "install", 1, &key, install_path) < 0) {
-			return -1;
-		}
-
-		if (!do_install) {
-			LOG_SUCCESS("%s" CLEAR ": Already installed.", val);
-			continue;
-		}
-
-		// Actually copy over files.
-
-		bool const is_cookie = (strstr(path, abs_out_path) == path);
-
-		if (is_cookie) {
-			LOG_INFO("%s" CLEAR ": Installing from cookie...", val);
-		}
-
-		else {
-			LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
-		}
-
-		char* CLEANUP_STR err = NULL;
-
-		if (copy(key, install_path, &err) < 0) {
-			LOG_FATAL("Failed to copy '%s' to '%s': %s", key, install_path, err);
-			return -1;
-		}
-
-		LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
-	}
-
-	return 0;
+	return install_all(prefix);
 }
 
 static int run(int argc, char* argv[]) {
