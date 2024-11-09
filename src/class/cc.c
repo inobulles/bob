@@ -9,6 +9,7 @@
 #include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
+#include <install_map.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
@@ -136,6 +137,10 @@ static bool compile_task(void* data) {
 
 	else {
 		set_owner(task->out);
+
+		if (install_cookie(task->out) < 0) {
+			stop = true;
+		}
 	}
 
 	pthread_mutex_lock(&task->bss->logging_lock);
