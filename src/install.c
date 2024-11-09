@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <apple.h>
 #include <common.h>
 #include <frugal.h>
 #include <fsutil.h>
@@ -76,7 +77,7 @@ found:
 	return 0;
 }
 
-static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool shut_up) {
+static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool shut_up, bool dylib) {
 	// Get absolute path of source to check it exists.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
@@ -131,8 +132,6 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 		return -1;
 	}
 
-	do_install = true;
-
 	if (!do_install) {
 		if (!shut_up) {
 			LOG_SUCCESS("%s" CLEAR ": Already (pre-)installed.", val);
@@ -162,6 +161,15 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 		return -1;
 	}
 
+#if defined(__APPLE__)
+	free(err);
+	err = NULL;
+
+	if (dylib && apple_set_install_id(install_path, val, &err) < 0) {
+		LOG_WARN("Failed to set Apple install ID for '%s': %s", install_path, err);
+	}
+#endif
+
 	if (!shut_up) {
 		LOG_SUCCESS("%s" CLEAR ": Successfully installed.", val);
 	}
@@ -177,7 +185,7 @@ int install_all(char const* _prefix) {
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
-		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false) < 0) {
+		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false, false) < 0) {
 			return -1;
 		}
 	}
@@ -185,7 +193,7 @@ int install_all(char const* _prefix) {
 	return 0;
 }
 
-int install_cookie(char* cookie) {
+int install_cookie(char* cookie, bool dylib) {
 	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
@@ -201,7 +209,7 @@ int install_cookie(char* cookie) {
 
 		// Found; install it.
 
-		if (install_single(key_val, install_map->map.vals[i], true) < 0) {
+		if (install_single(key_val, install_map->map.vals[i], true, dylib) < 0) {
 			return -1;
 		}
 
