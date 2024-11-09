@@ -51,3 +51,10 @@ To install a project with Bob, run:
 ```console
 bob install
 ```
+
+## Roadmap
+
+- v0.2.2: Resolve #55 and #56 (should be ready to replace v0.1.0 on IAR and Umber).
+- v0.2.3: Resolve #43 (quick QOL improvement).
+- v0.2.4: Resolve #48 and #51 (clean and pruning, maybe even uninstalling? But that's yet to be defined).
+- v0.2.5: Resolve #54 (dependency management system).
