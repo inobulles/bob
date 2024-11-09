@@ -5,6 +5,7 @@ if [ -z "$CC" ]; then
 	CC=cc
 fi
 
+rm -rf .bootstrap
 mkdir -p .bootstrap
 
 # Compile all objects.
