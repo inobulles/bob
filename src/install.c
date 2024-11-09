@@ -141,7 +141,7 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, char
 
 	if (!do_install) {
 		if (!shut_up) {
-			LOG_SUCCESS("%s" CLEAR ": Already installed.", val);
+			LOG_SUCCESS("%s" CLEAR ": Already (pre-)installed.", val);
 		}
 
 		return 0;
