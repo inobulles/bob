@@ -84,7 +84,8 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 	// Already linked.
 
 	log_already_done(out, NULL, bss->past);
-	rv = 0;
+	rv = install_cookie(out);
+
 	goto done;
 
 link:;
@@ -135,11 +136,14 @@ link:;
 
 	if (rv == 0) {
 		set_owner(out);
-		rv = install_cookie(out);
 	}
 
 	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);
 	cmd_free(&cmd);
+
+	if (rv == 0) {
+		rv = install_cookie(out);
+	}
 
 done:
 
