@@ -10,7 +10,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -63,7 +62,7 @@ int copy(char const* src, char const* dst, char** err) {
 	// Finally, actually run the copy command.
 
 	cmd_t cmd;
-	cmd_create(&cmd, "cp", "-RpP", src, dst, NULL);
+	cmd_create(&cmd, "cp", "-RP", src, dst, NULL);
 
 	int const rv = cmd_exec(&cmd);
 
