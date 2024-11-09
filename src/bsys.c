@@ -24,7 +24,7 @@ bsys_t const* bsys_identify(void) {
 	return NULL;
 }
 
-int bsys_build(bsys_t const* bsys) {
+int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
@@ -47,7 +47,7 @@ int bsys_build(bsys_t const* bsys) {
 
 	// Actually build.
 
-	return bsys->build();
+	return bsys->build(preinstall_prefix);
 }
 
 static void append_env(char const* name, char const* fmt, ...) {
@@ -87,12 +87,6 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 		return 0;
 	}
 
-	// Run build step.
-
-	if (bsys_build(bsys) < 0) {
-		return -1;
-	}
-
 	// Ensure the output path exists.
 
 	char* CLEANUP_STR path;
@@ -109,6 +103,12 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	if (to_prefix && mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+		return -1;
+	}
+
+	// Run build step.
+
+	if (bsys_build(bsys, path) < 0) {
 		return -1;
 	}
 

@@ -231,7 +231,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	return do_compile ? VALIDATION_RES_COMPILE : VALIDATION_RES_SKIP;
 }
 
-static int compile_step(size_t data_count, void** data) {
+static int compile_step(size_t data_count, void** data, char const* preinstall_prefix) {
 	pool_t pool;
 	pool_init(&pool, ncpu());
 	int rv = -1;

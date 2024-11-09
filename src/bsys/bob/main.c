@@ -223,12 +223,12 @@ err_fopen:
 	return rv;
 }
 
-static int build(void) {
-	if (setup_install_map(&flamingo) < 0) {
+static int build(char const* preinstall_prefix) {
+	if (setup_install_map(&flamingo, preinstall_prefix) < 0) {
 		return -1;
 	}
 
-	return run_build_steps();
+	return run_build_steps(preinstall_prefix);
 }
 
 static int install(char const* prefix) {

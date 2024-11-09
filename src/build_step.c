@@ -69,11 +69,11 @@ void free_build_steps(void) {
 	build_steps = NULL;
 }
 
-int run_build_steps(void) {
+int run_build_steps(char const* preinstall_prefix) {
 	for (size_t i = 0; i < build_step_count; i++) {
 		build_step_t* const step = &build_steps[i];
 
-		if (step->cb(step->data_count, step->data) < 0) {
+		if (step->cb(step->data_count, step->data, preinstall_prefix) < 0) {
 			return -1;
 		}
 	}
