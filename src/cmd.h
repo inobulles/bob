@@ -9,6 +9,7 @@
 typedef struct {
 	size_t len; // includes NULL sentinel
 	char** args;
+	int sig;
 	int rv;
 
 	// Pipe.
