@@ -63,6 +63,8 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 		assert(srcs[i] != NULL);
 	}
 
+	char* const CLEANUP_STR pretty = cookie_to_output(out, NULL);
+
 	// Re-link if flags have changed.
 
 	if (frugal_flags(bss->state->flags, out)) {
@@ -83,9 +85,7 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 
 	// Already linked.
 
-	char* const pretty = cookie_to_output(out, NULL);
 	log_already_done(out, pretty, bss->past);
-	free(pretty);
 	rv = install_cookie(out);
 
 	goto done;
@@ -133,14 +133,20 @@ link:;
 
 	// Actually execute it.
 
-	LOG_INFO(CLEAR "%s...", bss->present);
+	if (pretty == NULL) {
+		LOG_INFO(CLEAR "%s...", bss->present);
+	}
+	else {
+		LOG_INFO("%s" CLEAR ": %s...", pretty, bss->present);
+	}
+
 	rv = cmd_exec(&cmd);
 
 	if (rv == 0) {
 		set_owner(out);
 	}
 
-	cmd_log(&cmd, out, NULL, bss->infinitive, bss->past);
+	cmd_log(&cmd, out, pretty, bss->infinitive, bss->past);
 	cmd_free(&cmd);
 
 	if (rv == 0) {
