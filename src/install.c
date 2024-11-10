@@ -77,7 +77,7 @@ found:
 	return 0;
 }
 
-static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool installing_cookie) {
+static int install_single(flamingo_val_t* key_val, char* val, bool installing_cookie) {
 	// Get absolute path of source.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
@@ -103,8 +103,6 @@ static int install_single(flamingo_val_t* key_val, flamingo_val_t* val_val, bool
 
 	// Make sure destination directory exists.
 	// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
-
-	char* const CLEANUP_STR val = strndup(val_val->str.str, val_val->str.size);
 
 	char* CLEANUP_STR parent_backing = strdup(val);
 	char* parent = dirname(parent_backing);
@@ -191,7 +189,10 @@ int install_all(char const* _prefix) {
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
-		if (install_single(install_map->map.keys[i], install_map->map.vals[i], false) < 0) {
+		flamingo_val_t* const val_val = install_map->map.vals[i];
+		char* const val = strndup(val_val->str.str, val_val->str.size);
+
+		if (install_single(install_map->map.keys[i], val, false) < 0) {
 			return -1;
 		}
 	}
@@ -199,7 +200,7 @@ int install_all(char const* _prefix) {
 	return 0;
 }
 
-int install_cookie(char* cookie) {
+char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
@@ -215,11 +216,26 @@ int install_cookie(char* cookie) {
 
 		// Found; install it.
 
-		if (install_single(key_val, install_map->map.vals[i], true) < 0) {
-			return -1;
+		if (key_val_ref != NULL) {
+			*key_val_ref = key_val;
 		}
 
-		break;
+		flamingo_val_t* const val_val = install_map->map.vals[i];
+		char* const val = strndup(val_val->str.str, val_val->str.size);
+
+		assert(val != NULL);
+		return val;
+	}
+
+	return NULL;
+}
+
+int install_cookie(char* cookie) {
+	flamingo_val_t* key = NULL;
+	char* const CLEANUP_STR out = cookie_to_output(cookie, &key);
+
+	if (out != NULL && install_single(key, out, true) < 0) {
+		return -1;
 	}
 
 	return 0;

@@ -216,7 +216,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 
 	// We never want to merge these build steps because the output hash from one set of source files to another is (hopefully) always different.
 
-	return add_build_step((uint64_t) bss, archive ? "Archiving" : "Linking", link_step, bss);
+	return add_build_step((uint64_t) bss, present, link_step, bss);
 }
 
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
