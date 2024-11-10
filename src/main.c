@@ -53,16 +53,11 @@ void usage(void) {
 
 	fprintf(
 		stderr,
-		"usage: %1$s [-p prefix] [-C project_directory] [-o out_directory] "
+		"usage: %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] "
 		"build\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] lsp\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] run "
+		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] run "
 		"[args ...]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] "
-		"install\n"
-		"       %1$s [-p prefix] [-C project_directory] skeleton skeleton_name "
-		"[out_directory]\n"
-		"       %1$s [-p prefix] [-C project_directory] [-o out_directory] " "package format [name] [out_file]\n",
+		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] " "install\n",
 		progname
 	);
 
