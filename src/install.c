@@ -202,7 +202,7 @@ int install_all(char const* _prefix) {
 }
 
 char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
-	if (install_map == NULL || prefix == NULL) {
+	if (install_map == NULL) {
 		return 0;
 	}
 
@@ -232,6 +232,10 @@ char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 }
 
 int install_cookie(char* cookie) {
+	if (prefix == NULL) {
+		return 0;
+	}
+
 	flamingo_val_t* key = NULL;
 	char* const CLEANUP_STR out = cookie_to_output(cookie, &key);
 
