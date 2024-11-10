@@ -169,7 +169,8 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	free(err);
 	err = NULL;
 
-	bool const dylib = (strstr(val, ".l") == val + strlen(val) - 2);
+	size_t const key_len = strlen(key);
+	bool const dylib = key_len >= 2 && strcmp(key + key_len - 2, ".l") == 0;
 
 	if (dylib && apple_set_install_id(install_path, val, &err) < 0) {
 		LOG_WARN("Failed to set Apple install ID for dylib '%s': %s", install_path, err);
