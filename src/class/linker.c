@@ -83,7 +83,9 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 
 	// Already linked.
 
-	log_already_done(out, NULL, bss->past);
+	char* const pretty = cookie_to_output(out, NULL);
+	log_already_done(out, pretty, bss->past);
+	free(pretty);
 	rv = install_cookie(out);
 
 	goto done;
