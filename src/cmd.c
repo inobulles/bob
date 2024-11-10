@@ -185,12 +185,13 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	return pid;
 }
 
-static int wait_for_process(pid_t pid) {
+static int wait_for_process(pid_t pid, int* _Nonnull sig) {
 	int wstatus = 0;
 	while (waitpid(pid, &wstatus, 0) > 0)
 		;
 
 	if (WIFSIGNALED(wstatus)) {
+		*sig = WTERMSIG(wstatus);
 		return -1;
 	}
 
@@ -208,11 +209,15 @@ int cmd_exec(cmd_t* cmd) {
 		return -1;
 	}
 
-	cmd->rv = wait_for_process(pid);
+	cmd->sig = 0;
+	cmd->rv = wait_for_process(pid, &cmd->sig);
+
 	return cmd->rv;
 }
 
 char* cmd_read_out(cmd_t* cmd) {
+	// Actually read pipe output.
+
 	int const pipe = cmd->out;
 
 	char* out = strdup("");
@@ -233,6 +238,20 @@ char* cmd_read_out(cmd_t* cmd) {
 
 	if (bytes < 0) {
 		LOG_WARN("%s: Failed to read from %d: %s", __func__, pipe, strerror(errno));
+	}
+
+	// If we terminated due to a signal, append that to the output.
+
+	if (cmd->sig != 0) {
+		char* CLEANUP_STR sig_str = NULL;
+		asprintf(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
+		assert(sig_str != NULL);
+		size_t const sig_len = strlen(sig_str);
+
+		out = realloc(out, total + sig_len + 1);
+		assert(out != NULL);
+		memcpy(out + total, sig_str, sig_len);
+		total += sig_len;
 	}
 
 	out[total] = '\0';
