@@ -185,7 +185,9 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	return pid;
 }
 
-static int wait_for_process(pid_t pid, int* _Nonnull sig) {
+static int wait_for_process(pid_t pid, int* sig) {
+	assert(sig != NULL);
+
 	int wstatus = 0;
 	while (waitpid(pid, &wstatus, 0) > 0)
 		;
