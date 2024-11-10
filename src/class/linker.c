@@ -26,7 +26,6 @@
 
 typedef struct {
 	flamingo_val_t* flags;
-	char const* preinstall_prefix;
 } state_t;
 
 typedef struct {
@@ -107,7 +106,7 @@ link:;
 		cc = cc == NULL ? "cc" : cc;
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
 
-		if (bss->state->preinstall_prefix) {
+		if (preinstall_prefix != NULL) {
 			cmd_addf(&cmd, "-L%s/lib", preinstall_prefix);
 		}
 
