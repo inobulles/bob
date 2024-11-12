@@ -141,16 +141,19 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	}
 
 	// Create pipes.
+	// We don't do any of this pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
 
-	int fd[2];
+	if (!debugging) {
+		int fd[2];
 
-	if (pipe(fd) < 0) {
-		LOG_FATAL("pipe: %s", strerror(errno));
-		return -1;
+		if (pipe(fd) < 0) {
+			LOG_FATAL("pipe: %s", strerror(errno));
+			return -1;
+		}
+
+		cmd->in = fd[1];
+		cmd->out = fd[0];
 	}
-
-	cmd->in = fd[1];
-	cmd->out = fd[0];
 
 	// Spawn process.
 	// We can't use 'fork()' here, because we could be called from a multi-threaded context.
@@ -161,10 +164,12 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	posix_spawn_file_actions_t actions;
 	posix_spawn_file_actions_init(&actions);
 
-	posix_spawn_file_actions_addclose(&actions, cmd->out);
+	if (!debugging) {
+		posix_spawn_file_actions_addclose(&actions, cmd->out);
 
-	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
-	posix_spawn_file_actions_adddup2(&actions, cmd->in, STDERR_FILENO);
+		posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
+		posix_spawn_file_actions_adddup2(&actions, cmd->in, STDERR_FILENO);
+	}
 
 	extern char** environ;
 	pid_t pid;
@@ -179,8 +184,10 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 
 	posix_spawn_file_actions_destroy(&actions);
 
-	close(cmd->in);
-	cmd->in = -1;
+	if (!debugging) {
+		close(cmd->in);
+		cmd->in = -1;
+	}
 
 	return pid;
 }
@@ -220,10 +227,14 @@ int cmd_exec(cmd_t* cmd) {
 char* cmd_read_out(cmd_t* cmd) {
 	// Actually read pipe output.
 
-	int const pipe = cmd->out;
-
 	char* out = strdup("");
 	assert(out != NULL);
+
+	if (debugging) {
+		return out;
+	}
+
+	int const pipe = cmd->out;
 
 	size_t total = 0;
 

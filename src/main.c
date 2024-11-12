@@ -24,6 +24,7 @@
 
 // Global options go here so they're accessible by everyone.
 
+bool debugging = false;
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
@@ -101,6 +102,18 @@ int main(int argc, char* argv[]) {
 
 	if (!argc) {
 		usage();
+	}
+
+	// Are we in build debugging mode?
+
+	debugging = getenv("BOB_BUILD_DEBUGGING") != NULL;
+
+	if (debugging) {
+		LOG_INFO("Build debugging mode enabled.");
+
+		if (set_max_jobs(1) < 0) {
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	// If project path wasn't set, set it to the current working directory.
