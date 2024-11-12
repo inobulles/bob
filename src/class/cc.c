@@ -56,6 +56,8 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	// For this, parse the Makefile rule output by the preprocessor.
 	// See: https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html#Preprocessor-Options
 	// Also see: https://wiki.sei.cmu.edu/confluence/display/c/STR06-C.+Do+not+assume+that+strtok%28%29+leaves+the+parse+string+unchanged
+	// -MM: Output the dependencies to stdout, and imply the -E switch (i.e. preprocess only).
+	// -MT "": Exclude the source file from the output.
 	// TODO Can we do this in parallel easily with 'cmd_exec_async'?
 
 	cmd_t __attribute__((cleanup(cmd_free))) cmd;
@@ -66,8 +68,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	char* CLEANUP_STR out = cmd_read_out(&cmd);
 
 	if (rv < 0) {
-		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild! Does your compiler (CC = '%s') support this?", task->src, cc);
-		printf("%s", out);
+		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild!", task->src, cc);
 		return;
 	}
 
