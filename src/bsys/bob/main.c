@@ -289,6 +289,13 @@ found:;
 		cmd_add(&cmd, argv[i]);
 	}
 
+	// Make sure there actually is something in the command.
+
+	if (cmd.len == 1) {
+		LOG_WARN("Nothing to run.");
+		return 0;
+	}
+
 	// Finally, actually run the command.
 
 	if (cmd_exec_inplace(&cmd) < 0) {

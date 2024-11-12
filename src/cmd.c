@@ -122,6 +122,7 @@ static char* find_bin(cmd_t* cmd) {
 }
 
 int cmd_exec_inplace(cmd_t* cmd) {
+	assert(cmd->len > 1);
 	char* const CLEANUP_STR path = find_bin(cmd);
 
 	if (path == NULL) {
