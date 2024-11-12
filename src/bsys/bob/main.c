@@ -252,7 +252,8 @@ static int run(int argc, char* argv[]) {
 		}
 
 		if (vec->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			goto no_default;
+			LOG_FATAL("'bob run' has been disabled (run vector has been set to 'none').");
+			return 0;
 		}
 
 		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
@@ -283,8 +284,6 @@ found:;
 
 	// Then, add the arguments passed to the Bob frontend.
 	// If there is no default runner, just pass the arguments from the frontend onwards.
-
-no_default:
 
 	for (ssize_t i = 0; i < argc; i++) {
 		cmd_add(&cmd, argv[i]);
