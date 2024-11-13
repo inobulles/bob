@@ -3,6 +3,34 @@
 
 let __bob_has_been_imported__
 
+class Dep(_kind: str) {
+	let kind = _kind
+
+	# For local dependencies.
+
+	let local_path: str
+
+	# For git dependencies.
+
+	let git_url: str
+	let git_branch: str
+
+	# Constructors.
+
+	static fn local(path: str) -> Dep {
+		let dep = Dep("local")
+		dep.local_path = path
+		return dep
+	}
+
+	static fn git(url: str, branch: str) -> Dep {
+		let dep = Dep("git")
+		dep.git_url = url
+		dep.git_branch = branch
+		return dep
+	}
+}
+
 class Fs {
 	static proto list(path: str) -> vec<str>
 }
@@ -16,5 +44,6 @@ class Linker(flags: vec<str>) {
 	proto archive(obj: vec<str>) -> str
 }
 
+let deps: vec<Dep> = []
 let install: map<str, str>
 let run: vec<str> = []
