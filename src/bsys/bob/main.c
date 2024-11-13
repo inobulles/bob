@@ -161,14 +161,14 @@ static int setup(void) {
 	flamingo_register_class_decl_cb(&flamingo, class_decl_cb, NULL);
 	flamingo_register_class_inst_cb(&flamingo, class_inst_cb, NULL);
 
+	flamingo_add_import_path(&flamingo, "import"); // For when we're bootstrapping (should come first).
+
 	char* import_path = NULL;
 	asprintf(&import_path, "%s/share/flamingo/import", install_prefix);
 	assert(import_path != NULL);
 
 	flamingo_add_import_path(&flamingo, import_path);
 	free(import_path);
-
-	flamingo_add_import_path(&flamingo, "import"); // For when we're bootstrapping.
 
 	// Run build program.
 
