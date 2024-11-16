@@ -16,7 +16,6 @@
 #include <str.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <fts.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -195,9 +194,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 
 		// XOR'ing makes sure order doesn't matter.
 
-		char* const CLEANUP_STR tmp = strndup(src->str.str, src->str.size);
-		assert(tmp != NULL);
-		total_hash ^= str_hash(tmp);
+		total_hash ^= str_hash(src->str.str, src->str.size);
 	}
 
 	char* cookie = NULL;
