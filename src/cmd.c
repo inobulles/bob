@@ -90,7 +90,8 @@ static char* find_bin(cmd_t* cmd) {
 		return strdup(cmd->args[0]);
 	}
 
-	// Look for binary in '$PATH'.
+	// Look for binary in $PATH.
+	// $PATH should be traversed from beginning to end (earlier entries have higher priority).
 
 	char* const path = getenv("PATH");
 

@@ -50,7 +50,7 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	return bsys->build(preinstall_prefix);
 }
 
-static void append_env(char const* name, char const* fmt, ...) {
+static void prepend_env(char const* name, char const* fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -69,8 +69,10 @@ static void append_env(char const* name, char const* fmt, ...) {
 	}
 
 	else {
+		// We prepend because earlier entries searched first.
+
 		char* CLEANUP_STR new;
-		asprintf(&new, "%s:%s", prev, val);
+		asprintf(&new, "%s:%s", val, prev);
 		assert(new != NULL);
 
 		rv = setenv(name, new, 1);
@@ -129,9 +131,9 @@ int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 
 	// Set up environment to be inside the prefix.
 
-	append_env("PATH", "%s/prefix/bin", out_path);
+	prepend_env("PATH", "%s/prefix/bin", out_path);
 
-	append_env(
+	prepend_env(
 #if defined(__APPLE__)
 		"DY" // dyld(1) doesn't recognize `LD_LIBRARY_PATH`.
 #endif
