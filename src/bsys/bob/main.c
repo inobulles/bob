@@ -16,7 +16,6 @@
 #include <flamingo/flamingo.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
