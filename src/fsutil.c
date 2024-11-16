@@ -108,7 +108,7 @@ int set_owner(char const* path) {
 		return -1;
 	}
 
-	if (strstr(full_path, abs_out_path) != abs_out_path) {
+	if (strstr(full_path, abs_out_path) != full_path) {
 		return 0;
 	}
 
