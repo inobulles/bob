@@ -40,10 +40,11 @@ no_last:
 
 	// Actually add new build step.
 
-	build_steps = realloc(build_steps, (build_step_count + 1) * sizeof *build_steps);
+	build_steps = realloc(build_steps, ++build_step_count * sizeof *build_steps);
 	assert(build_steps != NULL);
-	build_step_t* const step = &build_steps[build_step_count++];
+	build_step_t* const step = &build_steps[build_step_count - 1];
 
+	step->unique = unique;
 	step->name = name;
 	step->cb = cb;
 	step->data_count = 1;
