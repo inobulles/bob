@@ -6,7 +6,7 @@ import bob
 let src = Fs.list("src").where(|path| path.endswith(".c") && !path.startswith("src/flamingo")) + ["src/flamingo/flamingo.c"]
 
 let obj = Cc([
-	"-std=c11",
+	"-std=c11", "-g",
 	"-Wall", "-Wextra", "-Werror",
 	"-Wno-unused-parameter",
 	"-Isrc", "-Isrc/flamingo/runtime",
