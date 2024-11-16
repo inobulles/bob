@@ -98,9 +98,13 @@ int set_owner(char const* path) {
 int mkdir_wrapped(char const* path, mode_t mode) {
 	int const rv = mkdir(path, mode);
 
-	if (rv == 0 || errno == EEXIST) {
+	if (rv < 0 && errno == EEXIST) {
+		return 0;
+	}
+
+	if (rv == 0) {
 		set_owner(path);
-		return rv;
+		return 0;
 	}
 
 	return rv;
