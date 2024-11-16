@@ -83,9 +83,27 @@ extern bool running_as_root;
 extern uid_t owner;
 
 int set_owner(char const* path) {
+	// We only want to lower permissions if we're running as root.
+
 	if (!running_as_root) {
 		return 0;
 	}
+
+	// We only want to mess with the permissions of stuff in the output directory (.bob).
+
+	char* const CLEANUP_STR full_path = realpath(path, NULL);
+
+	if (full_path == NULL) {
+		assert(errno != ENOMEM);
+		LOG_WARN("realpath(\"%s\"): %s", path, strerror(errno));
+		return -1;
+	}
+
+	if (strstr(full_path, abs_out_path) != abs_out_path) {
+		return 0;
+	}
+
+	// If those checks all pass, we can finally set the owner of the file.
 
 	if (chown(path, owner, -1) < 0) {
 		LOG_WARN("chown(\"%s\"): %s", path, strerror(errno));
@@ -102,7 +120,7 @@ int mkdir_wrapped(char const* path, mode_t mode) {
 		return 0;
 	}
 
-	if (rv == 0) {
+	else if (rv == 0) {
 		set_owner(path);
 		return 0;
 	}
