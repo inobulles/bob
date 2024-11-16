@@ -89,9 +89,18 @@ int set_owner(char const* path) {
 		return 0;
 	}
 
+	// If the absolute output path hasn't yet been set, this is being called as a means to ensure the output path exists.
+	// That being the case, we can skip to the chown call.
+
+	char* CLEANUP_STR full_path = NULL;
+
+	if (abs_out_path == NULL) {
+		goto chown;
+	}
+
 	// We only want to mess with the permissions of stuff in the output directory (.bob).
 
-	char* const CLEANUP_STR full_path = realpath(path, NULL);
+	full_path = realpath(path, NULL);
 
 	if (full_path == NULL) {
 		assert(errno != ENOMEM);
@@ -104,6 +113,8 @@ int set_owner(char const* path) {
 	}
 
 	// If those checks all pass, we can finally set the owner of the file.
+
+chown:
 
 	if (chown(path, owner, -1) < 0) {
 		LOG_WARN("chown(\"%s\"): %s", path, strerror(errno));
