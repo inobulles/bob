@@ -29,3 +29,5 @@ char* cmd_read_out(cmd_t* cmd);
 void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past);
 void cmd_print(cmd_t* cmd);
 void cmd_free(cmd_t* cmd);
+
+#define CMD_CLEANUP __attribute__((cleanup(cmd_free)))
