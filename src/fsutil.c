@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -100,10 +101,9 @@ int set_owner(char const* path) {
 
 	// We only want to mess with the permissions of stuff in the output directory (.bob).
 
-	full_path = realpath(path, NULL);
+	full_path = realpath_better(path);
 
 	if (full_path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_WARN("realpath(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
@@ -177,4 +177,24 @@ int mkdir_recursive(char const* path, mode_t mode) {
 	}
 
 	return 0;
+}
+
+char* realpath_better(char const* path) {
+	char* home = NULL;
+
+	if (path[0] == '~' && (path[1] == '\0' || path[1] == '/')) {
+		home = getenv("HOME");
+
+		if (home == NULL) {
+			LOG_ERROR("Using tilde ('~') in path '%s' which is usually meant to expand to $HOME, but $HOME is not set.", path);
+			return NULL;
+		}
+	}
+
+	char* CLEANUP_STR intermediary = NULL;
+	asprintf(&intermediary, "%s/%s", home, path);
+
+	char* const final = realpath(intermediary, NULL);
+	assert(final != NULL || errno != ENOMEM);
+	return final;
 }
