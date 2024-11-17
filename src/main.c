@@ -29,11 +29,10 @@ char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
 char* deps_path = NULL;
+char const* init_name = "bob";
 
 bool running_as_root = false;
 uid_t owner = 0;
-
-static char const* init_name = "bob";
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -63,7 +62,7 @@ void usage(void) {
 }
 
 int main(int argc, char* argv[]) {
-	init_name = *argv;
+	init_name = argv[0];
 	char const* project_path = NULL;
 	logging_init();
 
