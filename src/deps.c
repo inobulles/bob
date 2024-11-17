@@ -52,7 +52,6 @@ int deps_download(flamingo_val_t* deps) {
 		}
 
 		// Make sure everything checks out and take action.
-		// TODO Make all of these frugal.
 
 		if (kind == NULL) {
 			LOG_FATAL("Dependency must have a 'kind' attribute." PLZ_REPORT);
@@ -126,7 +125,7 @@ int deps_download(flamingo_val_t* deps) {
 				return -1;
 			}
 
-			// Clone git repo to deps directory.
+			// Get dependency path of git repo.
 
 			char* const CLEANUP_STR tmp = strndup(git_url->str.str, git_url->str.size);
 			assert(tmp != NULL);
@@ -136,6 +135,16 @@ int deps_download(flamingo_val_t* deps) {
 			uint64_t const hash =
 				str_hash(git_url->str.str, git_url->str.size) ^
 				str_hash(git_branch->str.str, git_branch->str.size);
+
+			char* CLEANUP_STR dep_path = NULL;
+			asprintf(&dep_path, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
+			assert(dep_path != NULL);
+
+			if (access(dep_path, F_OK) == 0) {
+				continue;
+			}
+
+			// If nothing exists there yet, clone the repo.
 
 			cmd_t CMD_CLEANUP cmd = {0};
 
