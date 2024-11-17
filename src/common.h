@@ -21,3 +21,4 @@ extern char const* out_path;
 extern char const* abs_out_path;
 extern char const* install_prefix;
 extern char* deps_path;
+extern char const* init_name;
