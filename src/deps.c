@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <string.h>
 #include <unistd.h>
 
 int deps_download(flamingo_val_t* deps) {
