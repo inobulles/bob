@@ -101,7 +101,7 @@ int set_owner(char const* path) {
 
 	// We only want to mess with the permissions of stuff in the output directory (.bob).
 
-	full_path = realpath_better(path);
+	full_path = realerpath(path);
 
 	if (full_path == NULL) {
 		LOG_WARN("realpath(\"%s\"): %s", path, strerror(errno));
@@ -179,7 +179,7 @@ int mkdir_recursive(char const* path, mode_t mode) {
 	return 0;
 }
 
-char* realpath_better(char const* path) {
+char* realerpath(char const* path) {
 	char* home = NULL;
 
 	if (path[0] == '~' && (path[1] == '\0' || path[1] == '/')) {
