@@ -6,6 +6,7 @@
 #include <bsys.h>
 #include <build_step.h>
 #include <cmd.h>
+#include <deps.h>
 #include <frugal.h>
 #include <fsutil.h>
 #include <install.h>
@@ -270,15 +271,7 @@ uh_oh:
 		return -1;
 	}
 
-	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
-	// Just do a BFS here, going down the tree.
-	// Probably I should have a 'get-deps' command, which does this step and returns a list of paths to these dependencies and probably also the edges of the dependency graph so we can get a fuller picture.
-	// Does it make sense here to download all of them to a common deps directory for all Bob projects for reuse, Poetry-style?
-	// I guess so, and then the name on the filesystem could be `'%s.local' % strhash(realpath(element))` for local stuff and `'%s.git' % (strhash(url)^ strhash(branch))` for stuff downloaded from git.
-	// Once all the downloading is done, do the smart building thing where cores are allocated and reallocated to dependencies dynamically.
-	// This is gonna be pretty complex so I should probably bring this out into a deps.c file.
-
-	return 0;
+	return deps_download(vec->val);
 }
 
 static int build(char const* preinstall_prefix) {
