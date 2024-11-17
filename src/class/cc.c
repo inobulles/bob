@@ -141,7 +141,7 @@ static bool compile_task(void* data) {
 	}
 
 	pthread_mutex_lock(&task->bss->logging_lock);
-	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
+	cmd_log(&cmd, task->out, task->src, "compile", "compiled", true);
 	pthread_mutex_unlock(&task->bss->logging_lock);
 
 	if (!stop && install_cookie(task->out) < 0) {

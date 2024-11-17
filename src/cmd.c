@@ -273,10 +273,11 @@ char* cmd_read_out(cmd_t* cmd) {
 	return out;
 }
 
-void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past) {
+void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past, bool log_success) {
 	char* const CLEANUP_STR out = cmd_read_out(cmd);
 	bool const is_out = out[0] != '\0';
-	char* const suffix = is_out ? ":" : ".";
+	bool const log_out = is_out && (log_success || cmd->rv < 0);
+	char* const suffix = log_out ? ":" : ".";
 
 #define P prefix ? prefix : "", prefix ? ": " : ""
 
@@ -290,7 +291,9 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 
 #undef P
 
-	printf("%s", out);
+	if (log_out) {
+		printf("%s", out);
+	}
 
 	// Write out log to file, only if there is one.
 	// If not, attempt to remove the existing one anyway.
