@@ -125,7 +125,8 @@ int main(int argc, char* argv[]) {
 	char const* const rel_project_path = project_path;
 	project_path = realpath(rel_project_path, NULL);
 
-	if (!project_path) {
+	if (project_path == NULL) {
+		assert(errno != ENOMEM);
 		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
 		return EXIT_FAILURE;
 	}
@@ -224,8 +225,12 @@ int main(int argc, char* argv[]) {
 
 	char const* const abs_init_name = realpath(init_name, NULL);
 
-	if (abs_init_name) {
+	if (abs_init_name != NULL) {
 		init_name = abs_init_name;
+	}
+
+	else {
+		assert(errno != ENOMEM);
 	}
 
 	// Identify the build system.
