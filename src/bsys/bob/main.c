@@ -256,19 +256,16 @@ found:
 		flamingo_val_t* const val = vec->val->vec.elems[i];
 
 		if (val->kind != FLAMINGO_VAL_KIND_INST) {
-			goto uh_oh;
+			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class.");
+			return -1;
 		}
 
 		flamingo_val_t* const class = val->inst.class;
 
 		if (flamingo_cstrcmp(class->name, "Dep", class->name_size) != 0) {
-			goto uh_oh;
+			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class (not '%.*s').", (int) class->name_size, class->name);
+			return -1;
 		}
-
-uh_oh:
-
-		LOG_FATAL("Dependencies vector element must be a instance of the `Dep` class.");
-		return -1;
 	}
 
 	return deps_download(vec->val);
