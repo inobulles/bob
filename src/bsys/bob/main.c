@@ -222,6 +222,75 @@ err_fopen:
 	return rv;
 }
 
+static int deps(void) {
+	// Find dependencies vector.
+
+	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
+	flamingo_var_t* vec = NULL;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		vec = &scope->vars[i];
+
+		if (flamingo_cstrcmp(vec->key, "deps", vec->key_size) != 0) {
+			continue;
+		}
+
+		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
+			LOG_FATAL("Dependencies vector must be a vector.");
+			return -1;
+		}
+
+		goto found;
+	}
+
+	LOG_FATAL("Dependencies vector was never declared. This is a serious issue, please report it!");
+	return -1;
+
+found:
+
+	// Make sure all elements of the dependencies vector are actual dependencies.
+
+	for (size_t i = 0; i < vec->val->vec.count; i++) {
+		flamingo_val_t* const val = vec->val->vec.elems[i];
+
+		if (val->kind != FLAMINGO_VAL_KIND_INST) {
+			goto uh_oh;
+		}
+
+		flamingo_val_t* const class = val->inst.class;
+
+		if (flamingo_cstrcmp(class->name, "Dep", class->name_size) != 0) {
+			goto uh_oh;
+		}
+
+uh_oh:
+
+		LOG_FATAL("Dependencies vector element must be a instance of the `Dep` class.");
+		return -1;
+	}
+
+	// Make sure the dependencies directory exists.
+
+	char* CLEANUP_STR path = NULL;
+	asprintf(&path, "%s/deps", out_path);
+	assert(path != NULL);
+
+	if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+		return -1;
+	}
+
+	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
+	// Just do a BFS here, going down the tree.
+	// Probably I should have a 'get-deps' command, which does this step and returns a list of paths to these dependencies and probably also the edges of the dependency graph so we can get a fuller picture.
+	// Does it make sense here to download all of them to a common deps directory for all Bob projects for reuse, Poetry-style?
+	// I guess so, and then the name on the filesystem could be `'%s.local' % strhash(realpath(element))` for local stuff and `'%s.git' % (strhash(url)^ strhash(branch))` for stuff downloaded from git.
+	// Once all the downloading is done, do the smart building thing where cores are allocated and reallocated to dependencies dynamically.
+	// This is gonna be pretty complex so I should probably bring this out into a deps.c file.
+
+	return 0;
+}
+
 static int build(char const* preinstall_prefix) {
 	if (setup_install_map(&flamingo, preinstall_prefix) < 0) {
 		return -1;
@@ -319,6 +388,7 @@ bsys_t const BSYS_BOB = {
 	.key = "bob",
 	.identify = identify,
 	.setup = setup,
+	.deps = deps,
 	.build = build,
 	.install = install,
 	.run = run,
