@@ -117,7 +117,7 @@ int set_owner(char const* path) {
 chown:
 
 	if (chown(path, owner, -1) < 0) {
-		LOG_WARN("chown(\"%s\"): %s", path, strerror(errno));
+		LOG_ERROR("chown(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
 
@@ -137,4 +137,44 @@ int mkdir_wrapped(char const* path, mode_t mode) {
 	}
 
 	return rv;
+}
+
+int mkdir_recursive(char const* path, mode_t mode) {
+	if (
+		path[0] != '/' ||
+		strstr(path, "/../") != NULL ||
+		strstr(path, "/..") == path + strlen(path) - 3
+	) {
+		LOG_ERROR("Path must be absolute (got '%s')!", path);
+		return -1;
+	}
+
+	char* CLEANUP_STR copy = strdup(path);
+	assert(copy != NULL);
+
+	char* CLEANUP_STR accum = strdup("");
+	assert(accum != NULL);
+
+	char* bit;
+
+	while ((bit = strsep(&copy, "/"))) {
+		if (bit[0] == '\0') {
+			continue;
+		}
+
+		char* CLEANUP_STR path = NULL;
+		asprintf(&path, "%s/%s", accum, bit);
+		assert(path != NULL);
+
+		if (mkdir_wrapped(path, mode) < 0 && errno != EEXIST) {
+			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+			return -1;
+		}
+
+		free(accum);
+		accum = strdup(path);
+		assert(accum != NULL);
+	}
+
+	return 0;
 }
