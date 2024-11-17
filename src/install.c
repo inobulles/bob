@@ -44,7 +44,7 @@ int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 		goto found;
 	}
 
-	LOG_FATAL("Install map was never declared. This is a serious internal issue, please report it!");
+	LOG_FATAL("Install map was never declared." PLZ_REPORT);
 	return -1;
 
 found:
