@@ -103,8 +103,6 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 
 	// Make sure destination directory exists.
 	// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
-	// TODO Is this robust w.r.t. relative paths?
-	// TODO Can this be replaced with mkdir_recursive?
 
 	char* CLEANUP_STR parent_backing = strdup(val);
 	assert(parent_backing != NULL);
