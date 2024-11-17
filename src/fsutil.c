@@ -193,15 +193,19 @@ char* realerpath(char const* path) {
 
 	char* final = NULL;
 
+#define R realpath
+
 	if (home != NULL) {
 		char* CLEANUP_STR intermediary = NULL;
 		asprintf(&intermediary, "%s/%s", home, path);
-		final = realpath(intermediary, NULL);
+		final = R(intermediary, NULL);
 	}
 
 	else {
-		final = realpath(path, NULL);
+		final = R(path, NULL);
 	}
+
+#undef R
 
 	assert(final != NULL || errno != ENOMEM);
 	return final;
