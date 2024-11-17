@@ -26,6 +26,12 @@ jobs:
             echo "Error: 'mkdir' is used in multiple places. Use 'mkdir_wrapped' instead."
             exit 1
           fi
+      - name: Make sure 'realpath_better' is used everywhere (except for once for 'fsutils.c')
+        run: |
+          if [ $(cat $SRC | grep "[^\"]realpath(" | wc -l) -gt 1 ]; then
+            echo "Error: 'realpath' is used in multiple places. Use 'realpath_better' instead."
+            exit 1
+          fi
       - name: Set up tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
