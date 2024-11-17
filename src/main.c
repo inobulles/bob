@@ -32,11 +32,7 @@ char const* install_prefix = NULL;
 bool running_as_root = false;
 uid_t owner = 0;
 
-// TODO Put this in the main function, simply?
-
 static char const* init_name = "bob";
-static char const* project_path = NULL;
-static char* cur_instr = NULL;
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -67,6 +63,7 @@ void usage(void) {
 
 int main(int argc, char* argv[]) {
 	init_name = *argv;
+	char const* project_path = NULL;
 	logging_init();
 
 	// Parse options.
@@ -182,7 +179,7 @@ int main(int argc, char* argv[]) {
 	// Ensure it exists.
 
 	if (access(install_prefix, F_OK) < 0) {
-		LOG_FATAL("Installation prefix \"%s\" does not exist", install_prefix);
+		LOG_FATAL("Installation prefix \"%s\" does not exist.", install_prefix);
 		return EXIT_FAILURE;
 	}
 
@@ -207,7 +204,7 @@ int main(int argc, char* argv[]) {
 	bsys_t const* const bsys = bsys_identify();
 
 	if (bsys == NULL) {
-		LOG_FATAL("Could not identify build system");
+		LOG_FATAL("Could not identify build system.");
 		return EXIT_FAILURE;
 	}
 
@@ -216,71 +213,38 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Parse instructions.
-	// TODO Currently, you can chain an arbitrary number of instructions. Is this really a necessary feature or is this confusing?
 
-	int rv;
+	int rv = EXIT_FAILURE;
 
-	while (argc-- > 0) {
-		rv = EXIT_FAILURE;
-		cur_instr = *argv++;
+	if (argc-- == 0) {
+		LOG_FATAL("No instructions given.");
+		usage();
+	}
 
-		if (strcmp(cur_instr, "build") == 0) {
-			if (bsys_build(bsys, NULL) == 0) {
-				rv = EXIT_SUCCESS;
-			}
-		}
+	char const* const instr = *argv++;
 
-		else if (strcmp(cur_instr, "lsp") == 0) {
-			// TODO gen_lsp_config = true;
-			// TODO rv = do_build();
-		}
-
-		// Everything stops if we run the 'run' command.
-		// We don't know how many arguments there'll still be.
-
-		else if (strcmp(cur_instr, "run") == 0) {
-			if (bsys_run(bsys, argc, argv) == 0) {
-				rv = EXIT_SUCCESS;
-			}
-
-			goto done;
-		}
-
-		else if (strcmp(cur_instr, "install") == 0) {
-			if (bsys_install(bsys) == 0) {
-				rv = EXIT_SUCCESS;
-			}
-		}
-
-		// Everything stops if we run the 'skeleton' command.
-		// I don't wanna deal with how the output/project paths should best be
-		// handled for subsequent commands.
-
-		else if (strcmp(cur_instr, "skeleton") == 0) {
-			// TODO rv = do_skeleton(argc, argv);
-			goto done;
-		}
-
-		// Everything stops if we run the 'package' command.
-		// The last argument is optional, so it would introduce ambiguity.
-
-		else if (strcmp(cur_instr, "package") == 0) {
-			// TODO rv = do_package(argc, argv);
-			goto done;
-		}
-
-		else {
-			usage();
-		}
-
-		// Stop here if there was an error in the execution of an instruction.
-
-		if (rv != EXIT_SUCCESS) {
-			goto done;
+	if (strcmp(instr, "build") == 0) {
+		if (bsys_build(bsys, NULL) == 0) {
+			rv = EXIT_SUCCESS;
 		}
 	}
 
-done:
+	else if (strcmp(instr, "run") == 0) {
+		if (bsys_run(bsys, argc, argv) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
+
+	else if (strcmp(instr, "install") == 0) {
+		if (bsys_install(bsys) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
+
+	else {
+		LOG_FATAL("Unknown instruction '%s'.", instr);
+		usage();
+	}
 
 	free_build_steps();
 
