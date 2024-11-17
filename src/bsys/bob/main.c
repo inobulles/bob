@@ -244,7 +244,7 @@ static int deps(void) {
 		goto found;
 	}
 
-	LOG_FATAL("Dependencies vector was never declared. This is a serious issue, please report it!");
+	LOG_FATAL("Dependencies vector was never declared." PLZ_REPORT);
 	return -1;
 
 found:
@@ -322,7 +322,7 @@ static int run(int argc, char* argv[]) {
 		goto found;
 	}
 
-	LOG_FATAL("Run vector was never declared. This is a serious issue, please report it!");
+	LOG_FATAL("Run vector was never declared." PLZ_REPORT);
 	return -1;
 
 found:;
