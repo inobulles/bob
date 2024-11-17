@@ -16,6 +16,17 @@
 #include <string.h>
 #include <unistd.h>
 
+static int build(char const* human, char const* path) {
+	cmd_t CMD_CLEANUP cmd = {0};
+	cmd_create(&cmd, init_name, "-o", abs_out_path, "-p", install_prefix, "-C", path, "build", NULL);
+
+	LOG_INFO("%s" CLEAR ": Building dependency...", human);
+	int const rv = cmd_exec(&cmd);
+	cmd_log(&cmd, NULL, human, "build dependency", "built dependency", false);
+
+	return rv;
+}
+
 int deps_download(flamingo_val_t* deps) {
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
 
@@ -63,6 +74,9 @@ int deps_download(flamingo_val_t* deps) {
 			return -1;
 		}
 
+		char* CLEANUP_STR dep_path = NULL;
+		char* CLEANUP_STR human = NULL;
+
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
 			if (local_path == NULL) {
 				LOG_FATAL("Local dependency must have a 'local_path' attribute." PLZ_REPORT);
@@ -87,11 +101,13 @@ int deps_download(flamingo_val_t* deps) {
 				return -1;
 			}
 
-			char* human = strrchr(abs_path, '/');
+			human = strrchr(abs_path, '/');
 			assert(human++ != NULL);
+			human = strdup(human);
+			assert(human != NULL);
+
 			uint64_t const hash = str_hash(abs_path, strlen(abs_path));
 
-			char* CLEANUP_STR dep_path = NULL;
 			asprintf(&dep_path, "%s/%s.%" PRIx64 ".local", deps_path, human, hash);
 			assert(dep_path != NULL);
 
@@ -129,19 +145,20 @@ int deps_download(flamingo_val_t* deps) {
 
 			char* const CLEANUP_STR tmp = strndup(git_url->str.str, git_url->str.size);
 			assert(tmp != NULL);
-			char* human = strrchr(tmp, '/');
-			human = human == NULL ? tmp : human + 1;
+
+			human = strrchr(tmp, '/');
+			human = strdup(human == NULL ? tmp : human + 1);
+			assert(human != NULL);
 
 			uint64_t const hash =
 				str_hash(git_url->str.str, git_url->str.size) ^
 				str_hash(git_branch->str.str, git_branch->str.size);
 
-			char* CLEANUP_STR dep_path = NULL;
 			asprintf(&dep_path, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
 			assert(dep_path != NULL);
 
 			if (access(dep_path, F_OK) == 0) {
-				continue;
+				goto downloaded;
 			}
 
 			// If nothing exists there yet, clone the repo.
@@ -159,7 +176,7 @@ int deps_download(flamingo_val_t* deps) {
 			LOG_INFO("%s" CLEAR ": Git cloning...", human);
 
 			bool const failure = cmd_exec(&cmd) < 0;
-			cmd_log(&cmd, NULL, human, "git clone", "git cloned");
+			cmd_log(&cmd, NULL, human, "git clone", "git cloned", false);
 
 			if (failure) {
 				return -1;
@@ -170,14 +187,19 @@ int deps_download(flamingo_val_t* deps) {
 			LOG_FATAL("Unknown value for dependency 'kind': '%.*s'." PLZ_REPORT, (int) kind->str.size, kind->str.str);
 			return -1;
 		}
-	}
 
-	// Just do a BFS here, going down the tree.
-	// Probably I should have a 'get-deps' command, which does this step and returns a list of paths to these dependencies and probably also the edges of the dependency graph so we can get a fuller picture.
-	// Does it make sense here to download all of them to a common deps directory for all Bob projects for reuse, Poetry-style?
-	// I guess so, and then the name on the filesystem could be `'%s.local' % strhash(realpath(element))` for local stuff and `'%s.git' % (strhash(url)^ strhash(branch))` for stuff downloaded from git.
-	// Once all the downloading is done, do the smart building thing where cores are allocated and reallocated to dependencies dynamically.
-	// This is gonna be pretty complex so I should probably bring this out into a deps.c file.
+		// If we're here, we've successfully downloaded the dependency.
+		// Now, build it.
+
+downloaded:
+
+		assert(dep_path != NULL);
+		assert(human != NULL);
+
+		if (build(human, dep_path) < 0) {
+			return -1;
+		}
+	}
 
 	return 0;
 }
