@@ -28,6 +28,7 @@ bool debugging = false;
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
+char* deps_path = NULL;
 
 bool running_as_root = false;
 uid_t owner = 0;
@@ -183,6 +184,34 @@ int main(int argc, char* argv[]) {
 
 	if (access(install_prefix, F_OK) < 0) {
 		LOG_FATAL("Installation prefix \"%s\" does not exist", install_prefix);
+		return EXIT_FAILURE;
+	}
+
+	// Get the dependencies path.
+
+	deps_path = getenv("BOB_DEPS_PATH");
+
+	if (deps_path == NULL) {
+		char const* const home = getenv("HOME");
+
+		// XXX Don't worry about freeing these.
+
+		if (home != NULL) {
+			asprintf(&deps_path, "%s/%s", home, ".cache/bob/deps");
+		}
+
+		else {
+			asprintf(&deps_path, "%s/%s", abs_out_path, "deps");
+			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
+		}
+
+		assert(deps_path != NULL);
+	}
+
+	// Ensure it exists.
+
+	if (mkdir_recursive(deps_path, 0755) < 0) {
+		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
