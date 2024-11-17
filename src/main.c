@@ -122,10 +122,9 @@ int main(int argc, char* argv[]) {
 	}
 
 	char const* const rel_project_path = project_path;
-	project_path = realpath(rel_project_path, NULL);
+	project_path = realerpath(rel_project_path);
 
 	if (project_path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
 		return EXIT_FAILURE;
 	}
@@ -159,10 +158,9 @@ int main(int argc, char* argv[]) {
 
 	// Get absolute output path.
 
-	abs_out_path = realpath(out_path, NULL);
+	abs_out_path = realerpath(out_path);
 
 	if (abs_out_path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
@@ -222,14 +220,10 @@ int main(int argc, char* argv[]) {
 	// by searching through 'PATH'.
 	// TODO Shouldn't this be relative to 'project_path' if one is set?
 
-	char const* const abs_init_name = realpath(init_name, NULL);
+	char const* const abs_init_name = realerpath(init_name);
 
 	if (abs_init_name != NULL) {
 		init_name = abs_init_name;
-	}
-
-	else {
-		assert(errno != ENOMEM);
 	}
 
 	// Identify the build system.
