@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <common.h>
+
 #include <deps.h>
 
-#include <common.h>
 #include <logging.h>
 #include <str.h>
 
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
