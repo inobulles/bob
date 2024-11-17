@@ -289,7 +289,7 @@ static int run(int argc, char* argv[]) {
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
 	flamingo_var_t* vec = NULL;
 
-	cmd_t __attribute__((cleanup(cmd_free))) cmd = {0};
+	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, NULL);
 
 	for (size_t i = 0; i < scope->vars_size; i++) {
