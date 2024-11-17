@@ -25,6 +25,14 @@ bsys_t const* bsys_identify(void) {
 	return NULL;
 }
 
+int bsys_deps(bsys_t const* bsys) {
+	if (bsys->deps == NULL) {
+		return 0;
+	}
+
+	return bsys->deps();
+}
+
 int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
