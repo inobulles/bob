@@ -3,7 +3,14 @@
 
 #include <deps.h>
 
+#include <common.h>
 #include <logging.h>
+#include <str.h>
+
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <unistd.h>
 
 int deps_download(flamingo_val_t* deps) {
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
@@ -63,7 +70,30 @@ int deps_download(flamingo_val_t* deps) {
 				return -1;
 			}
 
+			// Generate path for dependency in deps directory.
+
+			char* const CLEANUP_STR path = strndup(local_path->str.str, local_path->str.size);
+			assert(path != NULL);
+
+			char* const CLEANUP_STR abs_path = realpath(path, NULL);
+
+			if (abs_path == NULL) {
+				assert(errno != ENOMEM);
+				LOG_FATAL("realpath(\"%s\"): %s", path, strerror(errno));
+				return -1;
+			}
+
+			char* CLEANUP_STR dep_path = NULL;
+			asprintf(&dep_path, "%s/%s.%" PRIx64 ".local", deps_path, strrchr(abs_path, '/'), str_hash(abs_path, strlen(abs_path)));
+			assert(dep_path != NULL);
+
 			// Create symlink from dependency to deps directory.
+			// We're creating a symlink and not a hard one because, since we're depending the unique name of the dependency on it's original path, we want to break thing if it's ever moved.
+
+			if (symlink(path, dep_path) < 0 && errno != EEXIST) {
+				LOG_FATAL("link(\"%s\", \"%s\"): %s", path, dep_path, strerror(errno));
+				return -1;
+			}
 		}
 
 		else if (flamingo_cstrcmp(kind->str.str, "git", kind->str.size) == 0) {
