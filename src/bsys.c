@@ -39,7 +39,14 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 		return 0;
 	}
 
+	// Install dependencies.
+
+	if (bsys_deps(bsys) < 0) {
+		return -1;
+	}
+
 	// Ensure the output path exists.
+	// TODO Do this with mkdir_recursive? Do this in main.c?
 
 	if (bsys->key != NULL) {
 		char* CLEANUP_STR path;
