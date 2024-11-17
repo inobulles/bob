@@ -81,10 +81,9 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	// Get absolute path of source.
 
 	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
-	char* const CLEANUP_STR path = realpath(key, NULL);
+	char* const CLEANUP_STR path = realerpath(key);
 
 	if (path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
 		return -1;
 	}
