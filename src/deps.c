@@ -21,22 +21,22 @@ int deps_download(flamingo_val_t* deps) {
 		flamingo_val_t* git_branch = NULL;
 
 		for (size_t j = 0; j < val->inst.scope->vars_size; j++) {
-			flamingo_val_t* const inner = val->inst.scope->vars[j].val;
+			flamingo_var_t* const inner = &val->inst.scope->vars[j];
 
-			if (flamingo_cstrcmp(inner->name, "kind", inner->name_size) == 0) {
-				kind = inner;
+			if (flamingo_cstrcmp(inner->key, "kind", inner->key_size) == 0) {
+				kind = inner->val;
 			}
 
-			else if (flamingo_cstrcmp(inner->name, "local_path", inner->name_size) == 0) {
-				local_path = inner;
+			else if (flamingo_cstrcmp(inner->key, "local_path", inner->key_size) == 0) {
+				local_path = inner->val;
 			}
 
-			else if (flamingo_cstrcmp(inner->name, "git_url", inner->name_size) == 0) {
-				git_url = inner;
+			else if (flamingo_cstrcmp(inner->key, "git_url", inner->key_size) == 0) {
+				git_url = inner->val;
 			}
 
-			else if (flamingo_cstrcmp(inner->name, "git_branch", inner->name_size) == 0) {
-				git_branch = inner;
+			else if (flamingo_cstrcmp(inner->key, "git_branch", inner->key_size) == 0) {
+				git_branch = inner->val;
 			}
 		}
 
@@ -66,7 +66,7 @@ int deps_download(flamingo_val_t* deps) {
 			// Create symlink from dependency to deps directory.
 		}
 
-		else if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
+		else if (flamingo_cstrcmp(kind->str.str, "git", kind->str.size) == 0) {
 			if (git_url == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_url' attribute." PLZ_REPORT);
 				return -1;
@@ -92,6 +92,7 @@ int deps_download(flamingo_val_t* deps) {
 
 		else {
 			LOG_FATAL("Unknown value for dependency 'kind': '%.*s'." PLZ_REPORT, (int) kind->str.size, kind->str.str);
+			return -1;
 		}
 	}
 
