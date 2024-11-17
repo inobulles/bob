@@ -270,17 +270,6 @@ uh_oh:
 		return -1;
 	}
 
-	// Make sure the dependencies directory exists.
-
-	char* CLEANUP_STR path = NULL;
-	asprintf(&path, "%s/deps", out_path);
-	assert(path != NULL);
-
-	if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
-		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
-		return -1;
-	}
-
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
 	// Just do a BFS here, going down the tree.
 	// Probably I should have a 'get-deps' command, which does this step and returns a list of paths to these dependencies and probably also the edges of the dependency graph so we can get a fuller picture.
