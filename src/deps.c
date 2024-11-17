@@ -6,6 +6,7 @@
 #include <deps.h>
 
 #include <cmd.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <str.h>
 
@@ -93,10 +94,9 @@ int deps_download(flamingo_val_t* deps) {
 			char* const CLEANUP_STR path = strndup(local_path->str.str, local_path->str.size);
 			assert(path != NULL);
 
-			char* const CLEANUP_STR abs_path = realpath(path, NULL);
+			char* const CLEANUP_STR abs_path = realerpath(path);
 
 			if (abs_path == NULL) {
-				assert(errno != ENOMEM);
 				LOG_FATAL("realpath(\"%s\"): %s", path, strerror(errno));
 				return -1;
 			}
