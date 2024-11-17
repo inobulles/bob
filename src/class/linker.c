@@ -144,7 +144,7 @@ link:;
 		set_owner(out);
 	}
 
-	cmd_log(&cmd, out, pretty, bss->infinitive, bss->past);
+	cmd_log(&cmd, out, pretty, bss->infinitive, bss->past, true);
 	cmd_free(&cmd);
 
 	if (rv == 0) {
