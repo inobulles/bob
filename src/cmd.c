@@ -307,6 +307,10 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 	// Write out log to file, only if there is one.
 	// If not, attempt to remove the existing one anyway.
 
+	if (cookie == NULL) {
+		return;
+	}
+
 	char* CLEANUP_STR path;
 	asprintf(&path, "%s.log", cookie);
 	assert(path != NULL);
