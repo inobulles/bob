@@ -5,6 +5,7 @@
 
 #include <deps.h>
 
+#include <cmd.h>
 #include <logging.h>
 #include <str.h>
 
@@ -51,6 +52,7 @@ int deps_download(flamingo_val_t* deps) {
 		}
 
 		// Make sure everything checks out and take action.
+		// TODO Make all of these frugal.
 
 		if (kind == NULL) {
 			LOG_FATAL("Dependency must have a 'kind' attribute." PLZ_REPORT);
@@ -86,8 +88,12 @@ int deps_download(flamingo_val_t* deps) {
 				return -1;
 			}
 
+			char* human = strrchr(abs_path, '/');
+			assert(human++ != NULL);
+			uint64_t const hash = str_hash(abs_path, strlen(abs_path));
+
 			char* CLEANUP_STR dep_path = NULL;
-			asprintf(&dep_path, "%s/%s.%" PRIx64 ".local", deps_path, strrchr(abs_path, '/'), str_hash(abs_path, strlen(abs_path)));
+			asprintf(&dep_path, "%s/%s.%" PRIx64 ".local", deps_path, human, hash);
 			assert(dep_path != NULL);
 
 			// Create symlink from dependency to deps directory.
@@ -120,7 +126,35 @@ int deps_download(flamingo_val_t* deps) {
 				return -1;
 			}
 
-			// TODO Download git repo to deps directory.
+			// Clone git repo to deps directory.
+
+			char* const CLEANUP_STR tmp = strndup(git_url->str.str, git_url->str.size);
+			assert(tmp != NULL);
+			char* human = strrchr(tmp, '/');
+			human = human == NULL ? tmp : human + 1;
+
+			uint64_t const hash =
+				str_hash(git_url->str.str, git_url->str.size) ^
+				str_hash(git_branch->str.str, git_branch->str.size);
+
+			cmd_t CMD_CLEANUP cmd = {0};
+
+			cmd_create(&cmd, "git", "clone", NULL);
+			cmd_addf(&cmd, "%.*s", (int) git_url->str.size, git_url->str.str);
+			cmd_addf(&cmd, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
+			cmd_add(&cmd, "--depth");
+			cmd_add(&cmd, "1");
+			cmd_add(&cmd, "--branch");
+			cmd_addf(&cmd, "%.*s", (int) git_branch->str.size, git_branch->str.str);
+
+			LOG_INFO("%s" CLEAR ": Git cloning...", human);
+
+			bool const failure = cmd_exec(&cmd) < 0;
+			cmd_log(&cmd, NULL, human, "git clone", "git cloned");
+
+			if (failure) {
+				return -1;
+			}
 		}
 
 		else {
