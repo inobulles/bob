@@ -234,6 +234,12 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	else if (strcmp(instr, "sh") == 0) {
+		if (bsys_sh(bsys, argc, argv) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
+
 	else if (strcmp(instr, "install") == 0) {
 		if (bsys_install(bsys) == 0) {
 			rv = EXIT_SUCCESS;
