@@ -50,10 +50,9 @@ void usage(void) {
 
 	fprintf(
 		stderr,
-		"usage: %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] "
-		"build\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] run "
-		"[args ...]\n"
+		"usage: %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] sh [args ...]\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] " "install\n",
 		progname
 	);
