@@ -4,6 +4,7 @@
 #include <common.h>
 
 #include <bsys.h>
+#include <cmd.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -119,18 +120,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 	return bsys->install(path);
 }
 
-int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
-	if (install(bsys, true) < 0) {
-		return -1;
-	}
-
-	if (bsys->run == NULL) {
-		LOG_WARN("%s: build system does not have a run step; nothing to run!", bsys->name);
-		return 0;
-	}
-
-	// Set up environment to be inside the prefix.
-
+static void setup_environment(void) {
 	prepend_env("PATH", "%s/prefix/bin", out_path);
 
 	prepend_env(
@@ -141,10 +131,58 @@ int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
 		"%s/prefix/lib",
 		out_path
 	);
+}
 
-	// Actually run.
+int bsys_run(bsys_t const* bsys, int argc, char* argv[]) {
+	if (install(bsys, true) < 0) {
+		return -1;
+	}
+
+	if (bsys->run == NULL) {
+		LOG_WARN("%s: build system does not have a run step; nothing to run!", bsys->name);
+		return 0;
+	}
+
+	setup_environment();
 
 	return bsys->run(argc, argv);
+}
+
+int bsys_sh(bsys_t const* bsys, int argc, char* argv[]) {
+	if (install(bsys, true) < 0) {
+		return -1;
+	}
+
+	setup_environment();
+
+	// Actually run command.
+
+	cmd_t __attribute__((cleanup(cmd_free))) cmd = {0};
+	cmd_create(&cmd, NULL);
+
+	if (argc == 0) {
+		char const* const shell = getenv("SHELL");
+
+		if (shell == NULL) {
+			LOG_FATAL("No command passed to 'bob sh' and $SHELL not set.");
+			return -1;
+		}
+
+		cmd_add(&cmd, shell);
+	}
+
+	else {
+		for (int i = 1; i < argc; i++) {
+			cmd_add(&cmd, argv[i]);
+		}
+	}
+
+	if (cmd_exec_inplace(&cmd) < 0) {
+		LOG_ERROR("Failed to run command.");
+		return -1;
+	}
+
+	assert(false); // This should never be reached if 'cmd_exec_inplace' succeeds.
 }
 
 int bsys_install(bsys_t const* bsys) {
