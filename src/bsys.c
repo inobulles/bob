@@ -49,7 +49,7 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	// TODO Do this with mkdir_recursive? Do this in main.c?
 
 	if (bsys->key != NULL) {
-		char* CLEANUP_STR path;
+		char* STR_CLEANUP path;
 		asprintf(&path, "%s/%s", out_path, bsys->key);
 		assert(path != NULL);
 
@@ -71,7 +71,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 
 	va_start(args, fmt);
 
-	char* CLEANUP_STR val;
+	char* STR_CLEANUP val;
 	vasprintf(&val, fmt, args);
 	assert(val != NULL);
 
@@ -87,7 +87,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 	else {
 		// We prepend because earlier entries searched first.
 
-		char* CLEANUP_STR new;
+		char* STR_CLEANUP new;
 		asprintf(&new, "%s:%s", val, prev);
 		assert(new != NULL);
 
@@ -107,7 +107,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	// Ensure the output path exists.
 
-	char* CLEANUP_STR path;
+	char* STR_CLEANUP path;
 
 	if (to_prefix) {
 		asprintf(&path, "%s/prefix", out_path);

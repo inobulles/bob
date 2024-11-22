@@ -112,7 +112,7 @@ static char* find_bin(cmd_t* cmd) {
 		_exit(EXIT_FAILURE);
 	}
 
-	char* const CLEANUP_STR orig_search = strdup(path);
+	char* const STR_CLEANUP orig_search = strdup(path);
 	assert(orig_search != NULL);
 	char* search = orig_search;
 
@@ -136,7 +136,7 @@ static char* find_bin(cmd_t* cmd) {
 
 int cmd_exec_inplace(cmd_t* cmd) {
 	assert(cmd->len > 1);
-	char* const CLEANUP_STR path = find_bin(cmd);
+	char* const STR_CLEANUP path = find_bin(cmd);
 
 	if (path == NULL) {
 		return -1;
@@ -148,7 +148,7 @@ int cmd_exec_inplace(cmd_t* cmd) {
 pid_t cmd_exec_async(cmd_t* cmd) {
 	// Find binary.
 
-	char* const CLEANUP_STR path = find_bin(cmd);
+	char* const STR_CLEANUP path = find_bin(cmd);
 
 	if (path == NULL) {
 		return -1;
@@ -270,7 +270,7 @@ char* cmd_read_out(cmd_t* cmd) {
 	// If we terminated due to a signal, append that to the output.
 
 	if (cmd->sig != 0) {
-		char* CLEANUP_STR sig_str = NULL;
+		char* STR_CLEANUP sig_str = NULL;
 		asprintf(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
 		assert(sig_str != NULL);
 		size_t const sig_len = strlen(sig_str);
@@ -286,7 +286,7 @@ char* cmd_read_out(cmd_t* cmd) {
 }
 
 void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past, bool log_success) {
-	char* const CLEANUP_STR out = cmd_read_out(cmd);
+	char* const STR_CLEANUP out = cmd_read_out(cmd);
 	bool const is_out = out[0] != '\0';
 	bool const log_out = is_out && (log_success || cmd->rv < 0);
 	char* const suffix = log_out ? ":" : ".";
@@ -314,7 +314,7 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 		return;
 	}
 
-	char* CLEANUP_STR path;
+	char* STR_CLEANUP path;
 	asprintf(&path, "%s.log", cookie);
 	assert(path != NULL);
 

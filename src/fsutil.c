@@ -45,7 +45,7 @@ int copy(char const* src, char const* dst, char** err) {
 	}
 
 	bool const is_dir = S_ISDIR(sb.st_mode);
-	char* CLEANUP_STR dir_src = NULL;
+	char* STR_CLEANUP dir_src = NULL;
 
 	if (is_dir) {
 		asprintf(&dir_src, "%s/", src);
@@ -93,7 +93,7 @@ int set_owner(char const* path) {
 	// If the absolute output path hasn't yet been set, this is being called as a means to ensure the output path exists.
 	// That being the case, we can skip to the chown call.
 
-	char* CLEANUP_STR full_path = NULL;
+	char* STR_CLEANUP full_path = NULL;
 
 	if (abs_out_path == NULL) {
 		goto chown;
@@ -149,10 +149,10 @@ int mkdir_recursive(char const* path, mode_t mode) {
 		return -1;
 	}
 
-	char* CLEANUP_STR copy = strdup(path);
+	char* STR_CLEANUP copy = strdup(path);
 	assert(copy != NULL);
 
-	char* CLEANUP_STR accum = strdup("");
+	char* STR_CLEANUP accum = strdup("");
 	assert(accum != NULL);
 
 	char* bit;
@@ -162,7 +162,7 @@ int mkdir_recursive(char const* path, mode_t mode) {
 			continue;
 		}
 
-		char* CLEANUP_STR path = NULL;
+		char* STR_CLEANUP path = NULL;
 		asprintf(&path, "%s/%s", accum, bit);
 		assert(path != NULL);
 
@@ -196,7 +196,7 @@ char* realerpath(char const* path) {
 #define R realpath
 
 	if (home != NULL) {
-		char* CLEANUP_STR intermediary = NULL;
+		char* STR_CLEANUP intermediary = NULL;
 		asprintf(&intermediary, "%s/%s", home, path);
 		final = R(intermediary, NULL);
 	}
