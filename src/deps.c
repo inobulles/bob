@@ -75,8 +75,8 @@ int deps_download(flamingo_val_t* deps) {
 			return -1;
 		}
 
-		char* CLEANUP_STR dep_path = NULL;
-		char* CLEANUP_STR human = NULL;
+		char* STR_CLEANUP dep_path = NULL;
+		char* STR_CLEANUP human = NULL;
 
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
 			if (local_path == NULL) {
@@ -91,10 +91,10 @@ int deps_download(flamingo_val_t* deps) {
 
 			// Generate path for dependency in deps directory.
 
-			char* const CLEANUP_STR path = strndup(local_path->str.str, local_path->str.size);
+			char* const STR_CLEANUP path = strndup(local_path->str.str, local_path->str.size);
 			assert(path != NULL);
 
-			char* const CLEANUP_STR abs_path = realerpath(path);
+			char* const STR_CLEANUP abs_path = realerpath(path);
 
 			if (abs_path == NULL) {
 				LOG_FATAL("realpath(\"%s\"): %s", path, strerror(errno));
@@ -143,7 +143,7 @@ int deps_download(flamingo_val_t* deps) {
 
 			// Get dependency path of git repo.
 
-			char* const CLEANUP_STR tmp = strndup(git_url->str.str, git_url->str.size);
+			char* const STR_CLEANUP tmp = strndup(git_url->str.str, git_url->str.size);
 			assert(tmp != NULL);
 
 			human = strrchr(tmp, '/');

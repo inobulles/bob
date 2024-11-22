@@ -20,7 +20,7 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 
 	assert(flags->kind == FLAMINGO_VAL_KIND_VEC);
 
-	char* CLEANUP_STR flag_str = calloc(1, 1);
+	char* STR_CLEANUP flag_str = calloc(1, 1);
 	assert(flag_str != NULL);
 
 	size_t size = 0;
@@ -42,7 +42,7 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 	// If they differ, we also write out the new flags.
 
 	FILE* f = fopen(path, "rw");
-	char* CLEANUP_STR prev_flag_str = NULL;
+	char* STR_CLEANUP prev_flag_str = NULL;
 
 	if (f == NULL) {
 		goto write_out;

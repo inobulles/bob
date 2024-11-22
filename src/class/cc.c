@@ -65,7 +65,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	add_flags(&cmd, task);
 
 	int const rv = cmd_exec(&cmd);
-	char* CLEANUP_STR out = cmd_read_out(&cmd);
+	char* STR_CLEANUP out = cmd_read_out(&cmd);
 
 	if (rv < 0) {
 		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild!", task->src, cc);
@@ -197,7 +197,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	fseek(f, 0, SEEK_END);
 	long const deps_size = ftell(f);
 
-	char* CLEANUP_STR headers = malloc(deps_size + 1);
+	char* STR_CLEANUP headers = malloc(deps_size + 1);
 	assert(headers != NULL);
 
 	rewind(f);
