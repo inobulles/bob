@@ -174,6 +174,12 @@ int bsys_sh(bsys_t const* bsys, int argc, char* argv[]) {
 
 	else {
 		for (int i = 0; i < argc; i++) {
+			// On BSD/macOS, getopt doesn't consume the '--' argument.
+
+			if (strcmp(argv[i], "--") == 0) {
+				continue;
+			}
+
 			cmd_add(&cmd, argv[i]);
 		}
 	}

@@ -53,7 +53,7 @@ You can also just run any command you want by passing it to `bob sh`, like so:
 
 ```console
 bob sh echo test
-bob sh sh -c "echo \$PATH"
+bob sh -- sh -c "echo \$PATH"
 ```
 
 The second command will print out the value of the `$PATH` environment variable, and it should be prepended by the `bin` directory of the temporary installation prefix.
