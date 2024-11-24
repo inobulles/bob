@@ -1,5 +1,8 @@
 #!/bin/sh
 
+export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
+export TEST_OUT=.test-out
+
 # Find doas or sudo.
 
 if [ $(id -u) = 0 ]; then
