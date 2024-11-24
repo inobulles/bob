@@ -59,6 +59,9 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 
 	fclose(f);
 
+	// Note that we want to compare the order of these flags too, so just compare the strings.
+	// There could be some cases where flipping the order of flags could change the build, which is perhaps rare but let's not try to be too smart here.
+
 	if (strcmp(prev_flag_str, flag_str) != 0) {
 		goto write_out;
 	}
