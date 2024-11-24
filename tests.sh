@@ -3,10 +3,13 @@
 export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
 
-if which -s sudo; then
+if [ $(uname) = "Linux" ]; then
+	# XXX Linux is annoying, 'which -s' doesn't exist.
 	export SUDO=sudo
 elif which -s doas; then
 	export SUDO=doas
+elif which -s sudo; then
+	export SUDO=sudo
 else
 	echo "No sudo or doas found."
 	exit 1
