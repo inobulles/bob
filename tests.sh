@@ -4,9 +4,9 @@ export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
 
 if which -s sudo; then
-	SUDO=sudo
+	export SUDO=sudo
 elif which -s doas; then
-	SUDO=doas
+	export SUDO=doas
 else
 	echo "No sudo or doas found."
 	exit 1
