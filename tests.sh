@@ -19,9 +19,10 @@ else
 	exit 1
 fi
 
-# Install Bob.
-
+echo "Bootstrapping Bob..."
 sh bootstrap.sh
+
+echo "Installing Bob..."
 $SUDO .bootstrap/bob install > /dev/null
 
 # Actually run the tests.

@@ -14,9 +14,7 @@ jobs:
         with:
           version: latest
           platform: x64
-      - name: Bootstrap
-        run: sh bootstrap.sh
-      - name: Tests
+      - name: Run tests
         run: sh tests.sh
       - name: Set up tmate session
         if: ${{ failure() }}
@@ -35,9 +33,7 @@ jobs:
       ASAN_OPTIONS: detect_leaks=0
     steps:
       - uses: actions/checkout@v4
-      - name: Bootstrap
-        run: sh bootstrap.sh
-      - name: Tests
+      - name: Run tests
         run: sh tests.sh
       - name: Set up tmate session
         if: ${{ failure() }}
