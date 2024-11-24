@@ -19,7 +19,7 @@ SUDO rm -rf tests/chown/.bob $INSTALL_PATH
 USER=bobtestuser
 
 if [ $(uname) = "Linux" ] || [ $(uname) = "FreeBSD" ]; then
-	useradd -m $USER
+	SUDO useradd -m $USER
 elif [ $(uname) = "Darwin" ]; then
 	out=$(SUDO sysadminctl -addUser $USER 2>&1)
 
