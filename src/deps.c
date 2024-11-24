@@ -17,9 +17,12 @@
 #include <string.h>
 #include <unistd.h>
 
-static int build(char const* human, char const* path) {
+// REMME (But don't forget to copy the comment about -o; I think this is important!)
+
+__attribute__((unused)) static int build(char const* human, char const* path) {
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-o", abs_out_path, "-p", install_prefix, "-C", path, "build", NULL);
+	// TODO Wait no the -o passed to a dependency when building should really be its own output path. -p is the only thing that should be in common. That being said, that raises the issue of if a dependency wants to use a different output path. Maybe there should be a function in Bob to set the output path to something else instead of having an -o switch?
+	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, "build", NULL);
 
 	LOG_INFO("%s" CLEAR ": Building dependency...", human);
 	int const rv = cmd_exec(&cmd);
@@ -189,16 +192,27 @@ int deps_download(flamingo_val_t* deps) {
 		}
 
 		// If we're here, we've successfully downloaded the dependency.
-		// Now, build it.
+		// Run the 'dep-list' command on it and add the resulting dependency trees to ours.
 
 downloaded:
 
 		assert(dep_path != NULL);
 		assert(human != NULL);
 
-		if (build(human, dep_path) < 0) {
+		cmd_t CMD_CLEANUP cmd;
+		cmd_create(&cmd, init_name, "-o", abs_out_path, "-p", install_prefix, "-C", dep_path, "dep-tree", NULL);
+
+		int const rv = cmd_exec(&cmd);
+		char* const STR_CLEANUP out = cmd_read_out(&cmd);
+
+		if (rv < 0) {
+			LOG_FATAL("Failed to get Dependency tree of '%s'%s", human, out ? ":" : ".");
+			printf("%s", out);
 			return -1;
 		}
+
+		dep_node_t* const dep_node = dep_node_deserialize(out);
+		(void) dep_node;
 	}
 
 	return 0;
