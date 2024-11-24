@@ -3,7 +3,7 @@ set -e
 
 # Test installing programs.
 
-$SUDO bob install
+$SUDO .bootstrap/bob install
 bob build
 
 [ -d /usr/local/share/bob/skeletons ]
