@@ -1,35 +1,25 @@
 #!/bin/sh
 
+. tests/common.sh
+
 export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
-
-# Find doas or sudo.
-
-if [ $(id -u) = 0 ]; then
-	export SUDO=
-elif [ $(uname) = "Linux" ]; then
-	# XXX Linux is annoying, 'which -s' doesn't exist.
-	export SUDO=sudo -E
-elif which -s doas; then
-	export SUDO=doas
-elif which -s sudo; then
-	export SUDO=sudo -E
-else
-	echo "No sudo or doas found." >&2
-	exit 1
-fi
 
 echo "Bootstrapping Bob..."
 sh bootstrap.sh
 
 echo "Installing Bob..."
-$SUDO .bootstrap/bob install > /dev/null
+SUDO .bootstrap/bob install > /dev/null
 
 # Actually run the tests.
 
 all_passed=1
 
 for test in $(ls -p tests | grep -v /); do
+	if [ $test = "common.sh" ]; then
+		continue
+	fi
+
 	if [ -d $test ]; then
 		continue
 	fi

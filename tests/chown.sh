@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+. tests/common.sh
+
 # Regression test for the following PR:
 # https://github.com/inobulles/bob/pull/69
 # Basically, there's this feature which chown's generated files to the owner of the project directory when running Bob as root.
@@ -10,7 +12,7 @@ set -e
 # Make sure everything is clean.
 
 INSTALL_PATH=/usr/local/share/bob_chown_test.fl
-$SUDO rm -rf tests/chown/.bob $INSTALL_PATH
+SUDO rm -rf tests/chown/.bob $INSTALL_PATH
 
 # Create a user.
 
@@ -19,7 +21,7 @@ USER=bobtestuser
 if [ $(uname) = "Linux" ] || [ $(uname) = "FreeBSD" ]; then
 	useradd -m $USER
 elif [ $(uname) = "Darwin" ]; then
-	out=$($SUDO sysadminctl -addUser $USER 2>&1)
+	out=$(SUDO sysadminctl -addUser $USER 2>&1)
 
 	if [ $? != 0 ]; then
 		echo "Failed to create user: $out" >&2
@@ -32,15 +34,15 @@ fi
 
 # Chown the project directory to that user.
 
-$SUDO chown -R bobtestuser tests/chown
-$SUDO bob -C tests/chown build
+SUDO chown -R bobtestuser tests/chown
+SUDO bob -C tests/chown build
 
 if [ ! -z "$(find tests/chown ! -user bobtestuser)" ]; then
 	echo "Some files are not owned by bobtestuser in tests/chown." >&2
 	exit 1
 fi
 
-$SUDO bob -C tests/chown install
+SUDO bob -C tests/chown install
 
 # XXX Annoyingly, 'stat -f %Su' doesn't work on Linux (you have to use 'stat -c %U').
 
