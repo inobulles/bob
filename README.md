@@ -51,3 +51,11 @@ To install a project with Bob, run:
 ```console
 bob install
 ```
+
+## Testing
+
+To run the Bob tests, simply run:
+
+```console
+sh tests.sh
+```
