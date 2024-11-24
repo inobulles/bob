@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. tests/common.sh
+
 # Regression test for the following PR:
 # https://github.com/inobulles/bob/pull/71
 
