@@ -168,6 +168,7 @@ int bsys_sh(bsys_t const* bsys, int argc, char* argv[]) {
 			return -1;
 		}
 
+		LOG_SUCCESS("Entering shell ('%s').", shell);
 		cmd_add(&cmd, shell);
 	}
 
