@@ -2,9 +2,6 @@
 
 . tests/common.sh
 
-export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
-export TEST_OUT=.test-out
-
 echo "Bootstrapping Bob..."
 sh bootstrap.sh
 
