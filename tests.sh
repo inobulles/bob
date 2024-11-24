@@ -5,7 +5,9 @@ export TEST_OUT=.test-out
 
 # Find doas or sudo.
 
-if [ $(uname) = "Linux" ]; then
+if [ $(id -u) = 0 ]; then
+	export SUDO=
+elif [ $(uname) = "Linux" ]; then
 	# XXX Linux is annoying, 'which -s' doesn't exist.
 	export SUDO=sudo
 elif which -s doas; then
