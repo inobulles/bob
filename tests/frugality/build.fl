@@ -1,0 +1,13 @@
+import bob
+
+let src1 = "src1.c"
+let src2 = "src2.c"
+
+let obj = Cc(["-std=c11"]).compile([src1, src2])
+let linked = Linker([]).link(obj)
+
+install = {
+	obj[0]: "obj1.o",
+	obj[1]: "obj2.o",
+	linked: "bin",
+}
