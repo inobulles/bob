@@ -16,9 +16,9 @@ $SUDO rm -rf tests/chown/.bob $INSTALL_PATH
 
 USER=bobtestuser
 
-if [ $(uname) == "Linux" ] || [ $(uname) == "FreeBSD" ]; then
+if [ $(uname) = "Linux" ] || [ $(uname) = "FreeBSD" ]; then
 	useradd -m $USER
-elif [ $(uname) == "Darwin" ]; then
+elif [ $(uname) = "Darwin" ]; then
 	$SUDO sysadminctl -addUser $USER
 else
 	echo "Unsupported OS (don't know how to create a user)."
