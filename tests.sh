@@ -19,7 +19,8 @@ fi
 
 # Install Bob.
 
-$SUDO .bootstrap/bob install
+sh bootstrap.sh
+$SUDO .bootstrap/bob install > /dev/null
 
 # Actually run the tests.
 
