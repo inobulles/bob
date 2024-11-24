@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <fts.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static flamingo_val_t* list_val = NULL;
