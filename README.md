@@ -52,10 +52,11 @@ This will use the value stored in the `$SHELL` environment variable to launch a 
 You can also just run any command you want by passing it to `bob sh`, like so:
 
 ```console
-bob sh echo \$PATH
+bob sh echo test
+bob sh sh -c "echo \$PATH"
 ```
 
-This will print out the value of the `$PATH` environment variable, and it should be prepended by the `bin` directory of the temporary installation prefix.
+The second command will print out the value of the `$PATH` environment variable, and it should be prepended by the `bin` directory of the temporary installation prefix.
 
 ### Installing
 
