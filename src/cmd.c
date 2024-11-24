@@ -71,6 +71,18 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 	va_end(va);
 }
 
+void cmd_add_argv(cmd_t* cmd, int argc, char* argv[]) {
+	for (ssize_t i = 0; i < argc; i++) {
+		// On BSD/macOS, getopt doesn't consume the '--' argument.
+
+		if (strcmp(argv[i], "--") == 0) {
+			continue;
+		}
+
+		cmd_add(cmd, argv[i]);
+	}
+}
+
 static bool is_executable(char const* path) {
 	struct stat sb;
 
