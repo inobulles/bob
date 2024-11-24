@@ -7,7 +7,7 @@
 
 out=$(bob -C tests/run_path_traversal_order run 2>/dev/null)
 
-if [ $? == 0 ]; then
+if [ $? = 0 ]; then
 	echo "\$PATH was not set in order to find command; running should not have succeeded: $out" >&2
 	exit 1
 fi
