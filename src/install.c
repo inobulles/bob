@@ -14,7 +14,7 @@
 #include <libgen.h>
 
 static flamingo_val_t* install_map = NULL;
-static char const* prefix;
+static char const* prefix = NULL;
 
 int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 	// Find the install map.
@@ -183,11 +183,11 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 }
 
 int install_all(char const* _prefix) {
-	assert(_prefix == prefix);
-
 	if (install_map == NULL || prefix == NULL) {
 		return 0;
 	}
+
+	assert(_prefix == prefix);
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
 		flamingo_val_t* const val_val = install_map->map.vals[i];
