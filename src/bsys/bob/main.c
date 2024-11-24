@@ -284,9 +284,7 @@ found:;
 	// Then, add the arguments passed to the Bob frontend.
 	// If there is no default runner, just pass the arguments from the frontend onwards.
 
-	for (ssize_t i = 0; i < argc; i++) {
-		cmd_add(&cmd, argv[i]);
-	}
+	cmd_add_argv(&cmd, argc, argv);
 
 	// Make sure there actually is something in the command.
 
