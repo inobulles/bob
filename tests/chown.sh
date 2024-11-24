@@ -19,9 +19,14 @@ USER=bobtestuser
 if [ $(uname) = "Linux" ] || [ $(uname) = "FreeBSD" ]; then
 	useradd -m $USER
 elif [ $(uname) = "Darwin" ]; then
-	$SUDO sysadminctl -addUser $USER
+	out=$($SUDO sysadminctl -addUser $USER 2>&1)
+
+	if [ $? != 0 ]; then
+		echo "Failed to create user: $out" >&2
+		exit 1
+	fi
 else
-	echo "Unsupported OS (don't know how to create a user)."
+	echo "Unsupported OS (don't know how to create a user)." >&2
 	exit 1
 fi
 
@@ -31,7 +36,7 @@ $SUDO chown -R bobtestuser tests/chown
 $SUDO bob -C tests/chown build
 
 if [ ! -z "$(find tests/chown ! -user bobtestuser)" ]; then
-	echo "Some files are not owned by bobtestuser in tests/chown."
+	echo "Some files are not owned by bobtestuser in tests/chown." >&2
 	exit 1
 fi
 
@@ -42,6 +47,6 @@ $SUDO bob -C tests/chown install
 owner=$(ls -ld /usr/local/share/bob_chown_test.fl | awk '{print $3}')
 
 if [ $owner != "root" ]; then
-	echo "Installed files are not owned by root."
+	echo "Installed files are not owned by root." >&2
 	exit 1
 fi

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
+export ASAN_OPTIONS="detect_leaks=0" # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
 
 # Find doas or sudo.
@@ -15,7 +15,7 @@ elif which -s doas; then
 elif which -s sudo; then
 	export SUDO=sudo
 else
-	echo "No sudo or doas found."
+	echo "No sudo or doas found." >&2
 	exit 1
 fi
 
@@ -48,7 +48,7 @@ for test in $(ls -p tests | grep -v /); do
 done
 
 if [ $all_passed = 0 ]; then
-	echo "TESTS FAILED!"
+	echo "TESTS FAILED!" >&2
 	exit 1
 else
 	echo "ALL TESTS PASSED!"
