@@ -16,20 +16,8 @@ jobs:
           platform: x64
       - name: Bootstrap
         run: sh bootstrap.sh
-      - name: Test building Bob using Bob
-        run: .bootstrap/bob build
-      - name: Test running the version of Bob built with Bob
-        run: |
-          rm -rf .bob
-          .bootstrap/bob run build
-      - name: Test installing Bob
-        run: |
-          rm -rf .bob
-          sudo -E .bootstrap/bob install
-      - name: Test running the installed version of Bob
-        run: |
-          rm -rf .bob
-          bob build
+      - name: Tests
+        run: sh tests.sh
       - name: Set up tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
@@ -49,20 +37,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Bootstrap
         run: sh bootstrap.sh
-      - name: Test building Bob using Bob
-        run: .bootstrap/bob build
-      - name: Test running the version of Bob built with Bob
-        run: |
-          rm -rf .bob
-          .bootstrap/bob run build
-      - name: Test installing Bob
-        run: |
-          rm -rf .bob
-          sudo -E .bootstrap/bob install
-      - name: Test running the installed version of Bob
-        run: |
-          rm -rf .bob
-          bob build
+      - name: Tests
+        run: sh tests.sh
       - name: Set up tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
