@@ -5,8 +5,6 @@ on: [push, workflow_dispatch]
 jobs:
   run_tests:
     runs-on: ubuntu-latest
-    env:
-      ASAN_OPTIONS: detect_leaks=0
     steps:
       - uses: actions/checkout@v4
       - name: Set up compiler
@@ -29,8 +27,6 @@ jobs:
       matrix:
         os: [macos-13, macos-latest] # 'macos-13' is Intel, 'macos-latest' is M1.
     runs-on: ${{ matrix.os }}
-    env:
-      ASAN_OPTIONS: detect_leaks=0
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
