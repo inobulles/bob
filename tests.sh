@@ -3,6 +3,8 @@
 export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
 
+# Find doas or sudo.
+
 if [ $(uname) = "Linux" ]; then
 	# XXX Linux is annoying, 'which -s' doesn't exist.
 	export SUDO=sudo
@@ -14,6 +16,12 @@ else
 	echo "No sudo or doas found."
 	exit 1
 fi
+
+# Install Bob.
+
+$SUDO .bootstrap/bob install
+
+# Actually run the tests.
 
 all_passed=1
 

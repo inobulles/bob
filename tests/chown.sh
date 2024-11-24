@@ -28,14 +28,14 @@ fi
 # Chown the project directory to that user.
 
 $SUDO chown -R bobtestuser tests/chown
-$SUDO .bootstrap/bob -C tests/chown build
+$SUDO bob -C tests/chown build
 
 if [ ! -z "$(find tests/chown ! -user bobtestuser)" ]; then
 	echo "Some files are not owned by bobtestuser in tests/chown."
 	exit 1
 fi
 
-$SUDO .bootstrap/bob -C tests/chown install
+$SUDO bob -C tests/chown install
 
 # XXX Annoyingly, 'stat -f %Su' doesn't work on Linux (you have to use 'stat -c %U').
 
