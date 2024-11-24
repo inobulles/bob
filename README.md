@@ -42,6 +42,21 @@ To run a project with Bob, run:
 bob run
 ```
 
+Alternatively, you can enter the temporary installation prefix environment with:
+
+```console
+bob sh
+```
+
+This will use the value stored in the `$SHELL` environment variable to launch a shell inside of that prefix, similar to a Python virtual environment.
+You can also just run any command you want by passing it to `bob sh`, like so:
+
+```console
+bob sh echo \$PATH
+```
+
+This will print out the value of the `$PATH` environment variable, and it should be prepended by the `bin` directory of the temporary installation prefix.
+
 ### Installing
 
 Bob always helps his grandma install [Linux Mint](https://linuxmint.com/) on her computer! 👵
