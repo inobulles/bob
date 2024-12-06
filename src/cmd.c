@@ -130,7 +130,7 @@ static char* find_bin(cmd_t* cmd) {
 		free(full_path);
 	}
 
-	LOG_ERROR("Couldn't find binary '%s' in '$PATH'", cmd->args[0]);
+	LOG_ERROR("Couldn't find binary '%s' in '$PATH'.", cmd->args[0]);
 	return NULL;
 }
 
@@ -250,6 +250,10 @@ char* cmd_read_out(cmd_t* cmd) {
 
 	int const pipe = cmd->out;
 
+	if (pipe == -1) {
+		goto dont_read_pipe;
+	}
+
 	size_t total = 0;
 
 	char chunk[4096];
@@ -266,6 +270,8 @@ char* cmd_read_out(cmd_t* cmd) {
 	if (bytes < 0) {
 		LOG_WARN("%s: Failed to read from %d: %s", __func__, pipe, strerror(errno));
 	}
+
+dont_read_pipe:
 
 	// If we terminated due to a signal, append that to the output.
 
