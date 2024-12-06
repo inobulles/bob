@@ -226,7 +226,7 @@ err_fopen:
 	return rv;
 }
 
-static int deps(void) {
+static dep_node_t* dep_tree(void) {
 	// Find dependencies vector.
 
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
@@ -241,14 +241,14 @@ static int deps(void) {
 
 		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
 			LOG_FATAL("Dependencies vector must be a vector.");
-			return -1;
+			return NULL;
 		}
 
 		goto found;
 	}
 
 	LOG_FATAL("Dependencies vector was never declared." PLZ_REPORT);
-	return -1;
+	return NULL;
 
 found:
 
@@ -259,14 +259,14 @@ found:
 
 		if (val->kind != FLAMINGO_VAL_KIND_INST) {
 			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class.");
-			return -1;
+			return NULL;
 		}
 
 		flamingo_val_t* const class = val->inst.class;
 
 		if (flamingo_cstrcmp(class->name, "Dep", class->name_size) != 0) {
 			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class (not '%.*s').", (int) class->name_size, class->name);
-			return -1;
+			return NULL;
 		}
 	}
 
@@ -368,7 +368,7 @@ bsys_t const BSYS_BOB = {
 	.key = "bob",
 	.identify = identify,
 	.setup = setup,
-	.deps = deps,
+	.dep_tree = dep_tree,
 	.build = build,
 	.install = install,
 	.run = run,
