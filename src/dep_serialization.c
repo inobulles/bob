@@ -17,6 +17,13 @@
 static char* serialize_inner(dep_node_t* node, size_t depth);
 
 static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
+	// We wanna explicitly duplicate an empty string if no serialized string is passed instead of just relying on the 'realloc' call, because the node could very well not have any children.
+
+	if (serialized == NULL) {
+		serialized = strdup("");
+		assert(serialized != NULL);
+	}
+
 	for (size_t i = 0; i < node->child_count; i++) {
 		dep_node_t* const child = &node->children[i];
 		char* const STR_CLEANUP serialized_child = serialize_inner(child, depth);
