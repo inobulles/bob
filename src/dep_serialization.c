@@ -49,8 +49,8 @@ static char* serialize_inner(dep_node_t* node, size_t depth) {
 	memset(serialized, DEPTH_CHAR, depth);
 	memcpy(serialized + depth, node->path, len);
 
-	serialized[depth + len - 1] = '\n';
-	serialized[depth + len] = '\0';
+	serialized[depth + len] = '\n';
+	serialized[depth + len + 1] = '\0';
 
 	return add_children(serialized, node, depth + 1);
 }
