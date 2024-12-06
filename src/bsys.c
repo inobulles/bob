@@ -5,6 +5,7 @@
 
 #include <bsys.h>
 #include <cmd.h>
+#include <deps.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -25,12 +26,21 @@ bsys_t const* bsys_identify(void) {
 	return NULL;
 }
 
-int bsys_deps(bsys_t const* bsys) {
-	if (bsys->deps == NULL) {
+int bsys_dep_tree(bsys_t const* bsys) {
+	if (bsys->dep_tree == NULL) {
 		return 0;
 	}
 
-	return bsys->deps();
+	dep_node_t* const tree = bsys->dep_tree();
+
+	if (tree == NULL) {
+		return -1;
+	}
+
+	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
+
+	printf("%s", serialized);
+	return 0;
 }
 
 int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
@@ -39,11 +49,11 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 		return 0;
 	}
 
-	// Install dependencies.
+	// TODO Install dependencies.
 
-	if (bsys_deps(bsys) < 0) {
-		return -1;
-	}
+	// if (bsys_deps(bsys) < 0) {
+	// 	return -1;
+	// }
 
 	// Ensure the output path exists.
 	// TODO Do this with mkdir_recursive? Do this in main.c?

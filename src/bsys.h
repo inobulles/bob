@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <deps.h>
+
 #include <stdbool.h>
 
 typedef struct bsys_t bsys_t;
@@ -13,7 +15,7 @@ struct bsys_t {
 
 	bool (*identify)(void);
 	int (*setup)(void);
-	int (*deps)(void);
+	dep_node_t* (*dep_tree)(void);
 	int (*build)(char const* preinstall_prefix);
 	int (*install)(char const* prefix);
 	int (*run)(int argc, char* argv[]);
@@ -41,7 +43,7 @@ static bsys_t const* const BSYS[] = {
 };
 
 bsys_t const* bsys_identify(void);
-int bsys_deps(bsys_t const* bsys);
+int bsys_dep_tree(bsys_t const* bsys);
 int bsys_build(bsys_t const* bsys, char const* preinstall_prefix);
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_sh(bsys_t const* bsys, int argc, char* argv[]);

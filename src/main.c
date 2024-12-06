@@ -283,6 +283,9 @@ int main(int argc, char* argv[]) {
 	// This is purposefully undocumented, as it's really only used for communication between Bob parent processes and their Bob children processes.
 
 	else if (strcmp(instr, "dep-tree") == 0) {
+		if (bsys_dep_tree(bsys) == 0) {
+			rv = EXIT_SUCCESS;
+		}
 	}
 
 	else {
