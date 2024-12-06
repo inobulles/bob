@@ -119,6 +119,18 @@ int main(int argc, char* argv[]) {
 
 	bootstrap_import_path = realerpath(bootstrap_import_path);
 
+	// Make 'init_name' absolute.
+	// No biggie if we can't make it absolute, it's probably being run as a
+	// standalone command, in which case 'execute_async' can find it for us later
+	// by searching through 'PATH'.
+	// We must do this before potentially chdir'ing because this shouldn't be relative to 'project_path'.
+
+	char const* const abs_init_name = realerpath(init_name);
+
+	if (abs_init_name != NULL) {
+		init_name = abs_init_name;
+	}
+
 	// If project path wasn't set, set it to the current working directory.
 	// Then, make it absolute.
 	// Finally, actually change to that directory.
@@ -219,18 +231,6 @@ int main(int argc, char* argv[]) {
 	// TODO Make sure relative bin path is in '.gitignore'.
 
 	// validate_gitignore((char*) rel_bin_path);
-
-	// Make 'init_name' absolute.
-	// No biggie if we can't make it absolute, it's probably being run as a
-	// standalone command, in which case 'execute_async' can find it for us later
-	// by searching through 'PATH'.
-	// TODO Shouldn't this be relative to 'project_path' if one is set?
-
-	char const* const abs_init_name = realerpath(init_name);
-
-	if (abs_init_name != NULL) {
-		init_name = abs_init_name;
-	}
 
 	// Identify the build system.
 
