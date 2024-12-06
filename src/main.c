@@ -30,6 +30,7 @@ char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
 char* deps_path = NULL;
 char const* init_name = "bob";
+char const* bootstrap_import_path = "import";
 
 bool running_as_root = false;
 uid_t owner = 0;
@@ -111,6 +112,12 @@ int main(int argc, char* argv[]) {
 			exit(EXIT_FAILURE);
 		}
 	}
+
+	// Get the absolute bootstrap import path.
+	// We do this now as we might chdir into the project directory later.
+	// It's fine if realerpath returns NULL; this just means we're not bootstrapping.
+
+	bootstrap_import_path = realerpath(bootstrap_import_path);
 
 	// If project path wasn't set, set it to the current working directory.
 	// Then, make it absolute.
