@@ -20,4 +20,4 @@ int deps_download(flamingo_val_t* deps);
 // Dependency serialization.
 
 char* dep_node_serialize(dep_node_t* node);
-dep_node_t* dep_node_deserialize(char* serialized);
+int dep_node_deserialize(dep_node_t* root, char* serialized);
