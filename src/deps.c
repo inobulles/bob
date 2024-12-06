@@ -31,7 +31,17 @@ __attribute__((unused)) static int build(char const* human, char const* path) {
 	return rv;
 }
 
-int deps_download(flamingo_val_t* deps) {
+dep_node_t* deps_download(flamingo_val_t* deps) {
+	// TODO Free the tree when there are errors.
+
+	dep_node_t* const tree = calloc(1, sizeof *tree);
+
+	tree->is_root = true;
+	tree->path = NULL;
+
+	tree->child_count = 0;
+	tree->children = NULL;
+
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
 
 	for (size_t i = 0; i < deps->vec.count; i++) {
@@ -70,12 +80,12 @@ int deps_download(flamingo_val_t* deps) {
 
 		if (kind == NULL) {
 			LOG_FATAL("Dependency must have a 'kind' attribute." PLZ_REPORT);
-			return -1;
+			return NULL;
 		}
 
 		if (kind->kind != FLAMINGO_VAL_KIND_STR) {
 			LOG_FATAL("Dependency 'kind' attribute must be a string." PLZ_REPORT);
-			return -1;
+			return NULL;
 		}
 
 		char* STR_CLEANUP dep_path = NULL;
@@ -84,12 +94,12 @@ int deps_download(flamingo_val_t* deps) {
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
 			if (local_path == NULL) {
 				LOG_FATAL("Local dependency must have a 'local_path' attribute." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			if (local_path->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Local dependency 'local_path' attribute must be a string." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			// Generate path for dependency in deps directory.
@@ -100,8 +110,8 @@ int deps_download(flamingo_val_t* deps) {
 			char* const STR_CLEANUP abs_path = realerpath(path);
 
 			if (abs_path == NULL) {
-				LOG_FATAL("realpath(\"%s\"): %s", path, strerror(errno));
-				return -1;
+				LOG_FATAL("Could not get local dependency at '%s'.", path);
+				return NULL;
 			}
 
 			human = strrchr(abs_path, '/');
@@ -117,31 +127,31 @@ int deps_download(flamingo_val_t* deps) {
 			// Create symlink from dependency to deps directory.
 			// We're creating a symlink and not a hard one because, since we're depending the unique name of the dependency on it's original path, we want to break thing if it's ever moved.
 
-			if (symlink(path, dep_path) < 0 && errno != EEXIST) {
-				LOG_FATAL("link(\"%s\", \"%s\"): %s", path, dep_path, strerror(errno));
-				return -1;
+			if (symlink(abs_path, dep_path) < 0 && errno != EEXIST) {
+				LOG_FATAL("link(\"%s\", \"%s\"): %s", abs_path, dep_path, strerror(errno));
+				return NULL;
 			}
 		}
 
 		else if (flamingo_cstrcmp(kind->str.str, "git", kind->str.size) == 0) {
 			if (git_url == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_url' attribute." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			if (git_branch == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_branch' attribute." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			if (git_url->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Git dependency 'git_url' attribute must be a string." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			if (git_branch->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Git dependency 'git_branch' attribute must be a string." PLZ_REPORT);
-				return -1;
+				return NULL;
 			}
 
 			// Get dependency path of git repo.
@@ -182,17 +192,17 @@ int deps_download(flamingo_val_t* deps) {
 			cmd_log(&cmd, NULL, human, "git clone", "git cloned", false);
 
 			if (failure) {
-				return -1;
+				return NULL;
 			}
 		}
 
 		else {
 			LOG_FATAL("Unknown value for dependency 'kind': '%.*s'." PLZ_REPORT, (int) kind->str.size, kind->str.str);
-			return -1;
+			return NULL;
 		}
 
 		// If we're here, we've successfully downloaded the dependency.
-		// Run the 'dep-list' command on it and add the resulting dependency trees to ours.
+		// Run the 'dep-tree' command on it and add the resulting dependency trees to ours.
 
 downloaded:
 
@@ -206,14 +216,25 @@ downloaded:
 		char* const STR_CLEANUP out = cmd_read_out(&cmd);
 
 		if (rv < 0) {
-			LOG_FATAL("Failed to get Dependency tree of '%s'%s", human, out ? ":" : ".");
+			LOG_FATAL("Failed to get dependency tree of '%s'%s", human, out ? ":" : ".");
 			printf("%s", out);
-			return -1;
+			return NULL;
 		}
 
-		dep_node_t* const dep_node = dep_node_deserialize(out);
-		(void) dep_node;
+		dep_node_t node;
+
+		if (dep_node_deserialize(&node, out) < 0) {
+			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", human);
+			return NULL;
+		}
+
+		node.is_root = false;
+		node.path = strdup(dep_path);
+
+		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
+		assert(tree->children != NULL);
+		tree->children[tree->child_count++] = node;
 	}
 
-	return 0;
+	return tree;
 }

@@ -15,7 +15,7 @@ struct dep_node_t {
 	struct dep_node_t* children;
 };
 
-int deps_download(flamingo_val_t* deps);
+dep_node_t* deps_download(flamingo_val_t* deps);
 
 // Dependency serialization.
 
