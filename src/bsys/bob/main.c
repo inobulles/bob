@@ -171,7 +171,7 @@ static int setup(void) {
 	asprintf(&import_path, "%s/share/flamingo/import", install_prefix);
 	assert(import_path != NULL);
 
-	//flamingo_add_import_path(&flamingo, import_path);
+	flamingo_add_import_path(&flamingo, import_path);
 	free(import_path);
 
 	// Run build program.
