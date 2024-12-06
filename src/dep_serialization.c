@@ -62,8 +62,6 @@ char* dep_node_serialize(dep_node_t* node) {
 	return add_children(NULL, node, 0);
 }
 
-// TODO Finish deserialization.
-
 int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	root->is_root = true;
 	root->path = NULL;
@@ -71,13 +69,20 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	root->child_count = 0;
 	root->children = NULL;
 
+	size_t stack_size = 1;
+	dep_node_t** stack = malloc(stack_size * sizeof *stack);
+	assert(stack != NULL);
+	stack[0] = root;
+
 	char* const STR_CLEANUP orig_backing = strdup(serialized);
 	assert(orig_backing != NULL);
 
 	char* backing = orig_backing;
 	char* tok;
 
-	size_t prev_depth = 0;
+	// We start at 1 because, when deserializing, we're looking at all the children.
+
+	size_t prev_depth = 1;
 
 	while ((tok = strsep(&backing, "\n")) != NULL) {
 		if (tok[0] == '\0') {
@@ -85,8 +90,9 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 		}
 
 		// Find depth of node, and make sure that it makes sense.
+		// We start at 1 for the same reason 'prev_depth' starts at 1; children of the root node have 0 'DEPTH_CHAR's before them.
 
-		size_t depth = 0;
+		size_t depth = 1;
 
 		for (size_t i = 0; i < strlen(tok); i++) {
 			if (tok[i] != DEPTH_CHAR) {
@@ -97,8 +103,31 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 		}
 
 		// If the depth is one level higher than the previous one, we are a child dependency to the previous one.
+		// Then, we add the new dependency to our stack.
 
 		if (depth == prev_depth + 1) {
+			dep_node_t* const cur = stack[stack_size - 1];
+
+			// Actually create the node object.
+
+			cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
+			assert(cur->children != NULL);
+			dep_node_t* const node = &cur->children[cur->child_count++];
+
+			node->path = strdup(tok);
+			assert(node->path != NULL);
+
+			node->child_count = 0;
+			node->children = NULL;
+
+			// Add a reference to this node to our stack.
+
+			if (stack_size == 1) {
+				stack = realloc(stack, (stack_size + 1) * sizeof *stack);
+				assert(stack != NULL);
+				stack[stack_size++] = node;
+			}
+
 			continue;
 		}
 
@@ -106,28 +135,21 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		else if (depth > prev_depth + 1) {
 			LOG_FATAL("Invalid depth in serialized dependency tree." PLZ_REPORT);
-			return -1; // TODO Error label to free the deserialized dependency tree up until now.
+			return -1; // TODO Error label to free the deserialized dependency tree up until now. Also the stack.
 		}
 
 		// Any other depth means that we've rolled back.
+		// Pop the extra stuff from the end of our stack.
 
 		else {
+			stack_size = depth + 1;
 			continue;
 		}
 
 		prev_depth = depth;
-
-		// Then, actually create the node object.
-
-		dep_node_t* const node = malloc(sizeof *node);
-		assert(node != NULL);
-
-		node->path = strdup(tok);
-		assert(node->path != NULL);
-
-		node->child_count = 0;
-		node->children = NULL;
 	}
+
+	free(stack);
 
 	return 0;
 }
