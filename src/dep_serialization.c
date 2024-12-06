@@ -57,10 +57,7 @@ char* dep_node_serialize(dep_node_t* node) {
 
 // TODO Finish deserialization.
 
-dep_node_t* dep_node_deserialize(char* serialized) {
-	dep_node_t* const root = malloc(sizeof *root);
-	assert(root != NULL);
-
+int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	root->is_root = true;
 	root->path = NULL;
 
@@ -102,7 +99,7 @@ dep_node_t* dep_node_deserialize(char* serialized) {
 
 		else if (depth > prev_depth + 1) {
 			LOG_FATAL("Invalid depth in serialized dependency tree." PLZ_REPORT);
-			return NULL; // TODO Error label to free the deserialized dependency tree up until now.
+			return -1; // TODO Error label to free the deserialized dependency tree up until now.
 		}
 
 		// Any other depth means that we've rolled back.
@@ -125,5 +122,5 @@ dep_node_t* dep_node_deserialize(char* serialized) {
 		node->children = NULL;
 	}
 
-	return NULL;
+	return 0;
 }
