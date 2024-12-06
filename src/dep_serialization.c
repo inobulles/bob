@@ -80,9 +80,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	char* backing = orig_backing;
 	char* tok;
 
-	// We start at 1 because, when deserializing, we're looking at all the children.
-
-	size_t prev_depth = 1;
+	size_t prev_depth = 0;
 
 	while ((tok = strsep(&backing, "\n")) != NULL) {
 		if (tok[0] == '\0') {
