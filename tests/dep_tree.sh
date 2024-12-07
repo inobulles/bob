@@ -13,8 +13,8 @@ set -e
 
 # Test dependency tree creation.
 
-cp tests/deps/build{.normal,}.fl
-rm -rf tests/deps/.bob tests/deps/dep{1,2}/.bob
+cp tests/deps/build.normal.fl tests/deps/build.fl
+rm -rf tests/deps/.bob tests/deps/dep1/.bob tests/deps/dep2/.bob
 bob -C tests/deps dep-tree >/dev/null 2>/dev/null
 
 DEPS_TREE_PATH=tests/deps/.bob/deps.tree
@@ -48,7 +48,7 @@ fi
 
 # Test changing dependencies.
 
-cp tests/deps/build{.changed,}.fl
+cp tests/deps/build.changed.fl tests/deps/build.fl
 bob -C tests/deps dep-tree >/dev/null 2>/dev/null
 
 echo "$DEP1" > $DEPS_TREE_PATH.expected
