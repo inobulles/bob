@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 . tests/common.sh
 
@@ -11,11 +10,20 @@ set -e
 # And a check that we're caching dependencies correctly (i.e. same version same cache, different versions different cache).
 # Also also a check that we don't have the same dependency twice in our list.
 
+try() {
+	out=$(bob -C tests/deps dep-tree 2>&1)
+
+	if [ $? != 0 ]; then
+		echo "$1: $out" >&2
+		exit 1
+	fi
+}
+
 # Test dependency tree creation.
 
 cp tests/deps/build.normal.fl tests/deps/build.fl
 rm -rf tests/deps/.bob tests/deps/dep1/.bob tests/deps/dep2/.bob
-bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+try "Failed to create dependency tree"
 
 DEPS_TREE_PATH=tests/deps/.bob/deps.tree
 
@@ -39,35 +47,34 @@ fi
 # Test that changing nothing doesn't explode.
 # TODO Should this also be a frugality test?
 
-bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+try "Failed to create dependency tree after nothing changed"
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
-	echo "Dependency tree differed to the one expected." >&2
+	echo "Dependency tree differed to the one expected after nothing changed." >&2
 	exit 1
 fi
 
 # Test changing dependencies.
 
 cp tests/deps/build.changed.fl tests/deps/build.fl
-bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+try "Failed to create dependency tree after changing dependencies"
 
 echo "$DEP1" > $DEPS_TREE_PATH.expected
 echo "\t$DEP2" >> $DEPS_TREE_PATH.expected
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
-	echo "Dependency tree differed to the one expected." >&2
+	echo "Dependency tree differed to the one expected after changing dependencies." >&2
 	exit 1
 fi
 
 # Test automatically skipping duplicate dependencies.
 
 cp tests/deps/build{.duplicate,}.fl
-bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+try "Failed to create dependency tree with duplicates in the dependency vector"
 
 echo "$DEP2" > $DEPS_TREE_PATH.expected
-echo "$DEP2" >> $DEPS_TREE_PATH.expected
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
-	echo "Dependency tree differed to the one expected." >&2
+	echo "Dependency tree differed to the one expected with duplicates in the dependency vector." >&2
 	exit 1
 fi
