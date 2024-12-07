@@ -35,3 +35,13 @@ if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected." >&2
 	exit 1
 fi
+
+# Test that changing nothing doesn't explode.
+# TODO Should this also be a frugality test?
+
+bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+
+if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
+	echo "Dependency tree differed to the one expected." >&2
+	exit 1
+fi
