@@ -69,7 +69,7 @@ fi
 
 # Test automatically skipping duplicate dependencies.
 
-cp tests/deps/build{.duplicate,}.fl
+cp tests/deps/build.duplicate.fl tests/deps/build.fl
 try "Failed to create dependency tree with duplicates in the dependency vector"
 
 echo "$DEP2" > $DEPS_TREE_PATH.expected
