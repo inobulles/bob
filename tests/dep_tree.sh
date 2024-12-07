@@ -45,3 +45,16 @@ if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected." >&2
 	exit 1
 fi
+
+# Test changing dependencies.
+
+cp tests/deps/build{.changed,}.fl
+bob -C tests/deps dep-tree >/dev/null 2>/dev/null
+
+echo "$DEP1" > $DEPS_TREE_PATH.expected
+echo "\t$DEP2" >> $DEPS_TREE_PATH.expected
+
+if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
+	echo "Dependency tree differed to the one expected." >&2
+	exit 1
+fi
