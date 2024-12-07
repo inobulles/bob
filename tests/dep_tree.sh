@@ -24,8 +24,8 @@ if [ ! -f $DEPS_TREE_PATH ]; then
 	exit 1
 fi
 
-DEP1=$(find ~/.cache/bob/deps -name "*dep1*")
-DEP2=$(find ~/.cache/bob/deps -name "*dep2*")
+DEP1=$(find $BOB_DEPS_PATH -name "*dep1*")
+DEP2=$(find $BOB_DEPS_PATH -name "*dep2*")
 
 echo "$DEP1" > $DEPS_TREE_PATH.expected
 echo "\t$DEP2" >> $DEPS_TREE_PATH.expected

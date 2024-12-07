@@ -2,6 +2,7 @@
 
 export ASAN_OPTIONS=detect_leaks=0 # XXX For now, let's not worry about leaks.
 export TEST_OUT=.test-out
+export BOB_DEPS_PATH=$(pwd)/.deps
 
 # Find doas or sudo.
 
