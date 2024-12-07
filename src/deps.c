@@ -298,8 +298,29 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 
 build_tree:;
 
+	uint64_t hashes[deps_vec->vec.count];
+
 	for (size_t i = 0; i < deps_vec->vec.count; i++) {
 		dep_t* const dep = &deps[i];
+
+		// If the dependency was already seen in the dependency vector, skip it.
+		// The rationale behind skipping it silently rather than erroring or even emitting a warning is that it might make build scripts simpler to allow this, and I don't particularly see a downside as pruning this here is cheap.
+
+		bool skip = false;
+		uint64_t const hash = str_hash(dep->path, strlen(dep->path));
+
+		for (size_t j = 0; j < i; j++) {
+			if (hash == hashes[j]) {
+				skip = true;
+				break;
+			}
+		}
+
+		hashes[i] = str_hash(dep->path, strlen(dep->path));
+
+		if (skip) {
+			continue;
+		}
 
 		// Run the 'dep-tree' command on the dependency and add the resulting dependency trees to ours.
 
