@@ -5,6 +5,9 @@
 
 #include <flamingo/flamingo.h>
 
+#define DEP_TAG_START "<bob-dep-tree>\n"
+#define DEP_TAG_END "</bob-dep-tree>\n"
+
 typedef struct dep_node_t dep_node_t;
 
 struct dep_node_t {

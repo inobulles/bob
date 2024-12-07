@@ -258,7 +258,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 	FILE* const hash_f = fopen(hash_path, "r");
 
 	if (hash_f == NULL) {
-		// LOG_INFO("No cached dependency tree found, building it.");
+		LOG_INFO("No cached dependency tree found, building it.");
 		goto build_tree;
 	}
 
@@ -267,14 +267,14 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 	fclose(hash_f);
 
 	if (read_hash != hash) {
-		// LOG_INFO("Dependency vector changed, rebuilding dependency tree.");
+		LOG_INFO("Dependency vector changed, rebuilding dependency tree.");
 		goto build_tree;
 	}
 
 	FILE* const tree_f = fopen(tree_path, "r");
 
 	if (tree_f == NULL) {
-		// LOG_WARN("Could not open dependency tree file '%s', rebuilding it.", tree_path);
+		LOG_WARN("Could not open dependency tree file '%s', rebuilding it.", tree_path);
 		goto build_tree;
 	}
 
