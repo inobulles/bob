@@ -100,49 +100,39 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 			depth++;
 		}
 
-		// If the depth is one level higher than the previous one, we are a child dependency to the previous one.
-		// Then, we add the new dependency to our stack.
-
-		if (depth == prev_depth + 1) {
-			dep_node_t* const cur = stack[stack_size - 1];
-
-			// Actually create the node object.
-
-			cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
-			assert(cur->children != NULL);
-			dep_node_t* const node = &cur->children[cur->child_count++];
-
-			node->path = strdup(tok);
-			assert(node->path != NULL);
-
-			node->child_count = 0;
-			node->children = NULL;
-
-			// Add a reference to this node to our stack.
-
-			if (stack_size == 1) {
-				stack = realloc(stack, (stack_size + 1) * sizeof *stack);
-				assert(stack != NULL);
-				stack[stack_size++] = node;
-			}
-
-			continue;
-		}
-
 		// A depth which is more than one level higher than the previous one is impossible.
 
-		else if (depth > prev_depth + 1) {
+		if (depth > prev_depth + 1) {
 			LOG_FATAL("Invalid depth in serialized dependency tree." PLZ_REPORT);
 			return -1; // TODO Error label to free the deserialized dependency tree up until now. Also the stack.
 		}
 
-		// Any other depth means that we've rolled back.
+		// A less than or equal to depth means that we've rolled back.
 		// Pop the extra stuff from the end of our stack.
 
-		else {
-			stack_size = depth + 1;
-			continue;
+		else if (depth <= prev_depth) {
+			stack_size = depth;
 		}
+
+		dep_node_t* const cur = stack[stack_size - 1];
+
+		// Actually create the node object.
+
+		cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
+		assert(cur->children != NULL);
+		dep_node_t* const node = &cur->children[cur->child_count++];
+
+		node->path = strdup(tok + depth - 1);
+		assert(node->path != NULL);
+
+		node->child_count = 0;
+		node->children = NULL;
+
+		// Add a reference to this node to our stack.
+
+		stack = realloc(stack, (stack_size + 1) * sizeof *stack);
+		assert(stack != NULL);
+		stack[stack_size++] = node;
 
 		prev_depth = depth;
 	}
