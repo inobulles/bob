@@ -270,7 +270,7 @@ found:
 		}
 	}
 
-	return deps_download(vec->val);
+	return deps_tree(vec->val);
 }
 
 static int build(char const* preinstall_prefix) {
