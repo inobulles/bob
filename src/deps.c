@@ -31,21 +31,18 @@ __attribute__((unused)) static int build(char const* human, char const* path) {
 	return rv;
 }
 
-dep_node_t* deps_download(flamingo_val_t* deps) {
-	// TODO Free the tree when there are errors.
+typedef struct {
+	char* path;
+	char* human;
+} dep_t;
 
-	dep_node_t* const tree = calloc(1, sizeof *tree);
-
-	tree->is_root = true;
-	tree->path = NULL;
-
-	tree->child_count = 0;
-	tree->children = NULL;
+static int deps_download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
+	assert(*hash == 0);
 
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
 
-	for (size_t i = 0; i < deps->vec.count; i++) {
-		flamingo_val_t* const val = deps->vec.elems[i];
+	for (size_t i = 0; i < deps_vec->vec.count; i++) {
+		flamingo_val_t* const val = deps_vec->vec.elems[i];
 
 		// Find instance values.
 
@@ -80,12 +77,12 @@ dep_node_t* deps_download(flamingo_val_t* deps) {
 
 		if (kind == NULL) {
 			LOG_FATAL("Dependency must have a 'kind' attribute." PLZ_REPORT);
-			return NULL;
+			return -1;
 		}
 
 		if (kind->kind != FLAMINGO_VAL_KIND_STR) {
 			LOG_FATAL("Dependency 'kind' attribute must be a string." PLZ_REPORT);
-			return NULL;
+			return -1;
 		}
 
 		char* STR_CLEANUP dep_path = NULL;
@@ -94,12 +91,12 @@ dep_node_t* deps_download(flamingo_val_t* deps) {
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
 			if (local_path == NULL) {
 				LOG_FATAL("Local dependency must have a 'local_path' attribute." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			if (local_path->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Local dependency 'local_path' attribute must be a string." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			// Generate path for dependency in deps directory.
@@ -111,7 +108,7 @@ dep_node_t* deps_download(flamingo_val_t* deps) {
 
 			if (abs_path == NULL) {
 				LOG_FATAL("Could not get local dependency at '%s'.", path);
-				return NULL;
+				return -1;
 			}
 
 			human = strrchr(abs_path, '/');
@@ -129,29 +126,29 @@ dep_node_t* deps_download(flamingo_val_t* deps) {
 
 			if (symlink(abs_path, dep_path) < 0 && errno != EEXIST) {
 				LOG_FATAL("link(\"%s\", \"%s\"): %s", abs_path, dep_path, strerror(errno));
-				return NULL;
+				return -1;
 			}
 		}
 
 		else if (flamingo_cstrcmp(kind->str.str, "git", kind->str.size) == 0) {
 			if (git_url == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_url' attribute." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			if (git_branch == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_branch' attribute." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			if (git_url->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Git dependency 'git_url' attribute must be a string." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			if (git_branch->kind != FLAMINGO_VAL_KIND_STR) {
 				LOG_FATAL("Git dependency 'git_branch' attribute must be a string." PLZ_REPORT);
-				return NULL;
+				return -1;
 			}
 
 			// Get dependency path of git repo.
@@ -192,31 +189,128 @@ dep_node_t* deps_download(flamingo_val_t* deps) {
 			cmd_log(&cmd, NULL, human, "git clone", "git cloned", false);
 
 			if (failure) {
-				return NULL;
+				return -1;
 			}
 		}
 
 		else {
 			LOG_FATAL("Unknown value for dependency 'kind': '%.*s'." PLZ_REPORT, (int) kind->str.size, kind->str.str);
-			return NULL;
+			return -1;
 		}
 
 		// If we're here, we've successfully downloaded the dependency.
-		// Run the 'dep-tree' command on it and add the resulting dependency trees to ours.
 
 downloaded:
 
 		assert(dep_path != NULL);
 		assert(human != NULL);
 
+		// Create the dependency object.
+
+		*hash ^= str_hash(dep_path, strlen(dep_path));
+
+		deps[i].path = strdup(dep_path);
+		assert(deps[i].path != NULL);
+
+		deps[i].human = strdup(human);
+		assert(deps[i].path != NULL);
+	}
+
+	return 0;
+}
+
+dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
+	// Start off by going though all our direct dependencies and making sure they're downloaded.
+	// TODO Free the dependency list.
+
+	dep_t deps[deps_vec->vec.count + 1]; // Because a count of 0 is UB.
+	uint64_t hash = 0;
+
+	if (deps_download(deps_vec, deps, &hash) < 0) {
+		return NULL;
+	}
+
+	// Create the root node of the dependency tree.
+	// TODO Free the tree when there are errors.
+
+	dep_node_t* const tree = calloc(1, sizeof *tree);
+	assert(tree != NULL);
+
+	tree->is_root = true;
+	tree->path = NULL;
+
+	tree->child_count = 0;
+	tree->children = NULL;
+
+	// Then, attempt to read the cached dependency tree.
+	// If the hashes don't match, the dependency list changed, so we'll have to rebuild the tree.
+
+	char* STR_CLEANUP serialized = NULL;
+
+	char* STR_CLEANUP hash_path;
+	asprintf(&hash_path, "%s/deps.hash", out_path);
+	assert(hash_path != NULL);
+
+	char* STR_CLEANUP tree_path;
+	asprintf(&tree_path, "%s/deps.tree", out_path);
+	assert(tree_path != NULL);
+
+	FILE* const hash_f = fopen(hash_path, "r");
+
+	if (hash_f == NULL) {
+		// LOG_INFO("No cached dependency tree found, building it.");
+		goto build_tree;
+	}
+
+	uint64_t read_hash;
+	fscanf(hash_f, "%" PRIx64, &read_hash);
+	fclose(hash_f);
+
+	if (read_hash != hash) {
+		// LOG_INFO("Dependency vector changed, rebuilding dependency tree.");
+		goto build_tree;
+	}
+
+	FILE* const tree_f = fopen(tree_path, "r");
+
+	if (tree_f == NULL) {
+		// LOG_WARN("Could not open dependency tree file '%s', rebuilding it.", tree_path);
+		goto build_tree;
+	}
+
+	fseek(tree_f, 0, SEEK_END);
+	size_t const tree_size = ftell(tree_f);
+	rewind(tree_f);
+
+	serialized = calloc(1, tree_size + 1);
+	assert(serialized != NULL);
+	fread(serialized, 1, tree_size, tree_f);
+
+	fclose(tree_f);
+
+	if (dep_node_deserialize(tree, serialized) < 0) {
+		return NULL;
+	}
+
+	return tree;
+
+	// Build the tree.
+
+build_tree:;
+
+	for (size_t i = 0; i < deps_vec->vec.count; i++) {
+		dep_t* const dep = &deps[i];
+
+		// Run the 'dep-tree' command on the dependency and add the resulting dependency trees to ours.
+
 		cmd_t CMD_CLEANUP cmd;
-		cmd_create(&cmd, init_name, "-o", abs_out_path, "-p", install_prefix, "-C", dep_path, "dep-tree", NULL);
+		cmd_create(&cmd, init_name, "-p", install_prefix, "-C", dep->path, "dep-tree", NULL);
 
 		int const rv = cmd_exec(&cmd);
 		char* const STR_CLEANUP out = cmd_read_out(&cmd);
 
 		if (rv < 0) {
-			LOG_FATAL("Failed to get dependency tree of '%s'%s", human, out ? ":" : ".");
+			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");
 			printf("%s", out);
 			return NULL;
 		}
@@ -224,17 +318,46 @@ downloaded:
 		dep_node_t node;
 
 		if (dep_node_deserialize(&node, out) < 0) {
-			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", human);
+			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", dep->human);
 			return NULL;
 		}
 
 		node.is_root = false;
-		node.path = strdup(dep_path);
+		node.path = strdup(dep->path);
 
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);
 		tree->children[tree->child_count++] = node;
 	}
+
+	// Write out tree hash.
+
+	FILE* f = fopen(hash_path, "w");
+
+	if (f == NULL) {
+		LOG_FATAL("Could not open dependency hash file '%s' for writing: %s", hash_path, strerror(errno));
+		return NULL;
+	}
+
+	fprintf(f, "%" PRIx64, hash);
+	fclose(f);
+
+	// Write out tree.
+
+	f = fopen(tree_path, "w");
+
+	if (f == NULL) {
+		LOG_FATAL("Could not open dependency tree file '%s' for writing: %s", tree_path, strerror(errno));
+		return NULL;
+	}
+
+	if (serialized != NULL) {
+		free(serialized);
+	}
+
+	serialized = dep_node_serialize(tree);
+	fprintf(f, "%s", serialized);
+	fclose(f);
 
 	return tree;
 }
