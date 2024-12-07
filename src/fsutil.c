@@ -99,7 +99,7 @@ int set_owner(char const* path) {
 		goto chown;
 	}
 
-	// We only want to mess with the permissions of stuff in the output directory (.bob).
+	// We only want to mess with the permissions of stuff in the output directory (.bob) or the dependencies directory.
 
 	full_path = realerpath(path);
 
@@ -108,7 +108,10 @@ int set_owner(char const* path) {
 		return -1;
 	}
 
-	if (strstr(full_path, abs_out_path) != full_path) {
+	if (
+		strstr(full_path, abs_out_path) != full_path &&
+		strstr(full_path, deps_path) != full_path
+	) {
 		return 0;
 	}
 
