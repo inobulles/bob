@@ -63,6 +63,8 @@ char* dep_node_serialize(dep_node_t* node) {
 }
 
 int dep_node_deserialize(dep_node_t* root, char* serialized) {
+	// Do all the necessary set up for the root node and the stack.
+
 	root->is_root = true;
 	root->path = NULL;
 
@@ -74,8 +76,33 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	assert(stack != NULL);
 	stack[0] = root;
 
+	// Figure out if we're using dependency tree tags or not.
+	// If we are, jump to after that point in the string passed.
+	// If we are not, assume the whole string is the meat of the dependency tree.
+
+	char* const dep_tag_start = strstr(serialized, DEP_TAG_START);
+	bool const use_tags = dep_tag_start != NULL;
+
+	if (use_tags) {
+		serialized = dep_tag_start + strlen(DEP_TAG_START);
+	}
+
+	// We need to keep a copy of the original backing string to free it later.
+	// If using tags, remove all that is after the closing tag.
+
 	char* const STR_CLEANUP orig_backing = strdup(serialized);
 	assert(orig_backing != NULL);
+
+	if (use_tags) {
+		char* const dep_tag_end = strstr(orig_backing, DEP_TAG_END);
+
+		if (dep_tag_end == NULL) {
+			LOG_FATAL("Using dependency tree tags, but no closing dependency tree tag found." PLZ_REPORT);
+			return -1;
+		}
+
+		dep_tag_end[0] = '\0';
+	}
 
 	char* backing = orig_backing;
 	char* tok;

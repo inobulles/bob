@@ -39,7 +39,7 @@ int bsys_dep_tree(bsys_t const* bsys) {
 
 	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
 
-	printf("%s", serialized);
+	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
 	return 0;
 }
 
