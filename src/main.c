@@ -119,16 +119,19 @@ int main(int argc, char* argv[]) {
 
 	bootstrap_import_path = realerpath(bootstrap_import_path);
 
-	// Make 'init_name' absolute.
+	// Make 'init_name' absolute if it's detected to be a path (i.e. contains a slash).
 	// No biggie if we can't make it absolute, it's probably being run as a
 	// standalone command, in which case 'execute_async' can find it for us later
 	// by searching through 'PATH'.
 	// We must do this before potentially chdir'ing because this shouldn't be relative to 'project_path'.
+	// The reason we only want to do this when 'init_name' is a path is because we could have a file or directory named 'init_name' in the project directory, even when it was actually run as a command.
 
-	char const* const abs_init_name = realerpath(init_name);
+	if (strstr(init_name, "/") != NULL) {
+		char const* const abs_init_name = realerpath(init_name);
 
-	if (abs_init_name != NULL) {
-		init_name = abs_init_name;
+		if (abs_init_name != NULL) {
+			init_name = abs_init_name;
+		}
 	}
 
 	// If project path wasn't set, set it to the current working directory.
