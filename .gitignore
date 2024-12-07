@@ -12,3 +12,4 @@ compile_commands.json
 .bootstrap
 .test-out
 tests/deps/build.fl
+.deps
