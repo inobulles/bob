@@ -11,3 +11,4 @@ compile_commands.json
 .bob
 .bootstrap
 .test-out
+tests/deps/build.fl
