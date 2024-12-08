@@ -36,7 +36,38 @@ typedef struct {
 	char* human;
 } dep_t;
 
-static int deps_download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
+static int gen_local_path(char* path, char** abs_path, char** human, char** dep_path) {
+	char* STR_CLEANUP abs_tmp = NULL;
+	char* STR_CLEANUP human_tmp = NULL;
+
+	if (abs_path == NULL) {
+		abs_path = &abs_tmp;
+	}
+
+	if (human == NULL) {
+		human = &human_tmp;
+	}
+
+	*abs_path = realerpath(path);
+
+	if (*abs_path == NULL) {
+		return -1;
+	}
+
+	*human = strrchr(*abs_path, '/');
+	assert((*human)++ != NULL);
+	*human = strdup(*human);
+	assert(*human != NULL);
+
+	uint64_t const hash = str_hash(*abs_path, strlen(*abs_path));
+
+	asprintf(dep_path, "%s/%s.%" PRIx64 ".local", deps_path, *human, hash);
+	assert(*dep_path != NULL);
+
+	return 0;
+}
+
+static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 	assert(*hash == 0);
 
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
@@ -103,23 +134,12 @@ static int deps_download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) 
 
 			char* const STR_CLEANUP path = strndup(local_path->str.str, local_path->str.size);
 			assert(path != NULL);
+			char* STR_CLEANUP abs_path = NULL;
 
-			char* const STR_CLEANUP abs_path = realerpath(path);
-
-			if (abs_path == NULL) {
+			if (gen_local_path(path, &abs_path, &human, &dep_path) < 0) {
 				LOG_FATAL("Could not get local dependency at '%s'.", path);
 				return -1;
 			}
-
-			human = strrchr(abs_path, '/');
-			assert(human++ != NULL);
-			human = strdup(human);
-			assert(human != NULL);
-
-			uint64_t const hash = str_hash(abs_path, strlen(abs_path));
-
-			asprintf(&dep_path, "%s/%s.%" PRIx64 ".local", deps_path, human, hash);
-			assert(dep_path != NULL);
 
 			// Create symlink from dependency to deps directory.
 			// We're creating a symlink and not a hard one because, since we're depending the unique name of the dependency on it's original path, we want to break thing if it's ever moved.
@@ -226,11 +246,12 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 	dep_t deps[deps_vec->vec.count + 1]; // Because a count of 0 is UB.
 	uint64_t hash = 0;
 
-	if (deps_download(deps_vec, deps, &hash) < 0) {
+	if (download(deps_vec, deps, &hash) < 0) {
 		return NULL;
 	}
 
 	// Create the root node of the dependency tree.
+	// Set the path to what it would be were it a dependency.
 	// TODO Free the tree when there are errors.
 
 	dep_node_t* const tree = calloc(1, sizeof *tree);
@@ -238,6 +259,11 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 
 	tree->is_root = true;
 	tree->path = NULL;
+
+	if (gen_local_path(".", NULL, NULL, &tree->path) < 0) {
+		LOG_FATAL("Could not get would-be dependency name of current project." PLZ_REPORT);
+		return NULL;
+	}
 
 	tree->child_count = 0;
 	tree->children = NULL;

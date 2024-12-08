@@ -57,8 +57,6 @@ static char* serialize_inner(dep_node_t* node, size_t depth) {
 
 char* dep_node_serialize(dep_node_t* node) {
 	assert(node->is_root == true);
-	assert(node->path == NULL);
-
 	return add_children(NULL, node, 0);
 }
 
