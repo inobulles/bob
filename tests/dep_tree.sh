@@ -78,3 +78,18 @@ if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected with duplicates in the dependency vector." >&2
 	exit 1
 fi
+
+# Test that circular dependencies fail as they should.
+
+cp tests/deps/build.circular.fl tests/deps/build.fl
+out=$(generic_timeout 2 bob -C tests/deps dep-tree 2>&1)
+
+if [ $? = 142 ]; then
+	echo "Timed out when attempting to create a circular dependency tree (should just fail): $out" >&2
+	exit 1
+fi
+
+if [ $? = 0 ]; then
+	echo "Didn't fail when attempting to create a circular dependency tree: $out" >&2
+	exit 1
+fi
