@@ -6,9 +6,6 @@
 
 # TODO Extra tests: make sure we can't depend on ourselves (this is a circular dependency, right? Will this be caught by our circular dependency check?)
 # We need a circular dependency check of course.
-# Also a check for a dependency which don't exit.
-# And a check that we're caching dependencies correctly (i.e. same version same cache, different versions different cache).
-# Also also a check that we don't have the same dependency twice in our list.
 
 try() {
 	out=$(bob -C tests/deps dep-tree 2>&1)
