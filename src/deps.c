@@ -48,6 +48,9 @@ static int gen_local_path(char* path, char** abs_path, char** human, char** dep_
 		human = &human_tmp;
 	}
 
+	assert(*abs_path == NULL);
+	assert(*human == NULL);
+
 	*abs_path = realerpath(path);
 
 	if (*abs_path == NULL) {
@@ -239,39 +242,7 @@ downloaded:
 	return 0;
 }
 
-static bool detect_circular(dep_node_t* node, size_t path_len, uint64_t* path) {
-	// If hash is already in the path, stop here.
-
-	uint64_t const hash = str_hash(node->path, strlen(node->path));
-
-	for (size_t i = 0; i < path_len; i++) {
-		if (path[i] == hash) {
-			return true;
-		}
-	}
-
-	// Create a new path with the hash added to it.
-
-	uint64_t* const new_path = malloc((path_len + 1) * sizeof *path);
-	assert(new_path != NULL);
-
-	memcpy(new_path, path, path_len * sizeof *path);
-	new_path[path_len++] = hash;
-
-	// Recurse through children.
-
-	for (size_t i = 0; i < node->child_count; i++) {
-		if (detect_circular(&node->children[i], path_len, new_path)) {
-			free(new_path);
-			return true;
-		}
-	}
-
-	free(new_path);
-	return false;
-}
-
-dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
+dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes) {
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
 	// TODO Free the dependency list.
 
@@ -292,13 +263,26 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 	tree->is_root = true;
 	tree->path = NULL;
 
-	if (gen_local_path(".", NULL, NULL, &tree->path) < 0) {
+	char* STR_CLEANUP human = NULL;
+
+	if (gen_local_path(".", NULL, &human, &tree->path) < 0) {
 		LOG_FATAL("Could not get would-be dependency name of current project." PLZ_REPORT);
 		return NULL;
 	}
 
+	uint64_t const would_be_hash = str_hash(tree->path, strlen(tree->path));
+
 	tree->child_count = 0;
 	tree->children = NULL;
+
+	// Make sure the dependencies tree is not circular.
+
+	for (size_t i = 0; i < path_len; i++) {
+		if (path_hashes[i] == would_be_hash) {
+			LOG_FATAL("Dependency tree is circular after adding '%s'.", human);
+			return NULL;
+		}
+	}
 
 	// Then, attempt to read the cached dependency tree.
 	// If the hashes don't match, the dependency list changed, so we'll have to rebuild the tree.
@@ -385,6 +369,12 @@ build_tree:;
 		cmd_t CMD_CLEANUP cmd;
 		cmd_create(&cmd, init_name, "-p", install_prefix, "-C", dep->path, "dep-tree", NULL);
 
+		for (size_t j = 0; j < path_len; j++) {
+			cmd_addf(&cmd, "%" PRIx64, path_hashes[j]);
+		}
+
+		cmd_addf(&cmd, "%" PRIx64, would_be_hash);
+
 		int const rv = cmd_exec(&cmd);
 		char* const STR_CLEANUP out = cmd_read_out(&cmd);
 
@@ -407,12 +397,6 @@ build_tree:;
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);
 		tree->children[tree->child_count++] = node;
-
-		// Make sure the tree is still acyclic.
-
-		if (detect_circular(tree, 0, NULL)) {
-			LOG_FATAL("Dependency tree is circular after adding '%s'.", dep->human);
-		}
 	}
 
 	// Write out tree hash.

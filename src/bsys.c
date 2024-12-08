@@ -26,16 +26,30 @@ bsys_t const* bsys_identify(void) {
 	return NULL;
 }
 
-int bsys_dep_tree(bsys_t const* bsys) {
+int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	if (bsys->dep_tree == NULL) {
 		return 0;
 	}
 
-	dep_node_t* const tree = bsys->dep_tree();
+	// Parse the arguments as a list of hashes.
+
+	uint64_t* const hashes = malloc(argc * sizeof *hashes);
+	assert(hashes != NULL);
+
+	for (int i = 0; i < argc; i++) {
+		hashes[i] = strtoull(argv[i], NULL, 16);
+	}
+
+	// Create dependency tree.
+
+	dep_node_t* const tree = bsys->dep_tree(argc, hashes);
+	free(hashes);
 
 	if (tree == NULL) {
 		return -1;
 	}
+
+	// Serialize and output it.
 
 	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
 
