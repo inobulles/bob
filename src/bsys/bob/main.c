@@ -6,6 +6,7 @@
 #include <bsys.h>
 #include <build_step.h>
 #include <cmd.h>
+#include <deps.h>
 #include <frugal.h>
 #include <fsutil.h>
 #include <install.h>
@@ -16,6 +17,7 @@
 #include <flamingo/flamingo.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -161,14 +163,16 @@ static int setup(void) {
 	flamingo_register_class_decl_cb(&flamingo, class_decl_cb, NULL);
 	flamingo_register_class_inst_cb(&flamingo, class_inst_cb, NULL);
 
+	if (bootstrap_import_path != NULL) {
+		flamingo_add_import_path(&flamingo, (char*) bootstrap_import_path);
+	}
+
 	char* import_path = NULL;
 	asprintf(&import_path, "%s/share/flamingo/import", install_prefix);
 	assert(import_path != NULL);
 
 	flamingo_add_import_path(&flamingo, import_path);
 	free(import_path);
-
-	flamingo_add_import_path(&flamingo, "import"); // For when we're bootstrapping.
 
 	// Run build program.
 
@@ -222,6 +226,53 @@ err_fopen:
 	return rv;
 }
 
+static dep_node_t* dep_tree(void) {
+	// Find dependencies vector.
+
+	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
+	flamingo_var_t* vec = NULL;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		vec = &scope->vars[i];
+
+		if (flamingo_cstrcmp(vec->key, "deps", vec->key_size) != 0) {
+			continue;
+		}
+
+		if (vec->val->kind != FLAMINGO_VAL_KIND_VEC) {
+			LOG_FATAL("Dependencies vector must be a vector.");
+			return NULL;
+		}
+
+		goto found;
+	}
+
+	LOG_FATAL("Dependencies vector was never declared." PLZ_REPORT);
+	return NULL;
+
+found:
+
+	// Make sure all elements of the dependencies vector are actual dependencies.
+
+	for (size_t i = 0; i < vec->val->vec.count; i++) {
+		flamingo_val_t* const val = vec->val->vec.elems[i];
+
+		if (val->kind != FLAMINGO_VAL_KIND_INST) {
+			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class.");
+			return NULL;
+		}
+
+		flamingo_val_t* const class = val->inst.class;
+
+		if (flamingo_cstrcmp(class->name, "Dep", class->name_size) != 0) {
+			LOG_FATAL("Dependencies vector element must be a instance of the 'Dep' class (not '%.*s').", (int) class->name_size, class->name);
+			return NULL;
+		}
+	}
+
+	return deps_tree(vec->val);
+}
+
 static int build(char const* preinstall_prefix) {
 	if (setup_install_map(&flamingo, preinstall_prefix) < 0) {
 		return -1;
@@ -240,7 +291,7 @@ static int run(int argc, char* argv[]) {
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
 	flamingo_var_t* vec = NULL;
 
-	cmd_t __attribute__((cleanup(cmd_free))) cmd = {0};
+	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, NULL);
 
 	for (size_t i = 0; i < scope->vars_size; i++) {
@@ -263,7 +314,7 @@ static int run(int argc, char* argv[]) {
 		goto found;
 	}
 
-	LOG_FATAL("Run vector was never declared. This is a serious issue, please report it!");
+	LOG_FATAL("Run vector was never declared." PLZ_REPORT);
 	return -1;
 
 found:;
@@ -317,6 +368,7 @@ bsys_t const BSYS_BOB = {
 	.key = "bob",
 	.identify = identify,
 	.setup = setup,
+	.dep_tree = dep_tree,
 	.build = build,
 	.install = install,
 	.run = run,

@@ -44,7 +44,7 @@ int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 		goto found;
 	}
 
-	LOG_FATAL("Install map was never declared. This is a serious internal issue, please report it!");
+	LOG_FATAL("Install map was never declared." PLZ_REPORT);
 	return -1;
 
 found:
@@ -80,11 +80,10 @@ found:
 static int install_single(flamingo_val_t* key_val, char* val, bool installing_cookie) {
 	// Get absolute path of source.
 
-	char* const CLEANUP_STR key = strndup(key_val->str.str, key_val->str.size);
-	char* const CLEANUP_STR path = realpath(key, NULL);
+	char* const STR_CLEANUP key = strndup(key_val->str.str, key_val->str.size);
+	char* const STR_CLEANUP path = realerpath(key);
 
 	if (path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
 		return -1;
 	}
@@ -104,18 +103,20 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	// Make sure destination directory exists.
 	// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
 
-	char* CLEANUP_STR parent_backing = strdup(val);
+	char* STR_CLEANUP parent_backing = strdup(val);
+	assert(parent_backing != NULL);
 	char* parent = dirname(parent_backing);
 
 	char* bit;
-	char* CLEANUP_STR accum = strdup(prefix);
+	char* STR_CLEANUP accum = strdup(prefix);
+	assert(accum != NULL);
 
 	while ((bit = strsep(&parent, "/"))) {
 		if (bit[0] == '\0') {
 			continue;
 		}
 
-		char* CLEANUP_STR path = NULL;
+		char* STR_CLEANUP path = NULL;
 		asprintf(&path, "%s/%s", accum, bit);
 		assert(path != NULL);
 
@@ -132,7 +133,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	// Check modification times.
 	// TODO When 'key' is a directory, we should recursively check all files in it.
 
-	char* CLEANUP_STR install_path = NULL;
+	char* STR_CLEANUP install_path = NULL;
 	asprintf(&install_path, "%s/%s", prefix, val);
 	assert(install_path != NULL);
 
@@ -158,7 +159,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 		LOG_INFO("%s" CLEAR ": Installing from '%s'...", val, key);
 	}
 
-	char* CLEANUP_STR err = NULL;
+	char* STR_CLEANUP err = NULL;
 
 	if (copy(key, install_path, &err) < 0) {
 		LOG_FATAL("Failed to copy '%s' to '%s': %s", key, install_path, err);
@@ -237,7 +238,7 @@ int install_cookie(char* cookie) {
 	}
 
 	flamingo_val_t* key = NULL;
-	char* const CLEANUP_STR out = cookie_to_output(cookie, &key);
+	char* const STR_CLEANUP out = cookie_to_output(cookie, &key);
 
 	if (out != NULL && install_single(key, out, true) < 0) {
 		return -1;

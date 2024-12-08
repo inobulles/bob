@@ -5,6 +5,7 @@
 
 #include <bsys.h>
 #include <cmd.h>
+#include <deps.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -25,16 +26,40 @@ bsys_t const* bsys_identify(void) {
 	return NULL;
 }
 
+int bsys_dep_tree(bsys_t const* bsys) {
+	if (bsys->dep_tree == NULL) {
+		return 0;
+	}
+
+	dep_node_t* const tree = bsys->dep_tree();
+
+	if (tree == NULL) {
+		return -1;
+	}
+
+	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
+
+	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
+	return 0;
+}
+
 int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
 	}
 
+	// TODO Install dependencies.
+
+	// if (bsys_deps(bsys) < 0) {
+	// 	return -1;
+	// }
+
 	// Ensure the output path exists.
+	// TODO Do this with mkdir_recursive? Do this in main.c?
 
 	if (bsys->key != NULL) {
-		char* CLEANUP_STR path;
+		char* STR_CLEANUP path;
 		asprintf(&path, "%s/%s", out_path, bsys->key);
 		assert(path != NULL);
 
@@ -56,7 +81,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 
 	va_start(args, fmt);
 
-	char* CLEANUP_STR val;
+	char* STR_CLEANUP val;
 	vasprintf(&val, fmt, args);
 	assert(val != NULL);
 
@@ -72,7 +97,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 	else {
 		// We prepend because earlier entries searched first.
 
-		char* CLEANUP_STR new;
+		char* STR_CLEANUP new;
 		asprintf(&new, "%s:%s", val, prev);
 		assert(new != NULL);
 
@@ -92,7 +117,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	// Ensure the output path exists.
 
-	char* CLEANUP_STR path;
+	char* STR_CLEANUP path;
 
 	if (to_prefix) {
 		asprintf(&path, "%s/prefix", out_path);

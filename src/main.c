@@ -28,11 +28,12 @@ bool debugging = false;
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
+char* deps_path = NULL;
+char const* init_name = "bob";
+char const* bootstrap_import_path = "import";
 
 bool running_as_root = false;
 uid_t owner = 0;
-
-static char const* init_name = "bob";
 
 void usage(void) {
 #if defined(__FreeBSD__)
@@ -61,7 +62,7 @@ void usage(void) {
 }
 
 int main(int argc, char* argv[]) {
-	init_name = *argv;
+	init_name = argv[0];
 	char const* project_path = NULL;
 	logging_init();
 
@@ -112,6 +113,27 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	// Get the absolute bootstrap import path.
+	// We do this now as we might chdir into the project directory later.
+	// It's fine if realerpath returns NULL; this just means we're not bootstrapping.
+
+	bootstrap_import_path = realerpath(bootstrap_import_path);
+
+	// Make 'init_name' absolute if it's detected to be a path (i.e. contains a slash).
+	// No biggie if we can't make it absolute, it's probably being run as a
+	// standalone command, in which case 'execute_async' can find it for us later
+	// by searching through 'PATH'.
+	// We must do this before potentially chdir'ing because this shouldn't be relative to 'project_path'.
+	// The reason we only want to do this when 'init_name' is a path is because we could have a file or directory named 'init_name' in the project directory, even when it was actually run as a command.
+
+	if (strstr(init_name, "/") != NULL) {
+		char const* const abs_init_name = realerpath(init_name);
+
+		if (abs_init_name != NULL) {
+			init_name = abs_init_name;
+		}
+	}
+
 	// If project path wasn't set, set it to the current working directory.
 	// Then, make it absolute.
 	// Finally, actually change to that directory.
@@ -121,9 +143,9 @@ int main(int argc, char* argv[]) {
 	}
 
 	char const* const rel_project_path = project_path;
-	project_path = realpath(rel_project_path, NULL);
+	project_path = realerpath(rel_project_path);
 
-	if (!project_path) {
+	if (project_path == NULL) {
 		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
 		return EXIT_FAILURE;
 	}
@@ -157,10 +179,9 @@ int main(int argc, char* argv[]) {
 
 	// Get absolute output path.
 
-	abs_out_path = realpath(out_path, NULL);
+	abs_out_path = realerpath(out_path);
 
 	if (abs_out_path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
@@ -182,21 +203,37 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Get the dependencies path.
+
+	deps_path = getenv("BOB_DEPS_PATH");
+
+	if (deps_path == NULL) {
+		char const* const home = getenv("HOME");
+
+		// XXX Don't worry about freeing these.
+
+		if (home != NULL) {
+			asprintf(&deps_path, "%s/%s", home, ".cache/bob/deps");
+		}
+
+		else {
+			asprintf(&deps_path, "%s/%s", abs_out_path, "deps");
+			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
+		}
+
+		assert(deps_path != NULL);
+	}
+
+	// Ensure it exists.
+
+	if (mkdir_recursive(deps_path, 0755) < 0) {
+		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	// TODO Make sure relative bin path is in '.gitignore'.
 
 	// validate_gitignore((char*) rel_bin_path);
-
-	// Make 'init_name' absolute.
-	// No biggie if we can't make it absolute, it's probably being run as a
-	// standalone command, in which case 'execute_async' can find it for us later
-	// by searching through 'PATH'.
-	// TODO Shouldn't this be relative to 'project_path' if one is set?
-
-	char const* const abs_init_name = realpath(init_name, NULL);
-
-	if (abs_init_name) {
-		init_name = abs_init_name;
-	}
 
 	// Identify the build system.
 
@@ -242,6 +279,16 @@ int main(int argc, char* argv[]) {
 
 	else if (strcmp(instr, "install") == 0) {
 		if (bsys_install(bsys) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
+
+	// This is purposefully undocumented, as it's really only used for communication between Bob parent processes and their Bob children processes.
+
+	else if (strcmp(instr, "dep-tree") == 0) {
+		LOG_WARN("This command is internal and isn't meant for direct use. A correct consumer of this command should be able to discard this message by reading the contents within the dependency tree tags.");
+
+		if (bsys_dep_tree(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}

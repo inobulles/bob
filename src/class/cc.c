@@ -60,12 +60,12 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	// -MT "": Exclude the source file from the output.
 	// TODO Can we do this in parallel easily with 'cmd_exec_async'?
 
-	cmd_t __attribute__((cleanup(cmd_free))) cmd = {0};
+	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-MM", "-MT", "", task->src, NULL);
 	add_flags(&cmd, task);
 
 	int const rv = cmd_exec(&cmd);
-	char* CLEANUP_STR out = cmd_read_out(&cmd);
+	char* STR_CLEANUP out = cmd_read_out(&cmd);
 
 	if (rv < 0) {
 		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild!", task->src, cc);
@@ -141,7 +141,7 @@ static bool compile_task(void* data) {
 	}
 
 	pthread_mutex_lock(&task->bss->logging_lock);
-	cmd_log(&cmd, task->out, task->src, "compile", "compiled");
+	cmd_log(&cmd, task->out, task->src, "compile", "compiled", true);
 	pthread_mutex_unlock(&task->bss->logging_lock);
 
 	if (!stop && install_cookie(task->out) < 0) {
@@ -197,7 +197,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	fseek(f, 0, SEEK_END);
 	long const deps_size = ftell(f);
 
-	char* CLEANUP_STR headers = malloc(deps_size + 1);
+	char* STR_CLEANUP headers = malloc(deps_size + 1);
 	assert(headers != NULL);
 
 	rewind(f);
