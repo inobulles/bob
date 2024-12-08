@@ -239,6 +239,38 @@ downloaded:
 	return 0;
 }
 
+static bool detect_circular(dep_node_t* node, size_t path_len, uint64_t* path) {
+	// If hash is already in the path, stop here.
+
+	uint64_t const hash = str_hash(node->path, strlen(node->path));
+
+	for (size_t i = 0; i < path_len; i++) {
+		if (path[i] == hash) {
+			return true;
+		}
+	}
+
+	// Create a new path with the hash added to it.
+
+	uint64_t* const new_path = malloc((path_len + 1) * sizeof *path);
+	assert(new_path != NULL);
+
+	memcpy(new_path, path, path_len * sizeof *path);
+	new_path[path_len++] = hash;
+
+	// Recurse through children.
+
+	for (size_t i = 0; i < node->child_count; i++) {
+		if (detect_circular(&node->children[i], path_len, new_path)) {
+			free(new_path);
+			return true;
+		}
+	}
+
+	free(new_path);
+	return false;
+}
+
 dep_node_t* deps_tree(flamingo_val_t* deps_vec) {
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
 	// TODO Free the dependency list.
@@ -375,6 +407,12 @@ build_tree:;
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);
 		tree->children[tree->child_count++] = node;
+
+		// Make sure the tree is still acyclic.
+
+		if (detect_circular(tree, 0, NULL)) {
+			LOG_FATAL("Dependency tree is circular after adding '%s'.", dep->human);
+		}
 	}
 
 	// Write out tree hash.
