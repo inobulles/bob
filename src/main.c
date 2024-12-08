@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
 	else if (strcmp(instr, "dep-tree") == 0) {
 		LOG_WARN("This command is internal and isn't meant for direct use. A correct consumer of this command should be able to discard this message by reading the contents within the dependency tree tags.");
 
-		if (bsys_dep_tree(bsys) == 0) {
+		if (bsys_dep_tree(bsys, argc, argv) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}

@@ -18,7 +18,7 @@ struct dep_node_t {
 	struct dep_node_t* children;
 };
 
-dep_node_t* deps_tree(flamingo_val_t* deps_vec);
+dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes);
 
 // Dependency serialization.
 
