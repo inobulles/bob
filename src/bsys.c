@@ -42,12 +42,20 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 
 	// Create dependency tree.
 
-	dep_node_t* const tree = bsys->dep_tree(argc, hashes);
+	bool circular;
+	dep_node_t* const tree = bsys->dep_tree(argc, hashes, &circular);
 	free(hashes);
 
 	if (tree == NULL) {
+		if (circular) {
+			printf(BOB_DEPS_CIRCULAR);
+			return 0;
+		}
+
 		return -1;
 	}
+
+	assert(!circular);
 
 	// Serialize and output it.
 

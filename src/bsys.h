@@ -15,7 +15,7 @@ struct bsys_t {
 
 	bool (*identify)(void);
 	int (*setup)(void);
-	dep_node_t* (*dep_tree)(size_t path_len, uint64_t* path_hashes);
+	dep_node_t* (*dep_tree)(size_t path_len, uint64_t* path_hashes, bool* circular);
 	int (*build)(char const* preinstall_prefix);
 	int (*install)(char const* prefix);
 	int (*run)(int argc, char* argv[]);
