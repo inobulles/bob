@@ -78,15 +78,20 @@ fi
 
 # Test that circular dependencies fail as they should.
 
-# cp tests/deps/build.circular.fl tests/deps/build.fl
-# out=$(generic_timeout 2 bob -C tests/deps dep-tree 2>&1)
-#
-# if [ $? = 142 ]; then
-# 	echo "Timed out when attempting to create a circular dependency tree (should just fail): $out" >&2
-# 	exit 1
-# fi
-#
-# if [ $? = 0 ]; then
-# 	echo "Didn't fail when attempting to create a circular dependency tree: $out" >&2
-# 	exit 1
-# fi
+cp tests/deps/build.circular.fl tests/deps/build.fl
+out=$(generic_timeout 2 bob -C tests/deps dep-tree 2>&1)
+
+if [ $? = 142 ]; then
+	echo "Timed out when attempting to create a circular dependency tree (should just fail): $out" >&2
+	exit 1
+fi
+
+if [ $? != 0 ]; then
+	echo "Failed when attempting to create a circular dependency tree: $out" >&2
+	exit 1
+fi
+
+if ! echo $out | grep -q "<bob-dep-tree circular />"; then
+	echo "Circular dependency not detected." >&2
+	exit 1
+fi
