@@ -4,9 +4,6 @@
 
 # Test the internal 'bob dep-tree' command and dependency tree creation.
 
-# TODO Extra tests: make sure we can't depend on ourselves (this is a circular dependency, right? Will this be caught by our circular dependency check?)
-# We need a circular dependency check of course.
-
 try() {
 	out=$(bob -C tests/deps dep-tree 2>&1)
 
@@ -82,7 +79,7 @@ cp tests/deps/build.circular.fl tests/deps/build.fl
 out=$(generic_timeout 2 bob -C tests/deps dep-tree 2>&1)
 
 if [ $? = 142 ]; then
-	echo "Timed out when attempting to create a circular dependency tree (should just fail): $out" >&2
+	echo "Timed out when attempting to create a circular dependency tree: $out" >&2
 	exit 1
 fi
 
@@ -93,5 +90,25 @@ fi
 
 if ! echo $out | grep -q "<bob-dep-tree circular />"; then
 	echo "Circular dependency not detected." >&2
+	exit 1
+fi
+
+# Test that we can't depend on ourselves.
+
+cp tests/deps/build.self.fl tests/deps/build.fl
+out=$(generic_timeout 2 bob -C tests/deps dep-tree 2>&1)
+
+if [ $? = 142 ]; then
+	echo "Timed out when attempting to create a self dependency tree: $out" >&2
+	exit 1
+fi
+
+if [ $? != 0 ]; then
+	echo "Failed when attempting to create a self dependency tree: $out" >&2
+	exit 1
+fi
+
+if ! echo $out | grep -q "<bob-dep-tree circular />"; then
+	echo "Self dependency not detected." >&2
 	exit 1
 fi
