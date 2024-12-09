@@ -5,8 +5,12 @@
 
 #include <flamingo/flamingo.h>
 
-#define DEP_TAG_START "<bob-dep-tree>\n"
-#define DEP_TAG_END "</bob-dep-tree>\n"
+#define TAG_NAME "bob-dep-tree"
+
+#define DEP_TAG_START "<" TAG_NAME ">\n"
+#define DEP_TAG_END "</" TAG_NAME ">\n"
+
+#define BOB_DEPS_CIRCULAR "<" TAG_NAME " circular />\n"
 
 typedef struct dep_node_t dep_node_t;
 
@@ -18,7 +22,7 @@ struct dep_node_t {
 	struct dep_node_t* children;
 };
 
-dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes);
+dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular);
 
 // Dependency serialization.
 

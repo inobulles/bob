@@ -242,7 +242,10 @@ downloaded:
 	return 0;
 }
 
-dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes) {
+dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular) {
+	assert(circular != NULL);
+	*circular = false;
+
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
 	// TODO Free the dependency list.
 
@@ -280,6 +283,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	for (size_t i = 0; i < path_len; i++) {
 		if (path_hashes[i] == would_be_hash) {
 			LOG_FATAL("Dependency tree is circular after adding '%s'.", human);
+			*circular = true;
 			return NULL;
 		}
 	}
@@ -381,6 +385,12 @@ build_tree:;
 		if (rv < 0) {
 			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");
 			printf("%s", out);
+			return NULL;
+		}
+
+		if (strstr(out, BOB_DEPS_CIRCULAR) != NULL) {
+			LOG_FATAL("Dependency tree is circular after adding '%s'.", dep->human);
+			*circular = true;
 			return NULL;
 		}
 

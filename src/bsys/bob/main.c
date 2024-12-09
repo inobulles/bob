@@ -226,7 +226,7 @@ err_fopen:
 	return rv;
 }
 
-static dep_node_t* dep_tree(size_t path_len, uint64_t* path_hashes) {
+static dep_node_t* dep_tree(size_t path_len, uint64_t* path_hashes, bool* circular) {
 	// Find dependencies vector.
 
 	flamingo_scope_t* const scope = flamingo.env->scope_stack[0];
@@ -270,7 +270,7 @@ found:
 		}
 	}
 
-	return deps_tree(vec->val, path_len, path_hashes);
+	return deps_tree(vec->val, path_len, path_hashes, circular);
 }
 
 static int build(char const* preinstall_prefix) {
