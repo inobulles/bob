@@ -24,7 +24,7 @@ for test in $(ls -p tests | grep -v /); do
 	rm -rf .bob $TEST_OUT
 	mkdir -p $TEST_OUT
 
-	echo -n "Running test $test... "
+	printf "Running test $test... "
 	sh tests/$test > /dev/null
 
 	if [ $? = 0 ]; then
