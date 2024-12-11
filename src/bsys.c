@@ -60,8 +60,9 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	// Serialize and output it.
 
 	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
-
 	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
+
+	deps_tree_free(tree);
 	return 0;
 }
 
