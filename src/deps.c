@@ -242,6 +242,19 @@ downloaded:
 	return 0;
 }
 
+static void free_node(dep_node_t* node) {
+	for (size_t i = 0; i < node->child_count; i++) {
+		free_node(&node->children[i]);
+	}
+
+	free(node->children);
+}
+
+static void free_tree(dep_node_t* tree) {
+	free_node(tree);
+	free(tree);
+}
+
 dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular) {
 	assert(circular != NULL);
 	*circular = false;
@@ -258,32 +271,30 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 
 	// Create the root node of the dependency tree.
 	// Set the path to what it would be were it a dependency.
-	// TODO Free the tree when there are errors.
 
 	dep_node_t* const tree = calloc(1, sizeof *tree);
 	assert(tree != NULL);
 
 	tree->is_root = true;
-	tree->path = NULL;
-
 	char* STR_CLEANUP human = NULL;
 
 	if (gen_local_path(".", NULL, &human, &tree->path) < 0) {
 		LOG_FATAL("Could not get would-be dependency name of current project." PLZ_REPORT);
+
+		free_tree(tree);
 		return NULL;
 	}
 
 	uint64_t const would_be_hash = str_hash(tree->path, strlen(tree->path));
 
-	tree->child_count = 0;
-	tree->children = NULL;
-
 	// Make sure the dependencies tree is not circular.
 
 	for (size_t i = 0; i < path_len; i++) {
 		if (path_hashes[i] == would_be_hash) {
-			LOG_FATAL("Dependency tree is circular after adding '%s'.", human);
+			LOG_WARN("Dependency tree is circular after adding '%s'.", human);
 			*circular = true;
+
+			free_tree(tree);
 			return NULL;
 		}
 	}
@@ -335,6 +346,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	fclose(tree_f);
 
 	if (dep_node_deserialize(tree, serialized) < 0) {
+		free_tree(tree);
 		return NULL;
 	}
 
@@ -385,12 +397,16 @@ build_tree:;
 		if (rv < 0) {
 			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");
 			printf("%s", out);
+
+			free_tree(tree);
 			return NULL;
 		}
 
 		if (strstr(out, BOB_DEPS_CIRCULAR) != NULL) {
-			LOG_FATAL("Dependency tree is circular after adding '%s'.", dep->human);
+			LOG_WARN("Dependency tree is circular after adding '%s'.", dep->human);
 			*circular = true;
+
+			free_tree(tree);
 			return NULL;
 		}
 
@@ -398,6 +414,8 @@ build_tree:;
 
 		if (dep_node_deserialize(&node, out) < 0) {
 			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", dep->human);
+
+			free_tree(tree);
 			return NULL;
 		}
 
@@ -415,6 +433,8 @@ build_tree:;
 
 	if (f == NULL) {
 		LOG_FATAL("Could not open dependency hash file '%s' for writing: %s", hash_path, strerror(errno));
+
+		free_tree(tree);
 		return NULL;
 	}
 
@@ -427,6 +447,8 @@ build_tree:;
 
 	if (f == NULL) {
 		LOG_FATAL("Could not open dependency tree file '%s' for writing: %s", tree_path, strerror(errno));
+
+		free_tree(tree);
 		return NULL;
 	}
 
