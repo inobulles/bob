@@ -60,6 +60,10 @@ char* dep_node_serialize(dep_node_t* node) {
 	return add_children(NULL, node, 0);
 }
 
+static void free_stack(dep_node_t*** stack) {
+	free(*stack);
+}
+
 int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	// Do all the necessary set up for the root node and the stack.
 
@@ -70,7 +74,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	root->children = NULL;
 
 	size_t stack_size = 1;
-	dep_node_t** stack = malloc(stack_size * sizeof *stack);
+	dep_node_t** __attribute__((cleanup(free_stack))) stack = malloc(stack_size * sizeof *stack);
 	assert(stack != NULL);
 	stack[0] = root;
 
@@ -129,7 +133,9 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		if (depth > prev_depth + 1) {
 			LOG_FATAL("Invalid depth in serialized dependency tree." PLZ_REPORT);
-			return -1; // TODO Error label to free the deserialized dependency tree up until now. Also the stack.
+
+			deps_node_free(root);
+			return -1;
 		}
 
 		// A less than or equal to depth means that we've rolled back.
@@ -161,8 +167,6 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		prev_depth = depth;
 	}
-
-	free(stack);
 
 	return 0;
 }

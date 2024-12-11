@@ -242,16 +242,17 @@ downloaded:
 	return 0;
 }
 
-static void free_node(dep_node_t* node) {
+void deps_node_free(dep_node_t* node) {
 	for (size_t i = 0; i < node->child_count; i++) {
-		free_node(&node->children[i]);
+		deps_node_free(&node->children[i]);
 	}
 
 	free(node->children);
+	free(node->path);
 }
 
 void deps_tree_free(dep_node_t* tree) {
-	free_node(tree);
+	deps_node_free(tree);
 	free(tree);
 }
 
