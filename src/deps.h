@@ -23,6 +23,7 @@ struct dep_node_t {
 };
 
 dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular);
+void deps_node_free(dep_node_t* node);
 void deps_tree_free(dep_node_t* tree);
 
 // Dependency serialization.
