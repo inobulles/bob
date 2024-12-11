@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Aymeric Wibo
+
+import bob
+
+deps = [
+	Dep.local("dep1"),
+	Dep.local("this-dep-doesnt-exist"),
+]
