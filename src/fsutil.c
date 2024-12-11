@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -44,7 +45,7 @@ int copy(char const* src, char const* dst, char** err) {
 	}
 
 	bool const is_dir = S_ISDIR(sb.st_mode);
-	char* CLEANUP_STR dir_src = NULL;
+	char* STR_CLEANUP dir_src = NULL;
 
 	if (is_dir) {
 		asprintf(&dir_src, "%s/", src);
@@ -92,23 +93,25 @@ int set_owner(char const* path) {
 	// If the absolute output path hasn't yet been set, this is being called as a means to ensure the output path exists.
 	// That being the case, we can skip to the chown call.
 
-	char* CLEANUP_STR full_path = NULL;
+	char* STR_CLEANUP full_path = NULL;
 
 	if (abs_out_path == NULL) {
 		goto chown;
 	}
 
-	// We only want to mess with the permissions of stuff in the output directory (.bob).
+	// We only want to mess with the permissions of stuff in the output directory (.bob) or the dependencies directory.
 
-	full_path = realpath(path, NULL);
+	full_path = realerpath(path);
 
 	if (full_path == NULL) {
-		assert(errno != ENOMEM);
 		LOG_WARN("realpath(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
 
-	if (strstr(full_path, abs_out_path) != full_path) {
+	if (
+		strstr(full_path, abs_out_path) != full_path &&
+		strstr(full_path, deps_path) != full_path
+	) {
 		return 0;
 	}
 
@@ -117,7 +120,7 @@ int set_owner(char const* path) {
 chown:
 
 	if (chown(path, owner, -1) < 0) {
-		LOG_WARN("chown(\"%s\"): %s", path, strerror(errno));
+		LOG_ERROR("chown(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
 
@@ -137,4 +140,76 @@ int mkdir_wrapped(char const* path, mode_t mode) {
 	}
 
 	return rv;
+}
+
+int mkdir_recursive(char const* path, mode_t mode) {
+	if (
+		path[0] != '/' ||
+		strstr(path, "/../") != NULL ||
+		strstr(path, "/..") == path + strlen(path) - 3
+	) {
+		LOG_ERROR("Path must be absolute (got '%s')!", path);
+		return -1;
+	}
+
+	char* STR_CLEANUP copy = strdup(path);
+	assert(copy != NULL);
+
+	char* STR_CLEANUP accum = strdup("");
+	assert(accum != NULL);
+
+	char* bit;
+
+	while ((bit = strsep(&copy, "/"))) {
+		if (bit[0] == '\0') {
+			continue;
+		}
+
+		char* STR_CLEANUP path = NULL;
+		asprintf(&path, "%s/%s", accum, bit);
+		assert(path != NULL);
+
+		if (mkdir_wrapped(path, mode) < 0 && errno != EEXIST) {
+			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+			return -1;
+		}
+
+		free(accum);
+		accum = strdup(path);
+		assert(accum != NULL);
+	}
+
+	return 0;
+}
+
+char* realerpath(char const* path) {
+	char* home = NULL;
+
+	if (path[0] == '~' && (path[1] == '\0' || path[1] == '/')) {
+		home = getenv("HOME");
+
+		if (home == NULL) {
+			LOG_ERROR("Using tilde ('~') in path '%s' which is usually meant to expand to $HOME, but $HOME is not set.", path);
+			return NULL;
+		}
+	}
+
+	char* final = NULL;
+
+#define R realpath
+
+	if (home != NULL) {
+		char* STR_CLEANUP intermediary = NULL;
+		asprintf(&intermediary, "%s/%s", home, path);
+		final = R(intermediary, NULL);
+	}
+
+	else {
+		final = R(path, NULL);
+	}
+
+#undef R
+
+	assert(final != NULL || errno != ENOMEM);
+	return final;
 }

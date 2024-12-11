@@ -132,11 +132,11 @@ void progress_update(progress_t* self, size_t numerator, size_t _denominator, ch
 }
 
 void log_already_done(char const* cookie, char const* prefix, char const* past) {
-	char* CLEANUP_STR path;
+	char* STR_CLEANUP path;
 	asprintf(&path, "%s.log", cookie);
 	assert(path != NULL);
 
-	char* CLEANUP_STR out = NULL;
+	char* STR_CLEANUP out = NULL;
 	FILE* const f = fopen(path, "r");
 
 	if (f != NULL) {
