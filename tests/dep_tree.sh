@@ -112,3 +112,16 @@ if ! echo $out | grep -q "<bob-dep-tree circular />"; then
 	echo "Self dependency not detected." >&2
 	exit 1
 fi
+
+# Test that we can't depend on dependencies which don't exist.
+
+cp tests/deps/build.nonexistent.fl tests/deps/build.fl
+out=$(bob -C tests/deps dep-tree 2>&1)
+
+if [ $? = 0 ]; then
+	echo "Succeeded when attempting to create a dependency tree with a dependency which doesn't exist: $out" >&2
+	exit 1
+elif ! echo $out | grep -q "Could not get local dependency at 'this-dep-doesnt-exist'"; then
+	echo "Another issue occurred when attempting to create a dependency tree with a dependency which doesn't exist: $out" >&2
+	exit 1
+fi
