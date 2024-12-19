@@ -57,3 +57,5 @@ void log_already_done(char const* cookie, char const* prefix, char const* past);
 #define LOG_WARN(...) vlog(stderr, "🚸 " REGULAR YELLOW, __VA_ARGS__)
 #define LOG_INFO(...) vlog(stdout, "👷 " REGULAR BLUE, __VA_ARGS__)
 #define LOG_SUCCESS(...) vlog(stdout, "✅ " REGULAR GREEN, __VA_ARGS__)
+
+#define PLZ_REPORT " This is a serious internal issue, please report it!"

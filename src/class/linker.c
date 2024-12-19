@@ -48,7 +48,7 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 
 	// Make everything C strings.
 
-	char* const CLEANUP_STR out = strndup(bss->out_str->str.str, bss->out_str->str.size);
+	char* const STR_CLEANUP out = strndup(bss->out_str->str.str, bss->out_str->str.size);
 	assert(out != NULL);
 
 	size_t const src_count = bss->src_vec->vec.count;
@@ -61,7 +61,7 @@ static int link_step(size_t data_count, void** data, char const* preinstall_pref
 		assert(srcs[i] != NULL);
 	}
 
-	char* const CLEANUP_STR pretty = cookie_to_output(out, NULL);
+	char* const STR_CLEANUP pretty = cookie_to_output(out, NULL);
 
 	// Re-link if flags have changed.
 
@@ -144,7 +144,7 @@ link:;
 		set_owner(out);
 	}
 
-	cmd_log(&cmd, out, pretty, bss->infinitive, bss->past);
+	cmd_log(&cmd, out, pretty, bss->infinitive, bss->past, true);
 	cmd_free(&cmd);
 
 	if (rv == 0) {
