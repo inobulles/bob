@@ -66,17 +66,45 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	return 0;
 }
 
+static int bsys_deps(bsys_t const* bsys) {
+	if (bsys->dep_tree == NULL || bsys->build_deps == NULL) {
+		return 0;
+	}
+
+	// Create dependency tree.
+
+	bool circular;
+	dep_node_t* const tree = bsys->dep_tree(0, NULL, &circular);
+
+	if (tree == NULL) {
+		if (circular) {
+			LOG_FATAL("Dependency tree is circular.");
+		}
+
+		return -1;
+	}
+
+	assert(!circular);
+
+	// Build each dependency.
+
+	int const rv = bsys->build_deps(tree);
+	deps_tree_free(tree);
+
+	return rv;
+}
+
 int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
 	}
 
-	// TODO Install dependencies.
+	// Install dependencies.
 
-	// if (bsys_deps(bsys) < 0) {
-	// 	return -1;
-	// }
+	if (bsys_deps(bsys) < 0) {
+		return -1;
+	}
 
 	// Ensure the output path exists.
 	// TODO Do this with mkdir_recursive? Do this in main.c?
