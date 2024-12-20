@@ -50,6 +50,8 @@ static flamingo_scope_t* env_cur_scope(flamingo_env_t* env) {
 }
 
 static void env_gently_attach_scope(flamingo_env_t* env, flamingo_scope_t* scope) {
+	assert(env->scope_stack_size == 0 || env->scope_stack[env->scope_stack_size - 1] != scope);
+
 	env->scope_stack = realloc(env->scope_stack, ++env->scope_stack_size * sizeof *env->scope_stack);
 	assert(env->scope_stack != NULL);
 

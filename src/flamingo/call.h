@@ -83,8 +83,10 @@ static int call(
 	flamingo_val_t** rv,
 	flamingo_arg_list_t* args
 ) {
+	// Note about calling functions on instances: we don't actually need to add its scope to the environment, because the environment on its callable already has that scope on the scope stack.
+	// If we ever need to know whether or not we're calling on an instance, the following check can be used: accessed_val != NULL && accessed_val->kind == FLAMINGO_VAL_KIND_INST
+
 	bool const is_class = callable->fn.kind == FLAMINGO_FN_KIND_CLASS;
-	bool const on_inst = accessed_val != NULL && accessed_val->kind == FLAMINGO_VAL_KIND_INST;
 	bool const is_extern = callable->fn.kind == FLAMINGO_FN_KIND_EXTERN;
 	bool const is_ptm = callable->fn.kind == FLAMINGO_FN_KIND_PTM;
 
@@ -107,19 +109,15 @@ static int call(
 	// Switch context's current environment to the one closed over by the function.
 
 	flamingo_env_t* const prev_env = flamingo->env;
-	flamingo->env = callable->fn.env == NULL ? prev_env : callable->fn.env;
 
-	// If calling on an instance, add that instance's scope to the scope stack.
-	// We do this before the arguments scope because we want parameters to shadow stuff in the instance's scope.
-
-	if (on_inst) {
-		env_gently_attach_scope(flamingo->env, accessed_val->inst.scope);
+	if (callable->fn.env != NULL) {
+		flamingo->env = callable->fn.env;
 	}
 
 	// Create a new scope for the function for the argument assignments.
 	// It's important to set 'scope->class_scope' to false for functions as new scopes will copy the 'class_scope' property from their parents otherwise.
 
-	flamingo_scope_t* scope = env_push_scope(flamingo->env);
+	flamingo_scope_t* const scope = env_push_scope(flamingo->env);
 	scope->class_scope = is_class;
 
 	if (is_ptm) {
@@ -192,10 +190,6 @@ static int call(
 	// Unwind the scope stack and switch back to previous source, current function body context, and environment..
 
 	env_pop_scope(flamingo->env);
-
-	if (on_inst) {
-		env_gently_detach_scope(flamingo->env);
-	}
 
 	flamingo->src = prev_src;
 	flamingo->src_size = prev_src_size;
