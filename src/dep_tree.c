@@ -309,6 +309,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	uint64_t read_hash;
 	fscanf(hash_f, "%" PRIx64, &read_hash);
 	fclose(hash_f);
+	set_owner(hash_path);
 
 	if (read_hash != hash) {
 		LOG_INFO("Dependency vector changed, rebuilding dependency tree.");
@@ -331,6 +332,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	fread(serialized, 1, tree_size, tree_f);
 
 	fclose(tree_f);
+	set_owner(tree_path);
 
 	if (dep_node_deserialize(tree, serialized) < 0) {
 		deps_tree_free(tree);
@@ -427,6 +429,7 @@ build_tree:;
 
 	fprintf(f, "%" PRIx64, hash);
 	fclose(f);
+	set_owner(hash_path);
 
 	// Write out tree.
 
@@ -446,6 +449,7 @@ build_tree:;
 	serialized = dep_node_serialize(tree);
 	fprintf(f, "%s", serialized);
 	fclose(f);
+	set_owner(tree_path);
 
 	return tree;
 }
