@@ -10,8 +10,6 @@ let obj = Cc([
 	"-Wall", "-Wextra", "-Werror",
 	"-Wno-unused-parameter",
 	"-Isrc", "-Isrc/flamingo/runtime",
-	"-fsanitize=address,undefined",
-	"-fno-omit-frame-pointer",
 ]).compile(src)
 
 let cmd = Linker(["-lm", "-lpthread"]).link(obj)
