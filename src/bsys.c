@@ -66,7 +66,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	return 0;
 }
 
-static int bsys_deps(bsys_t const* bsys) {
+static int bsys_build_deps(bsys_t const* bsys) {
 	if (bsys->dep_tree == NULL || bsys->build_deps == NULL) {
 		return 0;
 	}
@@ -102,7 +102,7 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
 
 	// Install dependencies.
 
-	if (bsys_deps(bsys) < 0) {
+	if (bsys_build_deps(bsys) < 0) {
 		return -1;
 	}
 

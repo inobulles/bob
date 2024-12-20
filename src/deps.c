@@ -23,5 +23,6 @@ __attribute__((unused)) static int build(char const* human, char const* path) {
 }
 
 int deps_build(dep_node_t* tree) {
+	printf("SHOULD BUILD\n");
 	return 0;
 }

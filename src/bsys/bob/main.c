@@ -369,6 +369,7 @@ bsys_t const BSYS_BOB = {
 	.identify = identify,
 	.setup = setup,
 	.dep_tree = dep_tree,
+	.build_deps = deps_build,
 	.build = build,
 	.install = install,
 	.run = run,
