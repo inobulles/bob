@@ -153,6 +153,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 		assert(cur->children != NULL);
 		dep_node_t* const node = &cur->children[cur->child_count++];
 
+		node->is_root = false;
 		node->path = strdup(tok + depth - 1);
 		assert(node->path != NULL);
 
