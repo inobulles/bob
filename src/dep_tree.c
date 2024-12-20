@@ -345,7 +345,7 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 
 build_tree:;
 
-	uint64_t hashes[deps_vec->vec.count];
+	uint64_t hashes[deps_vec->vec.count + 1]; // XXX +1 just so we don't get UB for zero-length VLAs.
 
 	for (size_t i = 0; i < deps_vec->vec.count; i++) {
 		dep_t* const dep = &deps[i];
