@@ -60,7 +60,7 @@ static int external_fn_cb(flamingo_t* flamingo, flamingo_val_t* callable, void* 
 		bool consumed = false;
 
 		if (bob_class->call(callable, args, rv, &consumed) < 0) {
-			return -1;
+			return flamingo_raise_error(flamingo, "Something went wrong when calling the '%.*s' external function", (int) name_size, name);
 		}
 
 		if (consumed) {
