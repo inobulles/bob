@@ -91,11 +91,11 @@ int deps_build(dep_node_t* tree) {
 	size_t max_child_count = tree->child_count;
 	size_t const total_child_count = reset_built_deps(tree, &max_child_count);
 
-	char* already_built[total_child_count];
+	char* already_built[total_child_count + 1]; // XXX +1 because zero-length VLA UB.
 	size_t already_built_count = 0;
 
 	for (;;) {
-		char* leaves[max_child_count];
+		char* leaves[max_child_count + 1]; // XXX +1 because zero-length VLA UB.
 		size_t leaf_count = 0;
 
 		next_batch(tree, leaves, &leaf_count, already_built, &already_built_count);
