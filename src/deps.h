@@ -20,6 +20,11 @@ struct dep_node_t {
 
 	size_t child_count;
 	struct dep_node_t* children;
+
+	// Field only used during the dependency build process.
+	// If all the dependencies of this node have already been built, this is set.
+
+	bool built_deps;
 };
 
 int deps_build(dep_node_t* tree);
