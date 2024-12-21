@@ -284,6 +284,12 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 
 	uint64_t const would_be_hash = str_hash(tree->path, strlen(tree->path));
 
+	// If there are no more dependencies, stop here with just a root node.
+
+	if (deps_vec->vec.count == 0) {
+		return tree;
+	}
+
 	// Make sure the dependencies tree is not circular.
 
 	for (size_t i = 0; i < path_len; i++) {
