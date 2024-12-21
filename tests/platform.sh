@@ -7,6 +7,7 @@
 # Test Platform.os().
 # Should be the exact same output as uname(1).
 
+rm -rf tests/platform/.bob
 out=$(bob -C tests/platform build 2>&1)
 
 if [ "$out" != "$(uname)" ]; then
