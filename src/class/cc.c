@@ -37,7 +37,6 @@ typedef struct {
 
 typedef struct {
 	build_step_state_t* bss;
-	char const* preinstall_prefix;
 
 	char* src;
 	char* out;
@@ -52,10 +51,8 @@ static void add_flags(cmd_t* cmd, compile_task_t* task) {
 	}
 }
 
-static void add_common(cmd_t* cmd, char const* preinstall_prefix) {
-	if (preinstall_prefix != NULL) {
-		cmd_addf(cmd, "-B%s", preinstall_prefix);
-	}
+static void add_common(cmd_t* cmd) {
+	cmd_addf(cmd, "-B%s", install_prefix);
 }
 
 static void get_include_deps(compile_task_t* task, char* cc) {
@@ -70,7 +67,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-MM", "-MT", "", task->src, NULL);
 	add_flags(&cmd, task);
-	add_common(&cmd, task->preinstall_prefix);
+	add_common(&cmd);
 
 	int const rv = cmd_exec(&cmd);
 	char* STR_CLEANUP out = cmd_read_out(&cmd);
@@ -139,7 +136,7 @@ static bool compile_task(void* data) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 	add_flags(&cmd, task);
-	add_common(&cmd, task->preinstall_prefix);
+	add_common(&cmd);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -239,7 +236,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	return do_compile ? VALIDATION_RES_COMPILE : VALIDATION_RES_SKIP;
 }
 
-static int compile_step(size_t data_count, void** data, char const* preinstall_prefix) {
+static int compile_step(size_t data_count, void** data) {
 	pool_t pool;
 	pool_init(&pool, ncpu());
 	int rv = -1;
@@ -265,7 +262,6 @@ static int compile_step(size_t data_count, void** data, char const* preinstall_p
 				assert(data != NULL);
 
 				data->bss = bss;
-				data->preinstall_prefix = preinstall_prefix;
 
 				data->src = src;
 				data->out = out;

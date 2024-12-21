@@ -17,10 +17,15 @@
 #define COMMON_INCLUDED
 
 extern _Bool debugging;
-extern char const* out_path;
-extern char const* abs_out_path;
-extern char const* install_prefix;
-extern char* tmp_install_prefix;
-extern char* deps_path;
 extern char const* init_name;
 extern char const* bootstrap_import_path;
+
+extern char const* out_path;
+extern char const* abs_out_path;
+
+extern char* deps_path;
+extern _Bool build_deps;
+
+extern char const* install_prefix;
+extern char* default_final_install_prefix;
+extern char* default_tmp_install_prefix;

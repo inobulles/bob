@@ -66,7 +66,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	return 0;
 }
 
-static int do_build_deps(bsys_t const* bsys, bool preinstall) {
+static int do_build_deps(bsys_t const* bsys) {
 	if (bsys->dep_tree == NULL || bsys->build_deps == NULL) {
 		return 0;
 	}
@@ -88,19 +88,27 @@ static int do_build_deps(bsys_t const* bsys, bool preinstall) {
 
 	// Build each dependency.
 
-	int const rv = bsys->build_deps(tree, preinstall);
+	int const rv = bsys->build_deps(tree);
 	deps_tree_free(tree);
 
 	return rv;
 }
 
-int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_deps) {
+int bsys_build(bsys_t const* bsys) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
 	}
 
-	if (build_deps && do_build_deps(bsys, preinstall_prefix != NULL) < 0) {
+	// Building installs to a temporary prefix.
+
+	if (install_prefix == NULL) {
+		install_prefix = default_tmp_install_prefix;
+	}
+
+	// Build dependencies here.
+
+	if (build_deps && do_build_deps(bsys) < 0) {
 		return -1;
 	}
 
@@ -122,7 +130,7 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_dep
 
 	// Actually build.
 
-	return bsys->build(preinstall_prefix);
+	return bsys->build();
 }
 
 static void prepend_env(char const* name, char const* fmt, ...) {
@@ -158,44 +166,38 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 	}
 }
 
-static int install(bsys_t const* bsys, bool to_tmp_prefix) {
+static int install(bsys_t const* bsys, bool default_to_tmp_prefix) {
 	if (bsys->install == NULL) {
 		LOG_WARN("%s: build system does not have an install step; nothing to install!", bsys->name);
 		return 0;
 	}
 
-	// Ensure the output path exists.
+	// If defaulting to temporary prefix, set that if install prefix is not already set.
+	// Otherwise, default to the final prefix (obviously).
 
-	char* STR_CLEANUP path;
+	if (install_prefix == NULL) {
+		if (default_to_tmp_prefix) {
+			install_prefix = default_tmp_install_prefix;
+		}
 
-	if (to_tmp_prefix) {
-		path = strdup(tmp_install_prefix);
-	}
-
-	else {
-		asprintf(&path, "%s", install_prefix);
-	}
-
-	assert(path != NULL);
-
-	if (to_tmp_prefix && mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
-		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
-		return -1;
+		else {
+			install_prefix = default_final_install_prefix;
+		}
 	}
 
 	// Run build step.
 
-	if (bsys_build(bsys, path, true) < 0) {
+	if (bsys_build(bsys) < 0) {
 		return -1;
 	}
 
 	// Actually install.
 
-	return bsys->install(path);
+	return bsys->install();
 }
 
 static void setup_environment(void) {
-	prepend_env("PATH", "%s/bin", tmp_install_prefix);
+	prepend_env("PATH", "%s/bin", install_prefix);
 
 	prepend_env(
 #if defined(__APPLE__)
@@ -203,7 +205,7 @@ static void setup_environment(void) {
 #endif
 		"LD_LIBRARY_PATH",
 		"%s/lib",
-		tmp_install_prefix
+		install_prefix
 	);
 }
 

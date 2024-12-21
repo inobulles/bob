@@ -17,7 +17,6 @@
 #include <flamingo/flamingo.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -273,16 +272,12 @@ found:
 	return deps_tree(vec->val, path_len, path_hashes, circular);
 }
 
-static int build(char const* preinstall_prefix) {
-	if (setup_install_map(&flamingo, preinstall_prefix) < 0) {
+static int build(void) {
+	if (setup_install_map(&flamingo) < 0) {
 		return -1;
 	}
 
-	return run_build_steps(preinstall_prefix);
-}
-
-static int install(char const* prefix) {
-	return install_all(prefix);
+	return run_build_steps();
 }
 
 static int run(int argc, char* argv[]) {
@@ -371,7 +366,7 @@ bsys_t const BSYS_BOB = {
 	.dep_tree = dep_tree,
 	.build_deps = deps_build,
 	.build = build,
-	.install = install,
+	.install = install_all,
 	.run = run,
 	.destroy = destroy,
 };

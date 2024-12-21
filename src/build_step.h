@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef int (*build_step_cb_t)(size_t data_count, void** data, char const* preinstall_prefix);
+typedef int (*build_step_cb_t)(size_t data_count, void** data);
 
 typedef struct {
 	uint64_t unique;
@@ -20,4 +20,4 @@ typedef struct {
 int add_build_step(uint64_t unique, char const* name, build_step_cb_t cb, void* data);
 void free_build_steps(void);
 
-int run_build_steps(char const* preinstall_prefix);
+int run_build_steps(void);

@@ -27,7 +27,7 @@ struct dep_node_t {
 	bool built_deps;
 };
 
-int deps_build(dep_node_t* tree, bool preinstall);
+int deps_build(dep_node_t* tree);
 
 // Dependency tree stuff.
 

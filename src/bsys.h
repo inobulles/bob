@@ -16,9 +16,9 @@ struct bsys_t {
 	bool (*identify)(void);
 	int (*setup)(void);
 	dep_node_t* (*dep_tree)(size_t path_len, uint64_t* path_hashes, bool* circular);
-	int (*build_deps)(dep_node_t* tree, bool preinstall);
-	int (*build)(char const* preinstall_prefix);
-	int (*install)(char const* prefix);
+	int (*build_deps)(dep_node_t* tree);
+	int (*build)(void);
+	int (*install)(void);
 	int (*run)(int argc, char* argv[]);
 	void (*destroy)(void);
 };
@@ -45,7 +45,7 @@ static bsys_t const* const BSYS[] = {
 
 bsys_t const* bsys_identify(void);
 int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]);
-int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_deps);
+int bsys_build(bsys_t const* bsys);
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_sh(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_install(bsys_t const* bsys);

@@ -40,7 +40,7 @@ typedef struct {
 	flamingo_val_t* out_str;
 } build_step_state_t;
 
-static int link_step(size_t data_count, void** data, char const* preinstall_prefix) {
+static int link_step(size_t data_count, void** data) {
 	assert(data_count == 1); // See comment just before 'add_build_step' in 'prep_link'.
 
 	build_step_state_t* const bss = *data;
@@ -104,10 +104,7 @@ link:;
 		char* cc = getenv("CC");
 		cc = cc == NULL ? "cc" : cc;
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
-
-		if (preinstall_prefix != NULL) {
-			cmd_addf(&cmd, "-B%s", preinstall_prefix);
-		}
+		cmd_addf(&cmd, "-B%s", install_prefix);
 
 #if defined(__APPLE__)
 		cmd_add(&cmd, "-rpath");
