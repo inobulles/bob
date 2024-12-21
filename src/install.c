@@ -32,7 +32,10 @@ int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 		}
 
 		if (map->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			LOG_WARN("Install map not set; nothing to install!");
+			if (_prefix != NULL) {
+				LOG_WARN("Install map not set; nothing to install!");
+			}
+
 			return 0;
 		}
 
