@@ -27,16 +27,10 @@ static bool build_task(void* data) {
 	// Actually build the dependency.
 	// We shouldn't pass -o here because the dependency should be built in its own output path.
 	// XXX If the dependency wants to use a different output path, we should probably add a function in the Bob build script to set the output path to something else instead of having an -o switch.
+	// Since we're just building at the moment (no installing), only pass -t, not -p.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, NULL);
-
-	if (do_preinstall) {
-		cmd_add(&cmd, "-t");
-		cmd_add(&cmd, tmp_install_prefix);
-	}
-
-	cmd_add(&cmd, "build-no-deps");
+	cmd_create(&cmd, init_name, "-t", tmp_install_prefix, "-C", path, "build-no-deps", NULL);
 
 	int const rv = cmd_exec(&cmd);
 
