@@ -17,6 +17,7 @@
 #define COMMON_INCLUDED
 
 extern _Bool debugging;
+extern char const* instr;
 extern char const* init_name;
 extern char const* bootstrap_import_path;
 

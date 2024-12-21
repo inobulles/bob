@@ -31,7 +31,10 @@ int setup_install_map(flamingo_t* flamingo) {
 		}
 
 		if (map->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			LOG_WARN("Install map not set; nothing to install!"); // TODO Don't warn when just building please.
+			if (strcmp(instr, "build") != 0) {
+				LOG_WARN("Install map not set; nothing to install!");
+			}
+
 			return 0;
 		}
 
