@@ -242,17 +242,24 @@ void deps_tree_free(dep_node_t* tree) {
 	free(tree);
 }
 
+void deps_list_free(dep_t* deps, size_t count) {
+	for (size_t i = 0; i < count; i++) {
+		free(deps[i].path);
+		free(deps[i].human);
+	}
+}
+
 dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular) {
 	assert(circular != NULL);
 	*circular = false;
 
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
-	// TODO Free the dependency list.
 
-	dep_t deps[deps_vec->vec.count + 1]; // Because a count of 0 is UB.
+	dep_t deps[deps_vec->vec.count + 1] = {}; // Because a count of 0 is UB.
 	uint64_t hash = 0;
 
 	if (download(deps_vec, deps, &hash) < 0) {
+		deps_list_free(deps, deps_vec->vec.count);
 		return NULL;
 	}
 
@@ -268,7 +275,9 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	if (gen_local_path(".", NULL, &human, &tree->path) < 0) {
 		LOG_FATAL("Could not get would-be dependency name of current project." PLZ_REPORT);
 
+		deps_list_free(deps, deps_vec->vec.count);
 		deps_tree_free(tree);
+
 		return NULL;
 	}
 
@@ -281,7 +290,9 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 			LOG_WARN("Dependency tree is circular after adding '%s'.", human);
 			*circular = true;
 
+			deps_list_free(deps, deps_vec->vec.count);
 			deps_tree_free(tree);
+
 			return NULL;
 		}
 	}
@@ -335,7 +346,9 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	set_owner(tree_path);
 
 	if (dep_node_deserialize(tree, serialized) < 0) {
+		deps_list_free(deps, deps_vec->vec.count);
 		deps_tree_free(tree);
+
 		return NULL;
 	}
 
@@ -387,7 +400,9 @@ build_tree:;
 			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");
 			printf("%s", out);
 
+			deps_list_free(deps, deps_vec->vec.count);
 			deps_tree_free(tree);
+
 			return NULL;
 		}
 
@@ -395,7 +410,9 @@ build_tree:;
 			LOG_WARN("Dependency tree is circular after adding '%s'.", dep->human);
 			*circular = true;
 
+			deps_list_free(deps, deps_vec->vec.count);
 			deps_tree_free(tree);
+
 			return NULL;
 		}
 
@@ -404,7 +421,9 @@ build_tree:;
 		if (dep_node_deserialize(&node, out) < 0) {
 			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", dep->human);
 
+			deps_list_free(deps, deps_vec->vec.count);
 			deps_tree_free(tree);
+
 			return NULL;
 		}
 
@@ -423,7 +442,9 @@ build_tree:;
 	if (f == NULL) {
 		LOG_FATAL("Could not open dependency hash file '%s' for writing: %s", hash_path, strerror(errno));
 
+		deps_list_free(deps, deps_vec->vec.count);
 		deps_tree_free(tree);
+
 		return NULL;
 	}
 
@@ -438,7 +459,9 @@ build_tree:;
 	if (f == NULL) {
 		LOG_FATAL("Could not open dependency tree file '%s' for writing: %s", tree_path, strerror(errno));
 
+		deps_list_free(deps, deps_vec->vec.count);
 		deps_tree_free(tree);
+
 		return NULL;
 	}
 
@@ -451,5 +474,6 @@ build_tree:;
 	fclose(f);
 	set_owner(tree_path);
 
+	deps_list_free(deps, deps_vec->vec.count);
 	return tree;
 }
