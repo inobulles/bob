@@ -26,10 +26,9 @@ static bool build_task(void* data) {
 	// Actually build the dependency.
 	// We shouldn't pass -o here because the dependency should be built in its own output path.
 	// XXX If the dependency wants to use a different output path, we should probably add a function in the Bob build script to set the output path to something else instead of having an -o switch.
-	// TODO -p naturally needs to be set, but we should also have a separate switch to set the temporary install prefix so 'run' works.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, "build", NULL);
+	cmd_create(&cmd, init_name, "-t", tmp_install_prefix, "-p", install_prefix, "-C", path, "build", NULL);
 
 	int const rv = cmd_exec(&cmd);
 
@@ -37,7 +36,7 @@ static bool build_task(void* data) {
 	cmd_log(&cmd, NULL, path, "build dependency", "built dependency", false);
 	pthread_mutex_unlock(&logging_lock);
 
-	return rv;
+	return rv < 0;
 }
 
 static size_t reset_built_deps(dep_node_t* tree, size_t* max_child_count) {
@@ -122,6 +121,7 @@ int deps_build(dep_node_t* tree) {
 		}
 
 		// Actually build the leaves in parallel.
+		// TODO This can be majorly improved by not waiting for all leaves to be built before adding more stuff to the pool.
 
 		pool_t pool;
 		pool_init(&pool, ncpu());

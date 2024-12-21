@@ -160,7 +160,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 	}
 }
 
-static int install(bsys_t const* bsys, bool to_prefix) {
+static int install(bsys_t const* bsys, bool to_tmp_prefix) {
 	if (bsys->install == NULL) {
 		LOG_WARN("%s: build system does not have an install step; nothing to install!", bsys->name);
 		return 0;
@@ -170,8 +170,8 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	char* STR_CLEANUP path;
 
-	if (to_prefix) {
-		asprintf(&path, "%s/prefix", out_path);
+	if (to_tmp_prefix) {
+		path = strdup(tmp_install_prefix);
 	}
 
 	else {
@@ -180,7 +180,7 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 
 	assert(path != NULL);
 
-	if (to_prefix && mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
+	if (to_tmp_prefix && mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}
@@ -197,15 +197,15 @@ static int install(bsys_t const* bsys, bool to_prefix) {
 }
 
 static void setup_environment(void) {
-	prepend_env("PATH", "%s/prefix/bin", out_path);
+	prepend_env("PATH", "%s/bin", tmp_install_prefix);
 
 	prepend_env(
 #if defined(__APPLE__)
 		"DY" // dyld(1) doesn't recognize `LD_LIBRARY_PATH`.
 #endif
 		"LD_LIBRARY_PATH",
-		"%s/prefix/lib",
-		out_path
+		"%s/lib",
+		tmp_install_prefix
 	);
 }
 

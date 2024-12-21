@@ -28,6 +28,7 @@ bool debugging = false;
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char const* install_prefix = NULL;
+char* tmp_install_prefix = NULL;
 char* deps_path = NULL;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
@@ -70,7 +71,7 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:j:o:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:j:o:p:t:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
@@ -86,6 +87,10 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'p':
 			install_prefix = optarg;
+			break;
+		// XXX This is purposefully undocumented, as I only see this being used internally for dependencies.
+		case 't':
+			tmp_install_prefix = optarg;
 			break;
 		default:
 			usage();
@@ -203,6 +208,15 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Get default path to the temporary installation prefix if one was not explicitly set.
+
+	bool const tmp_install_prefix_set = tmp_install_prefix != NULL;
+
+	if (!tmp_install_prefix_set) {
+		asprintf(&tmp_install_prefix, "%s/prefix", abs_out_path);
+		assert(tmp_install_prefix != NULL);
+	}
+
 	// Get the dependencies path.
 
 	deps_path = getenv("BOB_DEPS_PATH");
@@ -260,7 +274,11 @@ int main(int argc, char* argv[]) {
 	char const* const instr = *argv++;
 
 	if (strcmp(instr, "build") == 0) {
-		if (bsys_build(bsys, NULL) == 0) {
+		// If we explicitly set a temporary installation prefix, we're probably intending to preinstall to that prefix, even when just building.
+
+		char* const prefix = tmp_install_prefix_set ? tmp_install_prefix : NULL;
+
+		if (bsys_build(bsys, prefix) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
