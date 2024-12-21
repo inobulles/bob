@@ -83,7 +83,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	char* const STR_CLEANUP path = realerpath(key);
 
 	if (path == NULL) {
-		LOG_FATAL("Couldn't find source file (from install map): %s", key_val->str.str);
+		LOG_FATAL("Couldn't find source file (from install map): %s", key);
 		return -1;
 	}
 
