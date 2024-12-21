@@ -255,7 +255,8 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
 
-	dep_t deps[deps_vec->vec.count + 1] = {}; // Because a count of 0 is UB.
+	dep_t deps[deps_vec->vec.count + 1]; // Because a count of 0 is UB.
+	memset(deps, 0, sizeof deps);
 	uint64_t hash = 0;
 
 	if (download(deps_vec, deps, &hash) < 0) {
