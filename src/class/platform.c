@@ -7,16 +7,24 @@
 #include <logging.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <fts.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/utsname.h>
 
 static flamingo_val_t* os_val = NULL;
 
 static int os(flamingo_val_t** rv) {
-	// TODO Get the OS we're on.
+	struct utsname utsname;
 
+	if (uname(&utsname) < 0) {
+		LOG_FATAL("uname: %s", strerror(errno));
+		return -1;
+	}
+
+	*rv = flamingo_val_make_str(strlen(utsname.sysname), utsname.sysname);
 	return 0;
 }
 
