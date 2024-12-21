@@ -101,6 +101,7 @@ int bsys_build(bsys_t const* bsys) {
 	}
 
 	// Building installs to a temporary prefix.
+	// It would be nice to only do this when -p is passed, but unfortunately that's not possible because some build steps can depend on preinstalled artifacts.
 
 	if (install_prefix == NULL) {
 		install_prefix = default_tmp_install_prefix;
