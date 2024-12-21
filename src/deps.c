@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <sys/param.h>
 
+static bool do_preinstall = false;
 static pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool build_task(void* data) {
@@ -30,8 +31,10 @@ static bool build_task(void* data) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, NULL);
 
-	cmd_add(&cmd, "-t");
-	cmd_add(&cmd, tmp_install_prefix);
+	if (do_preinstall) {
+		cmd_add(&cmd, "-t");
+		cmd_add(&cmd, tmp_install_prefix);
+	}
 
 	cmd_add(&cmd, "build-no-deps");
 
@@ -103,7 +106,9 @@ is_root:;
 	return false;
 }
 
-int deps_build(dep_node_t* tree) {
+int deps_build(dep_node_t* tree, bool preinstall) {
+	do_preinstall = preinstall;
+
 	// Walk through dependency tree and build each dependency, starting from the leaves.
 	// To do this most efficiently, we start by popping off all the leaves and building them in parallel.
 	// Once that's done, we pop off the next set of leaves, and so on, until we reach the root node (which this current Bob process is meant to build).

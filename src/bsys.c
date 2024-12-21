@@ -66,7 +66,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	return 0;
 }
 
-static int do_build_deps(bsys_t const* bsys) {
+static int do_build_deps(bsys_t const* bsys, bool preinstall) {
 	if (bsys->dep_tree == NULL || bsys->build_deps == NULL) {
 		return 0;
 	}
@@ -88,7 +88,7 @@ static int do_build_deps(bsys_t const* bsys) {
 
 	// Build each dependency.
 
-	int const rv = bsys->build_deps(tree);
+	int const rv = bsys->build_deps(tree, preinstall);
 	deps_tree_free(tree);
 
 	return rv;
@@ -100,7 +100,7 @@ int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_dep
 		return 0;
 	}
 
-	if (build_deps && do_build_deps(bsys) < 0) {
+	if (build_deps && do_build_deps(bsys, preinstall_prefix != NULL) < 0) {
 		return -1;
 	}
 
