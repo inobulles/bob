@@ -14,9 +14,8 @@
 #include <libgen.h>
 
 static flamingo_val_t* install_map = NULL;
-static char const* prefix = NULL;
 
-int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
+int setup_install_map(flamingo_t* flamingo) {
 	// Find the install map.
 
 	flamingo_scope_t* const scope = flamingo->env->scope_stack[0];
@@ -32,10 +31,7 @@ int setup_install_map(flamingo_t* flamingo, char const* _prefix) {
 		}
 
 		if (map->val->kind == FLAMINGO_VAL_KIND_NONE) {
-			if (_prefix != NULL) {
-				LOG_WARN("Install map not set; nothing to install!");
-			}
-
+			LOG_WARN("Install map not set; nothing to install!"); // TODO Don't warn when just building please.
 			return 0;
 		}
 
@@ -75,12 +71,12 @@ found:
 	}
 
 	install_map = map->val;
-	prefix = _prefix;
-
 	return 0;
 }
 
 static int install_single(flamingo_val_t* key_val, char* val, bool installing_cookie) {
+	assert(install_prefix != NULL);
+
 	// Get absolute path of source.
 
 	char* const STR_CLEANUP key = strndup(key_val->str.str, key_val->str.size);
@@ -111,7 +107,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	char* parent = dirname(parent_backing);
 
 	char* bit;
-	char* STR_CLEANUP accum = strdup(prefix);
+	char* STR_CLEANUP accum = strdup(install_prefix);
 	assert(accum != NULL);
 
 	while ((bit = strsep(&parent, "/"))) {
@@ -137,7 +133,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	// TODO When 'key' is a directory, we should recursively check all files in it.
 
 	char* STR_CLEANUP install_path = NULL;
-	asprintf(&install_path, "%s/%s", prefix, val);
+	asprintf(&install_path, "%s/%s", install_prefix, val);
 	assert(install_path != NULL);
 
 	bool do_install = false;
@@ -186,12 +182,10 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	return 0;
 }
 
-int install_all(char const* _prefix) {
-	if (install_map == NULL || prefix == NULL) {
+int install_all(void) {
+	if (install_map == NULL) {
 		return 0;
 	}
-
-	assert(_prefix == prefix);
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
 		flamingo_val_t* const val_val = install_map->map.vals[i];
@@ -236,10 +230,6 @@ char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 }
 
 int install_cookie(char* cookie) {
-	if (prefix == NULL) {
-		return 0;
-	}
-
 	flamingo_val_t* key = NULL;
 	char* const STR_CLEANUP out = cookie_to_output(cookie, &key);
 

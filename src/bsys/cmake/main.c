@@ -7,7 +7,7 @@ static bool identify(void) {
 	return false;
 }
 
-static int build(char const* preinstall_prefix) {
+static int build(void) {
 	return 0;
 }
 

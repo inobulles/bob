@@ -25,13 +25,18 @@
 // Global options go here so they're accessible by everyone.
 
 bool debugging = false;
-char const* out_path = ".bob"; // Default output path.
-char const* abs_out_path = NULL;
-char const* install_prefix = NULL;
-char* tmp_install_prefix = NULL;
-char* deps_path = NULL;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
+
+char const* out_path = ".bob"; // Default output path.
+char const* abs_out_path = NULL;
+
+char* deps_path = NULL;
+bool build_deps = true;
+
+char const* install_prefix = NULL;
+char* default_final_install_prefix = NULL;
+char* default_tmp_install_prefix = NULL;
 
 bool running_as_root = false;
 uid_t owner = 0;
@@ -52,10 +57,10 @@ void usage(void) {
 
 	fprintf(
 		stderr,
-		"usage: %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] build\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] run [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-C project_directory] [-o out_directory] " "install\n",
+		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] sh [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] " "install\n",
 		progname
 	);
 
@@ -71,10 +76,13 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:j:o:p:t:")) != -1) {
+	while ((c = getopt(argc, argv, "C:Dj:o:p:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
+			break;
+		case 'D':
+			build_deps = false;
 			break;
 		case 'j':
 			if (set_max_jobs(atoi(optarg)) < 0) {
@@ -87,10 +95,6 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'p':
 			install_prefix = optarg;
-			break;
-		// XXX This is purposefully undocumented, as I only see this being used internally for dependencies.
-		case 't':
-			tmp_install_prefix = optarg;
 			break;
 		default:
 			usage();
@@ -191,30 +195,37 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// Get system install prefix.
+	// Get install prefix and ensure it exists.
 
 	if (install_prefix == NULL) {
 		install_prefix = getenv("PREFIX");
 	}
 
-	if (install_prefix == NULL) {
-		install_prefix = "/usr/local";
-	}
+	// Get default final and temporary install prefixes.
 
-	// Ensure it exists.
+	default_final_install_prefix = "/usr/local";
+	asprintf(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
+	assert(default_tmp_install_prefix != NULL);
 
-	if (access(install_prefix, F_OK) < 0) {
-		LOG_FATAL("Installation prefix \"%s\" does not exist.", install_prefix);
-		return EXIT_FAILURE;
-	}
+	// Ensure all installation prefixes (explicitly set, final, and temporary) exist.
 
-	// Get default path to the temporary installation prefix if one was not explicitly set.
+	char const* const prefixes[] = {
+		install_prefix,
+		default_final_install_prefix,
+		default_tmp_install_prefix
+	};
 
-	bool const tmp_install_prefix_set = tmp_install_prefix != NULL;
+	for (size_t i = 0; i < sizeof prefixes / sizeof *prefixes; i++) {
+		char const* const prefix = prefixes[i];
 
-	if (!tmp_install_prefix_set) {
-		asprintf(&tmp_install_prefix, "%s/prefix", abs_out_path);
-		assert(tmp_install_prefix != NULL);
+		if (prefix == NULL) {
+			continue;
+		}
+
+		if (mkdir_wrapped(prefix, 0755) < 0 && errno != EEXIST) {
+			LOG_FATAL("mkdir(\"%s\"): %s", prefix, strerror(errno));
+			return -1;
+		}
 	}
 
 	// Get the dependencies path.
@@ -273,20 +284,8 @@ int main(int argc, char* argv[]) {
 
 	char const* const instr = *argv++;
 
-	// If we explicitly set a temporary installation prefix, we're probably intending to preinstall to that prefix, even when just building.
-
-	char* const build_prefix = tmp_install_prefix_set ? tmp_install_prefix : NULL;
-
 	if (strcmp(instr, "build") == 0) {
-		if (bsys_build(bsys, build_prefix, true) == 0) {
-			rv = EXIT_SUCCESS;
-		}
-	}
-
-	// This is intentionally undocumented, as it's only used when the dependencies of this process are already being managed by another.
-
-	else if (strcmp(instr, "build-no-deps") == 0) {
-		if (bsys_build(bsys, build_prefix, false) == 0) {
+		if (bsys_build(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
