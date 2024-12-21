@@ -24,6 +24,7 @@
 
 // Global options go here so they're accessible by everyone.
 
+char const* instr = NULL;
 bool debugging = false;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
@@ -292,7 +293,7 @@ int main(int argc, char* argv[]) {
 		usage();
 	}
 
-	char const* const instr = *argv++;
+	instr = *argv++;
 
 	if (strcmp(instr, "build") == 0) {
 		if (bsys_build(bsys) == 0) {
