@@ -6,20 +6,36 @@
 #include <cmd.h>
 #include <deps.h>
 #include <logging.h>
+#include <ncpu.h>
+#include <pool.h>
 
 #include <assert.h>
 #include <sys/param.h>
 
-// REMME (But don't forget to copy the comment about -o; I think this is important!)
+static pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 
-__attribute__((unused)) static int build(char const* human, char const* path) {
+static bool build_task(void* data) {
+	char const* const path = data;
+
+	// Log that we're building.
+
+	pthread_mutex_lock(&logging_lock);
+	LOG_INFO("%s" CLEAR ": Building dependency...", path); // TODO Replace with human.
+	pthread_mutex_unlock(&logging_lock);
+
+	// Actually build the dependency.
+	// We shouldn't pass -o here because the dependency should be built in its own output path.
+	// XXX If the dependency wants to use a different output path, we should probably add a function in the Bob build script to set the output path to something else instead of having an -o switch.
+	// TODO -p naturally needs to be set, but we should also have a separate switch to set the temporary install prefix so 'run' works.
+
 	cmd_t CMD_CLEANUP cmd = {0};
-	// TODO Wait no the -o passed to a dependency when building should really be its own output path. -p is the only thing that should be in common. That being said, that raises the issue of if a dependency wants to use a different output path. Maybe there should be a function in Bob to set the output path to something else instead of having an -o switch?
 	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, "build", NULL);
 
-	LOG_INFO("%s" CLEAR ": Building dependency...", human);
 	int const rv = cmd_exec(&cmd);
-	cmd_log(&cmd, NULL, human, "build dependency", "built dependency", false);
+
+	pthread_mutex_lock(&logging_lock);
+	cmd_log(&cmd, NULL, path, "build dependency", "built dependency", false);
+	pthread_mutex_unlock(&logging_lock);
 
 	return rv;
 }
@@ -105,15 +121,18 @@ int deps_build(dep_node_t* tree) {
 			break;
 		}
 
-		// TODO Actually build the leaves in parallel.
+		// Actually build the leaves in parallel.
 
-		printf("Building dependency batch:");
+		pool_t pool;
+		pool_init(&pool, ncpu());
 
 		for (size_t i = 0; i < leaf_count; i++) {
-			printf(" %s", leaves[i]);
+			pool_add_task(&pool, build_task, leaves[i]);
 		}
 
-		printf("\n");
+		if (pool_wait(&pool) < 0) {
+			return -1;
+		}
 	}
 
 	return 0;

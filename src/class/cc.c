@@ -128,7 +128,7 @@ static bool compile_task(void* data) {
 
 	// Run compilation command.
 
-	cmd_t cmd;
+	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 	add_flags(&cmd, task);
 
@@ -147,8 +147,6 @@ static bool compile_task(void* data) {
 	if (!stop && install_cookie(task->out) < 0) {
 		stop = true;
 	}
-
-	cmd_free(&cmd);
 
 	// Cleanup.
 
