@@ -37,6 +37,7 @@ typedef struct {
 
 typedef struct {
 	build_step_state_t* bss;
+	char const* preinstall_prefix;
 
 	char* src;
 	char* out;
@@ -48,6 +49,12 @@ static void add_flags(cmd_t* cmd, compile_task_t* task) {
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
 		cmd_addf(cmd, "%.*s", (int) flag->str.size, flag->str.str);
+	}
+}
+
+static void add_common(cmd_t* cmd, char const* preinstall_prefix) {
+	if (preinstall_prefix != NULL) {
+		cmd_addf(cmd, "-B%s", preinstall_prefix);
 	}
 }
 
@@ -63,6 +70,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-MM", "-MT", "", task->src, NULL);
 	add_flags(&cmd, task);
+	add_common(&cmd, task->preinstall_prefix);
 
 	int const rv = cmd_exec(&cmd);
 	char* STR_CLEANUP out = cmd_read_out(&cmd);
@@ -131,6 +139,7 @@ static bool compile_task(void* data) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 	add_flags(&cmd, task);
+	add_common(&cmd, task->preinstall_prefix);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -256,6 +265,7 @@ static int compile_step(size_t data_count, void** data, char const* preinstall_p
 				assert(data != NULL);
 
 				data->bss = bss;
+				data->preinstall_prefix = preinstall_prefix;
 
 				data->src = src;
 				data->out = out;
