@@ -273,12 +273,20 @@ int main(int argc, char* argv[]) {
 
 	char const* const instr = *argv++;
 
+	// If we explicitly set a temporary installation prefix, we're probably intending to preinstall to that prefix, even when just building.
+
+	char* const build_prefix = tmp_install_prefix_set ? tmp_install_prefix : NULL;
+
 	if (strcmp(instr, "build") == 0) {
-		// If we explicitly set a temporary installation prefix, we're probably intending to preinstall to that prefix, even when just building.
+		if (bsys_build(bsys, build_prefix, true) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
 
-		char* const prefix = tmp_install_prefix_set ? tmp_install_prefix : NULL;
+	// This is intentionally undocumented, as it's only used when the dependencies of this process are already being managed by another.
 
-		if (bsys_build(bsys, prefix) == 0) {
+	else if (strcmp(instr, "build-no-deps") == 0) {
+		if (bsys_build(bsys, build_prefix, false) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
@@ -301,7 +309,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	// This is purposefully undocumented, as it's really only used for communication between Bob parent processes and their Bob children processes.
+	// This is intentionally undocumented, as it's really only used for communication between Bob parent processes and their Bob children processes.
 
 	else if (strcmp(instr, "dep-tree") == 0) {
 		LOG_WARN("This command is internal and isn't meant for direct use. A correct consumer of this command should be able to discard this message by reading the contents within the dependency tree tags.");

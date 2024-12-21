@@ -28,7 +28,12 @@ static bool build_task(void* data) {
 	// XXX If the dependency wants to use a different output path, we should probably add a function in the Bob build script to set the output path to something else instead of having an -o switch.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-t", tmp_install_prefix, "-p", install_prefix, "-C", path, "build", NULL);
+	cmd_create(&cmd, init_name, "-p", install_prefix, "-C", path, NULL);
+
+	cmd_add(&cmd, "-t");
+	cmd_add(&cmd, tmp_install_prefix);
+
+	cmd_add(&cmd, "build-no-deps");
 
 	int const rv = cmd_exec(&cmd);
 

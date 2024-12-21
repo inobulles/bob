@@ -66,7 +66,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	return 0;
 }
 
-static int bsys_build_deps(bsys_t const* bsys) {
+static int do_build_deps(bsys_t const* bsys) {
 	if (bsys->dep_tree == NULL || bsys->build_deps == NULL) {
 		return 0;
 	}
@@ -94,15 +94,13 @@ static int bsys_build_deps(bsys_t const* bsys) {
 	return rv;
 }
 
-int bsys_build(bsys_t const* bsys, char const* preinstall_prefix) {
+int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_deps) {
 	if (bsys->build == NULL) {
 		LOG_WARN("%s build system does not have a build step; nothing to build!", bsys->name);
 		return 0;
 	}
 
-	// Install dependencies.
-
-	if (bsys_build_deps(bsys) < 0) {
+	if (build_deps && do_build_deps(bsys) < 0) {
 		return -1;
 	}
 
@@ -187,7 +185,7 @@ static int install(bsys_t const* bsys, bool to_tmp_prefix) {
 
 	// Run build step.
 
-	if (bsys_build(bsys, path) < 0) {
+	if (bsys_build(bsys, path, true) < 0) {
 		return -1;
 	}
 
