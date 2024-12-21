@@ -45,7 +45,7 @@ static bsys_t const* const BSYS[] = {
 
 bsys_t const* bsys_identify(void);
 int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]);
-int bsys_build(bsys_t const* bsys, char const* preinstall_prefix);
+int bsys_build(bsys_t const* bsys, char const* preinstall_prefix, bool build_deps);
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_sh(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_install(bsys_t const* bsys);
