@@ -54,7 +54,7 @@ static void add_flags(cmd_t* cmd, compile_task_t* task) {
 static void add_common(cmd_t* cmd) {
 	// XXX For some reason, at least with clang, -B doesn't work.
 
-	cmd_addf(cmd, "-isystem=%s/include", install_prefix);
+	cmd_addf(cmd, "-isystem%s/include", install_prefix);
 }
 
 static void get_include_deps(compile_task_t* task, char* cc) {
