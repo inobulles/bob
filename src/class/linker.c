@@ -104,7 +104,7 @@ link:;
 		char* cc = getenv("CC");
 		cc = cc == NULL ? "cc" : cc;
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
-		cmd_addf(&cmd, "-B%s", install_prefix);
+		cmd_addf(&cmd, "-L%s/lib", install_prefix);
 
 #if defined(__APPLE__)
 		cmd_add(&cmd, "-rpath");
