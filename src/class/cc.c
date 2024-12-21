@@ -68,7 +68,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	// TODO Can we do this in parallel easily with 'cmd_exec_async'?
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-MM", "-MT", "", task->src, NULL);
+	cmd_create(&cmd, cc, "-MM", "-MT", "", task->src, NULL);
 	add_flags(&cmd, task);
 	add_common(&cmd, task->preinstall_prefix);
 
