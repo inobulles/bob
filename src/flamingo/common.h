@@ -91,4 +91,8 @@ static inline int call(
 	flamingo_arg_list_t* args
 );
 
+// Representation prototypes.
+
+static inline int repr(flamingo_t* flamingo, flamingo_val_t* val, char** res);
+
 #define error(...) (flamingo_raise_error(__VA_ARGS__))
