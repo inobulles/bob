@@ -392,7 +392,7 @@ build_tree:;
 		// Run the 'dep-tree' command on the dependency and add the resulting dependency trees to ours.
 
 		cmd_t CMD_CLEANUP cmd;
-		cmd_create(&cmd, init_name, "-p", install_prefix, "-C", dep->path, "dep-tree", NULL);
+		cmd_create(&cmd, init_name, "-C", dep->path, "dep-tree", NULL);
 
 		for (size_t j = 0; j < path_len; j++) {
 			cmd_addf(&cmd, "%" PRIx64, path_hashes[j]);

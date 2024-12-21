@@ -167,7 +167,7 @@ static int setup(void) {
 	}
 
 	char* import_path = NULL;
-	asprintf(&import_path, "%s/share/flamingo/import", install_prefix);
+	asprintf(&import_path, "%s/share/flamingo/import", default_final_install_prefix);
 	assert(import_path != NULL);
 
 	flamingo_add_import_path(&flamingo, import_path);
