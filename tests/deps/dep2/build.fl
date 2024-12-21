@@ -5,6 +5,7 @@ import bob
 
 install = {
 	Linker([]).link(Cc([]).compile(["main.c"])): "bin/dep2",
+	"dep2.h": "include/dep2.h"
 }
 
 run = ["dep2"]
