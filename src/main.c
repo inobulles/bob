@@ -143,6 +143,22 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	// Get install prefix and ensure it exists.
+	// We must do this before chdir'ing - don't think I need to explain.
+
+	if (install_prefix == NULL) {
+		install_prefix = getenv("PREFIX");
+	}
+
+	if (install_prefix != NULL) {
+		install_prefix = realerpath(install_prefix);
+
+		if (install_prefix == NULL) {
+			LOG_FATAL("Install prefix path \"%s\" doesn't exist.", install_prefix);
+			return EXIT_FAILURE;
+		}
+	}
+
 	// If project path wasn't set, set it to the current working directory.
 	// Then, make it absolute.
 	// Finally, actually change to that directory.
@@ -155,7 +171,7 @@ int main(int argc, char* argv[]) {
 	project_path = realerpath(rel_project_path);
 
 	if (project_path == NULL) {
-		LOG_FATAL("Invalid project path (\"%s\")", rel_project_path);
+		LOG_FATAL("Project path \"%s\" doesn't exist.", rel_project_path);
 		return EXIT_FAILURE;
 	}
 
@@ -193,12 +209,6 @@ int main(int argc, char* argv[]) {
 	if (abs_out_path == NULL) {
 		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
 		return EXIT_FAILURE;
-	}
-
-	// Get install prefix and ensure it exists.
-
-	if (install_prefix == NULL) {
-		install_prefix = getenv("PREFIX");
 	}
 
 	// Get default final and temporary install prefixes.
