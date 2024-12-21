@@ -7,3 +7,5 @@ deps = [
 	Dep.local("dep1"),
 	Dep.local("dep2"),
 ]
+
+Cc([]).compile(["main.c"])
