@@ -106,7 +106,7 @@ link:;
 		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
 
 		if (preinstall_prefix != NULL) {
-			cmd_addf(&cmd, "-L%s/lib", preinstall_prefix);
+			cmd_addf(&cmd, "-B%s", preinstall_prefix);
 		}
 
 #if defined(__APPLE__)
