@@ -5,6 +5,7 @@
 
 #include <class/class.h>
 #include <logging.h>
+#include <str.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -12,14 +13,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static flamingo_val_t* list_val = NULL;
+static flamingo_val_t* exists_val = NULL;
 
 static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
 
-	char* const path = strndup(args->args[0]->str.str, args->args[0]->str.size);
+	char* const STR_CLEANUP path = strndup(args->args[0]->str.str, args->args[0]->str.size);
 	assert(path != NULL);
 
 	// Create a list to store the paths.
@@ -86,13 +89,27 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	fts_close(fts);
 
 	*rv = out_list;
+	return 0;
+}
 
+static int exists(flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	assert(args->count == 1);
+	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
+
+	char* const STR_CLEANUP path = strndup(args->args[0]->str.str, args->args[0]->str.size);
+	assert(path != NULL);
+
+	*rv = flamingo_val_make_bool(access(path, F_OK) == 0);
 	return 0;
 }
 
 static void populate(char* key, size_t key_size, flamingo_val_t* val) {
 	if (flamingo_cstrcmp(key, "list", key_size) == 0) {
 		list_val = val;
+	}
+
+	else if (flamingo_cstrcmp(key, "exists", key_size) == 0) {
+		exists_val = val;
 	}
 }
 
@@ -101,6 +118,10 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 
 	if (callable == list_val) {
 		return list(args, rv);
+	}
+
+	else if (callable == exists_val) {
+		return exists(args, rv);
 	}
 
 	*consumed = false;
