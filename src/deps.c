@@ -5,6 +5,7 @@
 
 #include <cmd.h>
 #include <deps.h>
+#include <fsutil.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
@@ -31,8 +32,16 @@ static bool build_task(void* data) {
 	// Since we're just building at the moment (no installing), only pass -t, not -p.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", dep->path, "install", NULL);
+	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", dep->path, NULL);
 
+	bool dep_own_prefix;
+	assert(would_set_owner(install_prefix, &dep_own_prefix) == 0);
+
+	if (dep_own_prefix) {
+		cmd_add(&cmd, "-O");
+	}
+
+	cmd_add(&cmd, "install");
 	int const rv = cmd_exec(&cmd);
 
 	pthread_mutex_lock(&logging_lock);
