@@ -53,3 +53,8 @@ if [ $owner != "root" ]; then
 	echo "Installed files are not owned by root." >&2
 	exit 1
 fi
+
+# chown back to the original user, so things aren't annoying.
+
+uid=$(id -u)
+SUDO chown -R $uid tests/chown
