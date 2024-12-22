@@ -41,16 +41,21 @@ static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
 }
 
 static char* serialize_inner(dep_node_t* node, size_t depth) {
-	size_t const len = strlen(node->path);
+	size_t const path_len = strlen(node->path);
+	size_t const human_len = node->human == NULL ? 0 : strlen(node->human) + 1; // +1 to include the colon.
 
-	char* const serialized = malloc(depth + len + 2);
+	size_t const size = human_len + path_len + 2;
+	char* const serialized = malloc(depth + size);
 	assert(serialized != NULL);
-
 	memset(serialized, DEPTH_CHAR, depth);
-	memcpy(serialized + depth, node->path, len);
 
-	serialized[depth + len] = '\n';
-	serialized[depth + len + 1] = '\0';
+	if (node->human == NULL) {
+		snprintf(serialized + depth, size, "%s\n", node->path);
+	}
+
+	else {
+		snprintf(serialized + depth, size, "%s:%s\n", node->human, node->path);
+	}
 
 	return add_children(serialized, node, depth + 1);
 }
@@ -69,6 +74,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 	root->is_root = true;
 	root->path = NULL;
+	root->human = NULL;
 
 	root->child_count = 0;
 	root->children = NULL;
@@ -154,7 +160,23 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 		dep_node_t* const node = &cur->children[cur->child_count++];
 
 		node->is_root = false;
-		node->path = strdup(tok + depth - 1);
+
+		char const* const tuple = tok + depth - 1;
+		char const* human = tuple;
+		char const* path = strrchr(tuple, ':') + 1;
+
+		if (path - 1 == NULL) {
+			path = tuple;
+			human = NULL;
+		}
+
+		if (human != NULL) {
+			node->human = strdup(human);
+			assert(node->human != NULL);
+			node->human[path - human - 1] = '\0';
+		}
+
+		node->path = strdup(path);
 		assert(node->path != NULL);
 
 		node->child_count = 0;
