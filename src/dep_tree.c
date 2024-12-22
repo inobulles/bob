@@ -222,7 +222,7 @@ downloaded:
 		assert(deps[i].path != NULL);
 
 		deps[i].human = strdup(human);
-		assert(deps[i].path != NULL);
+		assert(deps[i].human != NULL);
 	}
 
 	return 0;
@@ -235,6 +235,7 @@ void deps_node_free(dep_node_t* node) {
 
 	free(node->children);
 	free(node->path);
+	free(node->human);
 }
 
 void deps_tree_free(dep_node_t* tree) {
@@ -435,7 +436,12 @@ build_tree:;
 		}
 
 		node.is_root = false;
+
 		node.path = strdup(dep->path);
+		assert(node.path != NULL);
+
+		node.human = strdup(dep->human);
+		assert(node.human != NULL);
 
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);

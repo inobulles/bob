@@ -17,6 +17,7 @@ typedef struct dep_node_t dep_node_t;
 struct dep_node_t {
 	bool is_root; // The root dependency node is self.
 	char* path;
+	char* human; // Can be NULL.
 
 	size_t child_count;
 	struct dep_node_t* children;
