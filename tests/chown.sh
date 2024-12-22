@@ -11,7 +11,10 @@
 # Make sure everything is clean.
 
 INSTALL_PATH=/usr/local/share/bob_chown_test.fl
+DEP_INSTALL_PATH=/usr/local/share/bob_chown_dep_test.fl
+
 SUDO rm -rf tests/chown/.bob $INSTALL_PATH
+SUDO rm -rf tests/chown/dep/.bob $DEP_INSTALL_PATH
 
 # Create a user.
 
@@ -47,10 +50,17 @@ SUDO bob -C tests/chown install
 
 # XXX Annoyingly, 'stat -f %Su' doesn't work on Linux (you have to use 'stat -c %U').
 
-owner=$(ls -ld /usr/local/share/bob_chown_test.fl | awk '{print $3}')
+owner=$(ls -ld $INSTALL_PATH | awk '{print $3}')
 
 if [ $owner != "root" ]; then
-	echo "Installed files are not owned by root." >&2
+	echo "Installed file is not owned by root." >&2
+	exit 1
+fi
+
+dep_owner=$(ls -ld $DEP_INSTALL_PATH | awk '{print $3}')
+
+if [ $dep_owner != "root" ]; then
+	echo "Installed dependency file is not owned by root." >&2
 	exit 1
 fi
 

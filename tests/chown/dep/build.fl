@@ -3,10 +3,6 @@
 
 import bob
 
-deps = [
-	Dep.local("dep"),
-]
-
 install = {
-	"build.fl": "share/bob_chown_test.fl",
+	"build.fl": "share/bob_chown_dep_test.fl",
 }
