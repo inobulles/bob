@@ -27,6 +27,7 @@ extern char const* abs_out_path;
 extern char* deps_path;
 extern _Bool build_deps;
 
+extern _Bool own_prefix;
 extern char const* install_prefix;
 extern char* default_final_install_prefix;
 extern char* default_tmp_install_prefix;
