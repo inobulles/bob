@@ -163,14 +163,17 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		char const* const tuple = tok + depth - 1;
 		char const* human = tuple;
-		char const* path = strrchr(tuple, ':') + 1;
+		char const* path = strrchr(tuple, ':');
 
-		if (path - 1 == NULL) {
+		if (path == NULL) {
 			path = tuple;
 			human = NULL;
 		}
 
-		if (human != NULL) {
+		else {
+			assert(human != NULL);
+			path++;
+
 			node->human = strdup(human);
 			assert(node->human != NULL);
 			node->human[path - human - 1] = '\0';
