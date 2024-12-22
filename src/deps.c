@@ -15,12 +15,14 @@
 static pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool build_task(void* data) {
-	char const* const path = data;
+	dep_node_t* const dep = data;
 
 	// Log that we're building.
 
+	char const* const human = dep->human == NULL ? strrchr(dep->path, '/') + 1 : dep->human;
+
 	pthread_mutex_lock(&logging_lock);
-	LOG_INFO("%s" CLEAR ": Building dependency...", path); // TODO Replace with human.
+	LOG_INFO("%s" CLEAR ": Building dependency...", human);
 	pthread_mutex_unlock(&logging_lock);
 
 	// Actually build the dependency.
@@ -29,12 +31,12 @@ static bool build_task(void* data) {
 	// Since we're just building at the moment (no installing), only pass -t, not -p.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", path, "install", NULL);
+	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", dep->path, "install", NULL);
 
 	int const rv = cmd_exec(&cmd);
 
 	pthread_mutex_lock(&logging_lock);
-	cmd_log(&cmd, NULL, path, "build dependency", "built dependency", false);
+	cmd_log(&cmd, NULL, human, "build dependency", "built dependency", false);
 	pthread_mutex_unlock(&logging_lock);
 
 	return rv < 0;
@@ -57,7 +59,7 @@ static size_t reset_built_deps(dep_node_t* tree, size_t* max_child_count) {
 
 static bool next_batch(
 	dep_node_t* tree,
-	char** leaves,
+	dep_node_t** leaves,
 	size_t* leaf_count,
 	char** already_built,
 	size_t* already_built_count
@@ -76,7 +78,7 @@ static bool next_batch(
 			}
 		}
 
-		leaves[(*leaf_count)++] = tree->path;
+		leaves[(*leaf_count)++] = tree;
 		already_built[(*already_built_count)++] = tree->path;
 
 		return true;
@@ -111,7 +113,7 @@ int deps_build(dep_node_t* tree) {
 	size_t already_built_count = 0;
 
 	for (;;) {
-		char* leaves[max_child_count + 1]; // XXX +1 because zero-length VLA UB.
+		dep_node_t* leaves[max_child_count + 1]; // XXX +1 because zero-length VLA UB.
 		size_t leaf_count = 0;
 
 		next_batch(tree, leaves, &leaf_count, already_built, &already_built_count);
