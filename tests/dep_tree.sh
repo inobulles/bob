@@ -29,9 +29,9 @@ fi
 DEP1=$(find $BOB_DEPS_PATH -name "*dep1*")
 DEP2=$(find $BOB_DEPS_PATH -name "*dep2*")
 
-printf "$DEP1\n" > $DEPS_TREE_PATH.expected
-printf "\t$DEP2\n" >> $DEPS_TREE_PATH.expected
-printf "$DEP2\n" >> $DEPS_TREE_PATH.expected
+printf "dep1:$DEP1\n" > $DEPS_TREE_PATH.expected
+printf "\tdep2:$DEP2\n" >> $DEPS_TREE_PATH.expected
+printf "dep2:$DEP2\n" >> $DEPS_TREE_PATH.expected
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected." >&2
@@ -53,8 +53,8 @@ fi
 cp tests/deps/build.changed.fl tests/deps/build.fl
 try "Failed to create dependency tree after changing dependencies"
 
-printf "$DEP1\n" > $DEPS_TREE_PATH.expected
-printf "\t$DEP2\n" >> $DEPS_TREE_PATH.expected
+printf "dep1:$DEP1\n" > $DEPS_TREE_PATH.expected
+printf "\tdep2:$DEP2\n" >> $DEPS_TREE_PATH.expected
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected after changing dependencies." >&2
@@ -66,7 +66,7 @@ fi
 cp tests/deps/build.duplicate.fl tests/deps/build.fl
 try "Failed to create dependency tree with duplicates in the dependency vector"
 
-printf "$DEP2\n" > $DEPS_TREE_PATH.expected
+printf "dep2:$DEP2\n" > $DEPS_TREE_PATH.expected
 
 if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	echo "Dependency tree differed to the one expected with duplicates in the dependency vector." >&2
