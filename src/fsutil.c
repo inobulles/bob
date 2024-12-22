@@ -83,7 +83,9 @@ int copy(char const* src, char const* dst, char** err) {
 extern bool running_as_root;
 extern uid_t owner;
 
-int set_owner(char const* path) {
+int would_set_owner(char const* path, bool* would) {
+	*would = false;
+
 	// We only want to lower permissions if we're running as root.
 
 	if (!running_as_root) {
@@ -96,10 +98,11 @@ int set_owner(char const* path) {
 	char* STR_CLEANUP full_path = NULL;
 
 	if (abs_out_path == NULL) {
-		goto chown;
+		*would = true;
+		return 0;
 	}
 
-	// We only want to mess with the permissions of stuff in the output directory (.bob) or the dependencies directory.
+	// We only want to mess with the permissions of stuff in the output directory (.bob), the dependencies cache directory, or, if we're set to own the prefix, the prefix.
 
 	full_path = realerpath(path);
 
@@ -110,16 +113,26 @@ int set_owner(char const* path) {
 
 	if (
 		strstr(full_path, abs_out_path) != full_path &&
-		strstr(full_path, deps_path) != full_path
+		strstr(full_path, deps_path) != full_path &&
+		(!own_prefix || strstr(full_path, install_prefix) != full_path)
 	) {
 		return 0;
 	}
 
-	// If those checks all pass, we can finally set the owner of the file.
+	// If those checks all pass, we would set the owner of the file.
 
-chown:
+	*would = true;
+	return 0;
+}
 
-	if (chown(path, owner, -1) < 0) {
+int set_owner(char const* path) {
+	bool do_chown;
+
+	if (would_set_owner(path, &do_chown) < 0) {
+		return -1;
+	}
+
+	if (do_chown && chown(path, owner, -1) < 0) {
 		LOG_ERROR("chown(\"%s\"): %s", path, strerror(errno));
 		return -1;
 	}

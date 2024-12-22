@@ -35,6 +35,7 @@ char const* abs_out_path = NULL;
 char* deps_path = NULL;
 bool build_deps = true;
 
+bool own_prefix = false;
 char const* install_prefix = NULL;
 char* default_final_install_prefix = NULL;
 char* default_tmp_install_prefix = NULL;
@@ -58,10 +59,10 @@ void usage(void) {
 
 	fprintf(
 		stderr,
-		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] build\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] run [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-C project_directory] [-o out_directory] " "install\n",
+		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] " "install\n",
 		progname
 	);
 
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:Dj:o:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:Dj:Oo:p:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
@@ -90,6 +91,9 @@ int main(int argc, char* argv[]) {
 				exit(EXIT_FAILURE);
 			}
 
+			break;
+		case 'O':
+			own_prefix = true;
 			break;
 		case 'o':
 			out_path = optarg;
