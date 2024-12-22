@@ -37,6 +37,7 @@ class Dep(_kind: str) {
 
 class Fs {
 	static proto list(path: str) -> vec<str>
+	static proto exists(path: str) -> bool
 }
 
 class Linker(flags: vec<str>) {
