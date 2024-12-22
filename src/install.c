@@ -168,6 +168,8 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 		return -1;
 	}
 
+	set_owner(install_path);
+
 #if defined(__APPLE__)
 	free(err);
 	err = NULL;
