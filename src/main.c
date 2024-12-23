@@ -62,7 +62,7 @@ void usage(void) {
 		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] build\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] " "install\n",
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] install\n" "       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] clean\n",
 		progname
 	);
 
@@ -319,6 +319,12 @@ int main(int argc, char* argv[]) {
 
 	else if (strcmp(instr, "install") == 0) {
 		if (bsys_install(bsys) == 0) {
+			rv = EXIT_SUCCESS;
+		}
+	}
+
+	else if (strcmp(instr, "clean") == 0) {
+		if (bsys_clean(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}

@@ -264,3 +264,11 @@ int bsys_sh(bsys_t const* bsys, int argc, char* argv[]) {
 int bsys_install(bsys_t const* bsys) {
 	return install(bsys, false);
 }
+
+int bsys_clean(bsys_t const* bsys) {
+	if (bsys->clean == NULL) {
+		return 0;
+	}
+
+	return bsys->clean();
+}

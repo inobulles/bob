@@ -19,6 +19,7 @@ struct bsys_t {
 	int (*build_deps)(dep_node_t* tree);
 	int (*build)(void);
 	int (*install)(void);
+	int (*clean)(void);
 	int (*run)(int argc, char* argv[]);
 	void (*destroy)(void);
 };
@@ -49,3 +50,4 @@ int bsys_build(bsys_t const* bsys);
 int bsys_run(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_sh(bsys_t const* bsys, int argc, char* argv[]);
 int bsys_install(bsys_t const* bsys);
+int bsys_clean(bsys_t const* bsys);
