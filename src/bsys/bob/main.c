@@ -280,6 +280,20 @@ static int build(void) {
 	return run_build_steps();
 }
 
+static int clean(void) {
+	char* STR_CLEANUP err = NULL;
+
+	LOG_INFO("Will remove \"%s\". ^C to cancel now.", abs_out_path);
+	getchar();
+
+	if (rm(abs_out_path, &err) < 0) {
+		LOG_FATAL("Failed to clean output directory (\"%s\"): %s", abs_out_path, err);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int run(int argc, char* argv[]) {
 	// Find run vector.
 
@@ -367,6 +381,7 @@ bsys_t const BSYS_BOB = {
 	.build_deps = deps_build,
 	.build = build,
 	.install = install_all,
+	.clean = clean,
 	.run = run,
 	.destroy = destroy,
 };
