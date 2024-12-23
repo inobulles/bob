@@ -68,6 +68,16 @@ To install a project with Bob, run:
 bob install
 ```
 
+### Cleaning
+
+If for whatever reason you need to clean up Bob's mess, you can run:
+
+```console
+bob clean
+```
+
+In practice, this is just a safer way to run `rm -rf .bob`.
+
 ## Testing
 
 To run the Bob tests, simply run:
