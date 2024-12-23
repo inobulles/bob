@@ -3,7 +3,7 @@
 
 import bob
 
-assert Fs.list(".").where(|path| !path.startswith("./.bob")) == [".", "./build.fl", "./subdir", "./subdir/file2", "./subdir/file1"], "Fs.list() failed"
+assert Fs.list(".").where(|path| !path.startswith("./.bob")) == [".", "./build.fl", "./subdir", "./subdir/file1", "./subdir/file2"], "Fs.list() failed"
 
 assert Fs.exists("build.fl"), "Fs.exists() failed"
 assert !Fs.exists("thisfiledoesntexist"), "Fs.exists() failed"

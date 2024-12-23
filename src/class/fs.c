@@ -18,6 +18,10 @@
 static flamingo_val_t* list_val = NULL;
 static flamingo_val_t* exists_val = NULL;
 
+static int alpha_compar(FTSENT const** a, FTSENT const** b) {
+	return strcmp((*a)->fts_name, (*b)->fts_name);
+}
+
 static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
@@ -35,7 +39,7 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	size_t const depth = 0; // XXX Hardcoded for now.
 
 	char* const path_argv[] = {(char*) path, NULL};
-	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, NULL);
+	FTS* const fts = fts_open(path_argv, FTS_LOGICAL, alpha_compar);
 
 	if (fts == NULL) {
 		LOG_FATAL("fts_open(\"%s\"): %s", path, strerror(errno));
