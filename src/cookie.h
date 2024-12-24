@@ -5,7 +5,6 @@
 
 #include <pthread.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 extern size_t built_cookie_count;
 extern char** built_cookies;
