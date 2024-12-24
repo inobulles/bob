@@ -152,7 +152,7 @@ static bool compile_task(void* data) {
 	cmd_log(&cmd, task->out, task->src, "compile", "compiled", true);
 	pthread_mutex_unlock(&task->bss->logging_lock);
 
-	if (!stop && install_cookie(task->out) < 0) {
+	if (!stop && install_cookie(task->out, true) < 0) {
 		stop = true;
 	}
 
@@ -275,7 +275,7 @@ static int compile_step(size_t data_count, void** data) {
 			if (vres == VALIDATION_RES_SKIP) {
 				log_already_done(out, src, "compiled");
 
-				if (install_cookie(out) < 0) {
+				if (install_cookie(out, false) < 0) {
 					vres = VALIDATION_RES_ERR;
 				}
 			}

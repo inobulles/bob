@@ -95,7 +95,7 @@ static int link_step(size_t data_count, void** data) {
 	// Already linked.
 
 	log_already_done(out, pretty, bss->past);
-	rv = install_cookie(out);
+	rv = install_cookie(out, false);
 
 	goto done;
 
@@ -156,7 +156,7 @@ link:;
 	cmd_free(&cmd);
 
 	if (rv == 0) {
-		rv = install_cookie(out);
+		rv = install_cookie(out, true);
 	}
 
 done:

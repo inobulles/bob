@@ -236,7 +236,7 @@ char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 	return NULL;
 }
 
-int install_cookie(char* cookie) {
+int install_cookie(char* cookie, bool built) {
 	flamingo_val_t* key = NULL;
 	char* const STR_CLEANUP out = cookie_to_output(cookie, &key);
 
@@ -244,7 +244,9 @@ int install_cookie(char* cookie) {
 		return 0;
 	}
 
-	add_built_cookie(cookie);
+	if (built) {
+		add_built_cookie(cookie);
+	}
 
 	if (install_single(key, out, true) < 0) {
 		return -1;
