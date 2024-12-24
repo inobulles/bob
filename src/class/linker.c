@@ -69,6 +69,17 @@ static int link_step(size_t data_count, void** data) {
 		goto link;
 	}
 
+	// Re-link if any statically linked dependencies have changed.
+	// We know we have a static dependency when there's a cookie in the flags.
+
+	for (size_t i = 0; i < bss->state->flags->vec.count; i++) {
+		flamingo_val_t* const flag = bss->state->flags->vec.elems[i];
+
+		if (has_built_cookie(flag->str.str, flag->str.size)) {
+			goto link;
+		}
+	}
+
 	// Check modification times.
 
 	bool do_link;
