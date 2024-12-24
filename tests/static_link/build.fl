@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Aymeric Wibo
+
+import bob
+
+let lib1 = Linker([]).archive(Cc([]).compile(["lib1.c"]))
+let lib2 = Linker([]).archive(Cc([]).compile(["lib2.c"]))
+
+let cmd = Linker([lib1]).link(Cc([]).compile(["main.c"]))
+
+install = {
+	lib1: "lib/lib1.a",
+	lib2: "lib/lib2.a",
+	cmd: "bin/cmd"
+}
