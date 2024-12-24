@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
-#include <apple.h>
 #include <common.h>
+
+#include <apple.h>
+#include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
 #include <install.h>
@@ -206,7 +208,7 @@ int install_all(void) {
 
 char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 	if (install_map == NULL) {
-		return 0;
+		return NULL;
 	}
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
@@ -238,7 +240,13 @@ int install_cookie(char* cookie) {
 	flamingo_val_t* key = NULL;
 	char* const STR_CLEANUP out = cookie_to_output(cookie, &key);
 
-	if (out != NULL && install_single(key, out, true) < 0) {
+	if (out == NULL) {
+		return 0;
+	}
+
+	add_built_cookie(cookie);
+
+	if (install_single(key, out, true) < 0) {
 		return -1;
 	}
 
