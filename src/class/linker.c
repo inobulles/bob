@@ -142,6 +142,7 @@ link:;
 	if (pretty == NULL) {
 		LOG_INFO(CLEAR "%s...", bss->present);
 	}
+
 	else {
 		LOG_INFO("%s" CLEAR ": %s...", pretty, bss->present);
 	}
@@ -205,7 +206,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 		total_hash ^= str_hash(src->str.str, src->str.size);
 	}
 
-	char* cookie = NULL;
+	char* STR_CLEANUP cookie = NULL;
 	asprintf(&cookie, "%s/bob/linker.%s.cookie.%" PRIx64 ".%s", out_path, infinitive, total_hash, archive ? "a" : "l");
 	assert(cookie != NULL);
 	*rv = flamingo_val_make_cstr(cookie);
