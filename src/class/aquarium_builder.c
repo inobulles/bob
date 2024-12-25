@@ -14,7 +14,7 @@
 #include <inttypes.h>
 
 #define AQUARIUM_BUILDER "AquariumBuilder"
-#define MAGIC (strhash("AquariumBuilder() magic"))
+#define MAGIC (strhash(AQUARIUM_BUILDER "() magic"))
 
 typedef struct {
 	char* template;
@@ -52,7 +52,7 @@ static int create_step(size_t data_count, void** data) {
 		}
 
 		else {
-			LOG_INFO("%s" CLEAR ": Creating builder aquarium, as it doesn't yet exist (this might take several minutes)...", pretty);
+			LOG_INFO("%s" CLEAR ": Creating builder aquarium, as it doesn't yet exist...", pretty);
 
 			cmd_create(&cmd, "aquarium", "-t", state->template, "create", cookie, NULL);
 			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
@@ -62,7 +62,7 @@ static int create_step(size_t data_count, void** data) {
 				set_owner(cookie);
 			}
 
-			cmd_log(&cmd, cookie, pretty, "create builder aquarium", "created build aquarium", true);
+			cmd_log(&cmd, cookie, pretty, "create builder aquarium", "created builder aquarium", true);
 
 			if (rv != 0) {
 				return -1;
