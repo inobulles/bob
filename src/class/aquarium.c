@@ -33,7 +33,7 @@ static int add_kernel(state_t* state, flamingo_arg_list_t* args, flamingo_val_t*
 static int prep_image(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 0);
 
-	// TODO
+	// TODO Imaging build step.
 
 	return 0;
 }

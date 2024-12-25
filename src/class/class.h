@@ -15,6 +15,7 @@ typedef struct {
 } bob_class_t;
 
 extern bob_class_t BOB_CLASS_AQUARIUM;
+extern bob_class_t BOB_CLASS_AQUARIUM_BUILDER;
 extern bob_class_t BOB_CLASS_CC;
 extern bob_class_t BOB_CLASS_CARGO;
 extern bob_class_t BOB_CLASS_FS;
@@ -25,6 +26,7 @@ extern bob_class_t BOB_CLASS_PLATFORM;
 
 static bob_class_t* const BOB_CLASSES[] = {
 	&BOB_CLASS_AQUARIUM,
+	&BOB_CLASS_AQUARIUM_BUILDER,
 	&BOB_CLASS_CC,
 	&BOB_CLASS_CARGO,
 	&BOB_CLASS_FS,
