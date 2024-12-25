@@ -299,7 +299,7 @@ int main(int argc, char* argv[]) {
 
 	instr = *argv++;
 
-	if (strcmp(instr, "build") == 0) {
+	if (argc == 0 && strcmp(instr, "build") == 0) {
 		if (bsys_build(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
@@ -317,13 +317,13 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	else if (strcmp(instr, "install") == 0) {
+	else if (argc == 0 && strcmp(instr, "install") == 0) {
 		if (bsys_install(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
 
-	else if (strcmp(instr, "clean") == 0) {
+	else if (argc == 0 && strcmp(instr, "clean") == 0) {
 		if (bsys_clean(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
@@ -331,7 +331,7 @@ int main(int argc, char* argv[]) {
 
 	// This is intentionally undocumented, as it's really only used for communication between Bob parent processes and their Bob children processes.
 
-	else if (strcmp(instr, "dep-tree") == 0) {
+	else if (argc == 1 && strcmp(instr, "dep-tree") == 0) {
 		LOG_WARN("This command is internal and isn't meant for direct use. A correct consumer of this command should be able to discard this message by reading the contents within the dependency tree tags.");
 
 		if (bsys_dep_tree(bsys, argc, argv) == 0) {
