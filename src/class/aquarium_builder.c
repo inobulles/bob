@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
-#include <class/class.h>
 #include <common.h>
+
+#include <class/class.h>
 #include <logging.h>
 #include <str.h>
 
