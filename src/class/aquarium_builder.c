@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#include "aquarium_common.h"
+
 #define AQUARIUM_BUILDER "AquariumBuilder"
 #define MAGIC (strhash(AQUARIUM_BUILDER "() magic"))
 
@@ -26,6 +28,11 @@ typedef struct {
 	char* cookie;
 } state_t;
 
+typedef struct {
+	state_t* state;
+	aquarium_state_t* target;
+} install_to_bss_t;
+
 static int create_step(size_t data_count, void** data) {
 	// TODO Parallelize this, but make sure libaquarium works in parallel first.
 
@@ -35,9 +42,8 @@ static int create_step(size_t data_count, void** data) {
 		// Generate the cookie.
 
 		uint64_t const hash = strhash(state->template) ^ strhash(state->project_path);
-		char* STR_CLEANUP cookie = NULL;
-		asprintf(&cookie, "%s/bob/aquarium_builder.cookie.%" PRIx64 ".aquarium", out_path, hash);
-		assert(cookie != NULL);
+		asprintf(&state->cookie, "%s/bob/aquarium_builder.cookie.%" PRIx64 ".aquarium", out_path, hash);
+		assert(state->cookie != NULL);
 
 		// If it doesn't yet exist, create the aquarium.
 
@@ -47,24 +53,24 @@ static int create_step(size_t data_count, void** data) {
 
 		cmd_t CMD_CLEANUP cmd = {0};
 
-		if (access(cookie, F_OK) == 0) {
-			log_already_done(cookie, pretty, "created builder aquarium");
+		if (access(state->cookie, F_OK) == 0) {
+			log_already_done(NULL, pretty, "created builder aquarium");
 		}
 
 		else {
 			LOG_INFO("%s" CLEAR ": Creating builder aquarium, as it doesn't yet exist...", pretty);
 
-			cmd_create(&cmd, "aquarium", "-t", state->template, "create", cookie, NULL);
+			cmd_create(&cmd, "aquarium", "-t", state->template, "create", state->cookie, NULL);
 			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
 			int rv = cmd_exec(&cmd);
 
 			if (rv == 0) {
-				set_owner(cookie);
+				set_owner(state->cookie);
 			}
 
-			cmd_log(&cmd, cookie, pretty, "create builder aquarium", "created builder aquarium", true);
+			cmd_log(&cmd, NULL, pretty, "create builder aquarium", "created builder aquarium", true);
 
-			if (rv != 0) {
+			if (rv < 0) {
 				return -1;
 			}
 
@@ -73,7 +79,7 @@ static int create_step(size_t data_count, void** data) {
 			LOG_INFO("%s" CLEAR ": Installing Bob to the builder aquarium...", pretty);
 
 			cmd_free(&cmd);
-			cmd_create(&cmd, "aquarium", "-t", state->template, "enter", cookie, NULL);
+			cmd_create(&cmd, "aquarium", "-t", state->template, "enter", state->cookie, NULL);
 
 			// clang-format off
 			cmd_prepare_stdin(&cmd,
@@ -92,7 +98,7 @@ static int create_step(size_t data_count, void** data) {
 
 			if (cmd_exec(&cmd) < 0) {
 				LOG_FATAL("%s" CLEAR ": Failed to install Bob to the builder aquarium.", pretty);
-				rm(cookie, NULL); // To make sure that we go through this again next time the command is run.
+				rm(state->cookie, NULL); // To make sure that we go through this again next time the command is run.
 				return -1;
 			}
 
@@ -105,9 +111,9 @@ static int create_step(size_t data_count, void** data) {
 
 		LOG_INFO("%s" CLEAR ": Copying project to the builder aquarium...", pretty);
 
-		cmd_create(&cmd, "aquarium", "cp", cookie, state->project_path, "/proj", NULL);
+		cmd_create(&cmd, "aquarium", "cp", state->cookie, state->project_path, "/proj", NULL);
 		int const rv = cmd_exec(&cmd);
-		cmd_log(&cmd, cookie, pretty, "copy project to builder aquarium", "copied project to builder aquarium", false);
+		cmd_log(&cmd, NULL, pretty, "copy project to builder aquarium", "copied project to builder aquarium", false);
 
 		if (rv < 0) {
 			return -1;
@@ -118,7 +124,7 @@ static int create_step(size_t data_count, void** data) {
 		LOG_INFO("%s" CLEAR ": Building project in the builder aquarium...", pretty);
 
 		cmd_free(&cmd);
-		cmd_create(&cmd, "aquarium", "enter", cookie, NULL);
+		cmd_create(&cmd, "aquarium", "enter", state->cookie, NULL);
 
 		// clang-format off
 		cmd_prepare_stdin(&cmd,
@@ -143,6 +149,58 @@ static int create_step(size_t data_count, void** data) {
 	return 0;
 }
 
+#define INSTALL_TO_MOUNTPOINT "/mnt"
+
+static int install_to_step(size_t data_count, void** data) {
+	for (size_t i = 0; i < data_count; i++) {
+		install_to_bss_t* const bss = data[i];
+
+		// Bind mount the target aquarium to the builder.
+
+		LOG_INFO("%s" CLEAR ": Bind mounting target aquarium to builder...", bss->state->template);
+
+		cmd_t CMD_CLEANUP cmd = {0};
+		cmd_create(&cmd, "aquarium", "mount", bss->target->cookie, bss->state->cookie, INSTALL_TO_MOUNTPOINT, NULL);
+
+		int const rv = cmd_exec(&cmd);
+		cmd_log(&cmd, NULL, bss->state->template, "bind mounted target aquarium to builder", "bind mounted target aquarium to builder", false);
+
+		if (rv < 0) {
+			return -1;
+		}
+
+		// Actually install the project to the target aquarium.
+
+		LOG_INFO("%s" CLEAR ": Installing built project to target aquarium...", bss->state->template);
+
+		cmd_free(&cmd);
+		cmd_create(&cmd, "aquarium", "enter", bss->state->cookie, NULL);
+
+		// clang-format off
+		cmd_prepare_stdin(&cmd,
+			"set -e\n"
+			"export HOME=/root\n"
+			"export PATH\n"
+			"cd proj\n"
+			"bob -p " INSTALL_TO_MOUNTPOINT "/usr/local install\n"
+		);
+		// clang-format on
+
+		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+
+		if (cmd_exec(&cmd) < 0) {
+			LOG_FATAL("%s" CLEAR ": Failed to install built project to target aquarium.", bss->state->template);
+			return -1;
+		}
+
+		LOG_SUCCESS("%s" CLEAR ": Installed built project to target aquarium.", bss->state->template);
+
+		// TODO Unmount?
+	}
+
+	return 0;
+}
+
 static int prep_install_to(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	flamingo_val_t* const arg = args->args[0];
@@ -157,9 +215,17 @@ static int prep_install_to(state_t* state, flamingo_arg_list_t* args, flamingo_v
 		return -1;
 	}
 
-	// TODO Installing build step.
+	aquarium_state_t* const target = arg->inst.data;
 
-	return 0;
+	// Add build step to install to target aquarium.
+
+	install_to_bss_t* const bss = malloc(sizeof *bss);
+	assert(bss != NULL);
+
+	bss->state = state;
+	bss->target = target;
+
+	return add_build_step(MAGIC ^ strhash(__func__), "Installing built project to target aquarium", install_to_step, bss);
 }
 
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
@@ -180,6 +246,7 @@ static void free_state(flamingo_val_t* inst, void* data) {
 
 	free(state->template);
 	free(state->project_path);
+	free(state->cookie);
 
 	free(state);
 }
