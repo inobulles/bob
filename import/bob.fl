@@ -64,31 +64,28 @@ class Platform {
 	static proto getenv(key: str) -> str
 }
 
-# This class provides a way to build and interact with aquariums.
+# This class provides a way to create and interact with aquariums.
 # Bob does not come with aquariums by default, so you must have already installed it.
 # It uses the aquarium command line tool to build aquariums, so you don't need to re-link it if you installed aquariums a posteriori.
 #
 # The constructor just creates a new aquarium from a template.
 class Aquarium(template: str) {
-	# Builder aquarium stuff.
-
-	# Create a builder aquarium from a template and a project path.
-	# The builder aquarium will be created from the template and will have Bob installed in it.
-	# Then, the project at the given path will be copied over to the builder aquarium and be built within that aquarium.
-	static proto builder(template: str, project_path: str) -> Aquarium
-
-	# Install the built project to a target aquarium.
-	# The aquarium this is called on must be a builder aquarium, i.e. one created with `Aquarium.builder()`.
-	proto install_to(target: Aquarium) -> void
-
-	# Regular aquarium stuff.
-
 	# Add a kernel template to the aquarium.
 	proto add_kernel(kernel: str) -> void
 
 	# Create a bootable image from the aquarium.
 	# A kernel must have been added to the aquarium with `set_kernel()` before calling this method.
 	proto image -> str
+}
+
+# This class provides a way to build projects inside of aquariums.
+# All the same disclaimers from the `Aquarium` class apply here too.
+#
+# The constructor creates a builder aquarium from the template and will have Bob installed to it.
+# Then, the project at the given path will be copied over to the builder aquarium and be built within that aquarium.
+class AquariumBuilder(template: str, project_path: str) {
+	# Install the built project to a target aquarium.
+	proto install_to(target: Aquarium) -> void
 }
 
 # Vector of other projects this project depends on.
