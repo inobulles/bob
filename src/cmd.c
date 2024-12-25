@@ -44,6 +44,8 @@ void cmd_create(cmd_t* cmd, ...) {
 
 	va_end(va);
 
+	cmd_set_redirect(cmd, true);
+
 	cmd->in = -1;
 	cmd->out = -1;
 }
@@ -81,6 +83,17 @@ void cmd_add_argv(cmd_t* cmd, int argc, char* argv[]) {
 
 		cmd_add(cmd, argv[i]);
 	}
+}
+
+void cmd_set_redirect(cmd_t* cmd, bool redirect) {
+	// We don't do any of this output pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
+
+	if (debugging) {
+		cmd->redirect = false;
+		return;
+	}
+
+	cmd->redirect = redirect;
 }
 
 static bool is_executable(char const* path) {
@@ -154,10 +167,9 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		return -1;
 	}
 
-	// Create pipes.
-	// We don't do any of this pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
+	// Create stdout+stderr pipe.
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		int fd[2];
 
 		if (pipe(fd) < 0) {
@@ -178,7 +190,7 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	posix_spawn_file_actions_t actions;
 	posix_spawn_file_actions_init(&actions);
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		posix_spawn_file_actions_addclose(&actions, cmd->out);
 
 		posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
@@ -198,7 +210,7 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 
 	posix_spawn_file_actions_destroy(&actions);
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		close(cmd->in);
 		cmd->in = -1;
 	}
@@ -244,7 +256,7 @@ char* cmd_read_out(cmd_t* cmd) {
 	char* out = strdup("");
 	assert(out != NULL);
 
-	if (debugging) {
+	if (!cmd->redirect) {
 		return out;
 	}
 
