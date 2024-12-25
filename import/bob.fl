@@ -56,7 +56,10 @@ class Linker(flags: vec<str>) {
 	proto archive(obj: vec<str>) -> str
 }
 
+# This class provides platform-specific information.
 class Platform {
+	# Return the OS of the platform Bob is running on.
+	# The output of this function is equivalent to the output of the uname(1) POSIX command.
 	static proto os -> str
 	static proto getenv(key: str) -> str
 }
