@@ -118,7 +118,31 @@ static int create_step(size_t data_count, void** data) {
 			return -1;
 		}
 
-		// TODO Attempt to build project.
+		// Attempt to build project.
+
+		LOG_INFO("%s" CLEAR ": Building project in the builder aquarium...", pretty);
+
+		cmd_free(&cmd);
+		cmd_create(&cmd, "aquarium", "enter", cookie, NULL);
+
+		// clang-format off
+		cmd_prepare_stdin(&cmd,
+			"set -e\n"
+			"export HOME=/root\n"
+			"export PATH\n"
+			"cd proj\n"
+			"bob build\n"
+		);
+		// clang-format on
+
+		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+
+		if (cmd_exec(&cmd) < 0) {
+			LOG_FATAL("%s" CLEAR ": Failed to build project in the builder aquarium.", pretty);
+			return -1;
+		}
+
+		LOG_SUCCESS("%s" CLEAR ": Built project in the builder aquarium.", pretty);
 	}
 
 	return 0;
