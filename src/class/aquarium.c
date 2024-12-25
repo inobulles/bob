@@ -6,6 +6,7 @@
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
+#include <cookie.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -18,7 +19,13 @@
 #define AQUARIUM "Aquarium"
 #define MAGIC (strhash(AQUARIUM "() magic"))
 
+typedef struct {
+	aquarium_state_t* state;
+	char* cookie;
+} image_bss_t;
+
 static size_t aquarium_count = 0;
+static size_t image_id = 0;
 
 static int create_step(size_t data_count, void** data) {
 	for (size_t i = 0; i < data_count; i++) {
@@ -68,6 +75,31 @@ static int create_step(size_t data_count, void** data) {
 	return 0;
 }
 
+static int image_step(size_t data_count, void** data) {
+	for (size_t i = 0; i < data_count; i++) {
+		image_bss_t* const bss = data[i];
+
+		LOG_INFO("%s" CLEAR ": Creating bootable image from aquarium...", bss->state->template);
+
+		cmd_t CMD_CLEANUP cmd = {0};
+		cmd_create(&cmd, "aquarium", "image", bss->state->cookie, bss->cookie, NULL);
+		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+		int rv = cmd_exec(&cmd);
+
+		if (rv == 0) {
+			set_owner(bss->cookie);
+		}
+
+		cmd_log(&cmd, NULL, bss->state->template, "create bootable image from aquarium", "created bootable image from aquarium", true);
+
+		if (rv < 0) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int add_kernel(aquarium_state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 
@@ -85,9 +117,17 @@ static int add_kernel(aquarium_state_t* state, flamingo_arg_list_t* args, flamin
 static int prep_image(aquarium_state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 0);
 
-	// TODO Imaging build step.
+	image_bss_t* const bss = malloc(sizeof *bss);
+	assert(bss != NULL);
 
-	return 0;
+	bss->state = state;
+
+	asprintf(&bss->cookie, "%s/bob/aquarium.cookie.%zu.img", out_path, image_id++);
+	assert(bss->cookie != NULL);
+
+	*rv = flamingo_val_make_cstr(bss->cookie);
+
+	return add_build_step(MAGIC ^ strhash(__func__), "Imaging aquarium", image_step, bss);
 }
 
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
