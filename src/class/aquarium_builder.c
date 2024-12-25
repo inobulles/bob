@@ -50,6 +50,8 @@ static int create_step(size_t data_count, void** data) {
 		asprintf(&pretty, "Project '%s' with template '%s'", state->project_path, state->template);
 		assert(pretty != NULL);
 
+		cmd_t CMD_CLEANUP cmd = {0};
+
 		if (access(cookie, F_OK) == 0) {
 			log_already_done(cookie, pretty, "created builder aquarium");
 		}
@@ -57,7 +59,6 @@ static int create_step(size_t data_count, void** data) {
 		else {
 			LOG_INFO("%s" CLEAR ": Creating builder aquarium, as it doesn't yet exist (this might take several minutes)...", pretty);
 
-			cmd_t CMD_CLEANUP cmd;
 			cmd_create(&cmd, "aquarium", "-t", state->template, "create", cookie, NULL);
 			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
 			int rv = cmd_exec(&cmd);
@@ -101,9 +102,22 @@ static int create_step(size_t data_count, void** data) {
 			}
 
 			LOG_SUCCESS("%s" CLEAR ": Installed Bob to the builder aquarium.", pretty);
+			cmd_free(&cmd);
 		}
 
-		// TODO Copy/link over the project.
+		// Copy over the project.
+		// TODO Should we preserve the .bob directory somehow? At least all the dependencies will be kept run-to-run.
+
+		LOG_INFO("%s" CLEAR ": Copying project to the builder aquarium...", pretty);
+
+		cmd_create(&cmd, "aquarium", "cp", cookie, state->project_path, "/proj", NULL);
+		int const rv = cmd_exec(&cmd);
+		cmd_log(&cmd, cookie, pretty, "copy project to builder aquarium", "copied project to builder aquarium", false);
+
+		if (rv < 0) {
+			return -1;
+		}
+
 		// TODO Attempt to build project.
 	}
 
