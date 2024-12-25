@@ -26,16 +26,11 @@ typedef struct {
 	char* cookie;
 } state_t;
 
-typedef struct {
-	state_t* state;
-} bss_create_t;
-
 static int create_step(size_t data_count, void** data) {
 	// TODO Parallelize this, but make sure libaquarium works in parallel first.
 
 	for (size_t i = 0; i < data_count; i++) {
-		bss_create_t* const bss = data[i];
-		state_t* const state = bss->state;
+		state_t* const state = data[i];
 
 		// Generate the cookie.
 
@@ -217,18 +212,12 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 	inst->inst.free_data = free_state;
 
 	// Add build step to create aquarium itself.
-
-	bss_create_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
-
-	bss->state = state;
-
 	// We can always do this in parallel as we can have no dependencies, so let's always merge these build steps.
 	// TODO In fact, I'm pretty sure we can run all the AquariumBuilder creation build steps program-wide. We don't need other build steps to fence this.
 	// TODO Is libaquarium happy with this? Either way it's its problem if it breaks in this situation.
 	// We also don't check for frugality here, because the project might have changes, so it'll always have to be rebuilt.
 
-	return add_build_step(MAGIC, "Creating aquarium for aquarium builder", create_step, bss);
+	return add_build_step(MAGIC, "Creating aquarium for aquarium builder", create_step, state);
 }
 
 bob_class_t BOB_CLASS_AQUARIUM_BUILDER = {
