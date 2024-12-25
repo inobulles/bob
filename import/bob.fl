@@ -61,6 +61,16 @@ class Platform {
 	static proto getenv(key: str) -> str
 }
 
+# Vector of other projects this project depends on.
 let deps: vec<Dep> = []
+
+# Map between cookies or source files and their corresponding (prefixless) install paths.
 let install: map<str, str>
+
+# Vector of the default run command for when using `bob run`.
+# This is usually a command in the temporary install prefix.
+# For example, if my project was the echo(1) POSIX command, the default run command could be `["echo"]`, such that I could run `bob run "Hello, world!"`.
+#
+# If this is set to `none`, running will be disabled and Bob will emit an error if the user tries to run `bob run`.
+# This is useful for projects that are not meant to be run directly, such as libraries.
 let run: vec<str> = []
