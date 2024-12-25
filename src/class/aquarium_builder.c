@@ -47,7 +47,7 @@ static int create_step(size_t data_count, void** data) {
 		// If it doesn't yet exist, create the aquarium.
 
 		char* STR_CLEANUP pretty = NULL;
-		asprintf(&pretty, "Project '%s' with template '%s'", state->template, state->project_path);
+		asprintf(&pretty, "Project '%s' with template '%s'", state->project_path, state->template);
 		assert(pretty != NULL);
 
 		if (access(cookie, F_OK) == 0) {
@@ -59,7 +59,8 @@ static int create_step(size_t data_count, void** data) {
 
 			cmd_t CMD_CLEANUP cmd;
 			cmd_create(&cmd, "aquarium", "-t", state->template, "create", cookie, NULL);
-			int const rv = cmd_exec(&cmd);
+			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
+			int rv = cmd_exec(&cmd);
 
 			if (rv == 0) {
 				set_owner(cookie);
@@ -67,7 +68,39 @@ static int create_step(size_t data_count, void** data) {
 
 			cmd_log(&cmd, cookie, pretty, "create builder aquarium", "created build aquarium", true);
 
-			// TODO Install Bob.
+			if (rv != 0) {
+				return -1;
+			}
+
+			// Install Bob to the aquarium.
+
+			LOG_INFO("%s" CLEAR ": Installing Bob to the builder aquarium...", pretty);
+
+			cmd_free(&cmd);
+			cmd_create(&cmd, "aquarium", "-t", state->template, "enter", cookie, NULL);
+
+			// clang-format off
+			cmd_prepare_stdin(&cmd,
+				"set -e\n"
+				"export HOME=/root\n"
+				"export PATH\n"
+				"pkg install -y git-lite\n"
+				"git clone https://github.com/inobulles/bob --depth 1 --branch " VERSION "\n"
+				"cd bob\n"
+				"sh bootstrap.sh\n"
+				".bootstrap/bob install\n"
+			);
+			// clang-format on
+
+			cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+
+			if (cmd_exec(&cmd) < 0) {
+				LOG_FATAL("%s" CLEAR ": Failed to install Bob to the builder aquarium.", pretty);
+				rm(cookie, NULL); // To make sure that we go through this again next time the command is run.
+				return -1;
+			}
+
+			LOG_SUCCESS("%s" CLEAR ": Installed Bob to the builder aquarium.", pretty);
 		}
 
 		// TODO Copy/link over the project.
