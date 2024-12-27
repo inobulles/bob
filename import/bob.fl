@@ -73,6 +73,9 @@ class Aquarium(template: str) {
 	# Add a kernel template to the aquarium.
 	proto add_kernel(kernel: str) -> void
 
+	# Execute an arbitrary command in the aquarium.
+	proto exec(cmd: str) -> void
+
 	# Create a bootable image from the aquarium.
 	# A kernel must have been added to the aquarium with `set_kernel()` before calling this method.
 	proto image -> str
