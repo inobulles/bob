@@ -20,6 +20,7 @@
 
 typedef struct {
 	char* template;
+	char* overlays;
 	char* project_path;
 
 	// This is the aquarium itself.
@@ -41,7 +42,7 @@ static int create_step(size_t data_count, void** data) {
 
 		// Generate the cookie.
 
-		uint64_t const hash = strhash(state->template) ^ strhash(state->project_path);
+		uint64_t const hash = strhash(state->template) ^ strhash(state->overlays) ^ strhash(state->project_path);
 		asprintf(&state->cookie, "%s/bob/aquarium_builder.cookie.%" PRIx64 ".aquarium", out_path, hash);
 		assert(state->cookie != NULL);
 
@@ -60,7 +61,16 @@ static int create_step(size_t data_count, void** data) {
 		else {
 			LOG_INFO("%s" CLEAR ": Creating builder aquarium, as it doesn't yet exist...", pretty);
 
-			cmd_create(&cmd, "aquarium", "-t", state->template, "create", state->cookie, NULL);
+			cmd_create(&cmd, "aquarium", "-t", state->template, NULL);
+
+			if (state->overlays != NULL) {
+				cmd_add(&cmd, "-O");
+				cmd_add(&cmd, state->overlays);
+			}
+
+			cmd_add(&cmd, "create");
+			cmd_add(&cmd, state->cookie);
+
 			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
 			int rv = cmd_exec(&cmd);
 
@@ -201,6 +211,29 @@ static int install_to_step(size_t data_count, void** data) {
 	return 0;
 }
 
+static int add_overlay(state_t* state, flamingo_arg_list_t* args) {
+	assert(args->count == 1);
+
+	if (args->args[0]->kind != FLAMINGO_VAL_KIND_STR) {
+		LOG_FATAL(AQUARIUM_BUILDER ": Expected argument to be a string");
+		return -1;
+	}
+
+	bool const comma = strlen(state->overlays) > 0;
+
+	size_t const prev_len = strlen(state->overlays);
+	size_t const next_len = args->args[0]->str.size;
+
+	state->overlays = realloc(state->overlays, prev_len + next_len + 1 + comma);
+	assert(state->overlays != NULL);
+
+	state->overlays[prev_len] = ',';
+	state->overlays[prev_len + comma + next_len] = '\0';
+	memcpy(state->overlays + prev_len + comma, args->args[0]->str.str, next_len);
+
+	return 0;
+}
+
 static int prep_install_to(state_t* state, flamingo_arg_list_t* args) {
 	assert(args->count == 1);
 	flamingo_val_t* const arg = args->args[0];
@@ -233,7 +266,11 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 
 	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
 
-	if (flamingo_cstrcmp(callable->name, "install_to", callable->name_size) == 0) {
+	if (flamingo_cstrcmp(callable->name, "add_overlay", callable->name_size) == 0) {
+		return add_overlay(state, args);
+	}
+
+	else if (flamingo_cstrcmp(callable->name, "install_to", callable->name_size) == 0) {
 		return prep_install_to(state, args);
 	}
 
@@ -274,6 +311,9 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	state->project_path = strndup(args->args[1]->str.str, args->args[1]->str.size);
 	assert(state->project_path != NULL);
+
+	state->overlays = strdup("");
+	assert(state->overlays != NULL);
 
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;
