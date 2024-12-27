@@ -87,6 +87,9 @@ class Aquarium(template: str) {
 # The constructor creates a builder aquarium from the template and will have Bob installed to it.
 # Then, the project at the given path will be copied over to the builder aquarium and be built within that aquarium.
 class AquariumBuilder(template: str, project_path: str) {
+	# Add overlay template to the builder aquarium.
+	proto add_overlay(overlay: str) -> void
+
 	# Install the built project to a target aquarium.
 	proto install_to(target: Aquarium) -> void
 }
