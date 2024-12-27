@@ -300,6 +300,11 @@ int main(int argc, char* argv[]) {
 	instr = *argv++;
 
 	if (strcmp(instr, "build") == 0) {
+		if (argc != 0) {
+			LOG_FATAL("Extraneous arguments to '%s'.", instr);
+			usage();
+		}
+
 		if (bsys_build(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
@@ -318,12 +323,22 @@ int main(int argc, char* argv[]) {
 	}
 
 	else if (strcmp(instr, "install") == 0) {
+		if (argc != 0) {
+			LOG_FATAL("Extraneous arguments to '%s'.", instr);
+			usage();
+		}
+
 		if (bsys_install(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
 
 	else if (strcmp(instr, "clean") == 0) {
+		if (argc != 0) {
+			LOG_FATAL("Extraneous arguments to '%s'.", instr);
+			usage();
+		}
+
 		if (bsys_clean(bsys) == 0) {
 			rv = EXIT_SUCCESS;
 		}

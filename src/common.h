@@ -16,6 +16,8 @@
 
 #define COMMON_INCLUDED
 
+#define VERSION "v0.2.12"
+
 extern _Bool debugging;
 extern char const* instr;
 extern char const* init_name;

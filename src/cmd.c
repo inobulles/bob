@@ -44,8 +44,14 @@ void cmd_create(cmd_t* cmd, ...) {
 
 	va_end(va);
 
+	cmd_set_redirect(cmd, true);
+
 	cmd->in = -1;
 	cmd->out = -1;
+
+	cmd->pending_stdin = NULL;
+	cmd->stdin_in = -1;
+	cmd->stdin_out = -1;
 }
 
 void cmd_add(cmd_t* cmd, char const* arg) {
@@ -81,6 +87,22 @@ void cmd_add_argv(cmd_t* cmd, int argc, char* argv[]) {
 
 		cmd_add(cmd, argv[i]);
 	}
+}
+
+void cmd_set_redirect(cmd_t* cmd, bool redirect) {
+	// We don't do any of this output pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
+
+	if (debugging) {
+		cmd->redirect = false;
+		return;
+	}
+
+	cmd->redirect = redirect;
+}
+
+void cmd_prepare_stdin(cmd_t* cmd, char* data) {
+	cmd->pending_stdin = strdup(data);
+	assert(cmd->pending_stdin != NULL);
 }
 
 static bool is_executable(char const* path) {
@@ -154,10 +176,9 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		return -1;
 	}
 
-	// Create pipes.
-	// We don't do any of this pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
+	// Create stdout+stderr pipe.
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		int fd[2];
 
 		if (pipe(fd) < 0) {
@@ -169,6 +190,20 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		cmd->out = fd[0];
 	}
 
+	// Create stdin pipe.
+
+	if (cmd->pending_stdin != NULL) {
+		int fd[2];
+
+		if (pipe(fd) < 0) {
+			LOG_FATAL("pipe: %s", strerror(errno));
+			return -1;
+		}
+
+		cmd->stdin_in = fd[1];
+		cmd->stdin_out = fd[0];
+	}
+
 	// Spawn process.
 	// We can't use 'fork()' here, because we could be called from a multi-threaded context.
 	// https://www.qnx.com/developers/docs/8.0/com.qnx.doc.neutrino.getting_started/topic/s1_procs_Multithreaded_fork.html
@@ -178,11 +213,16 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 	posix_spawn_file_actions_t actions;
 	posix_spawn_file_actions_init(&actions);
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		posix_spawn_file_actions_addclose(&actions, cmd->out);
 
 		posix_spawn_file_actions_adddup2(&actions, cmd->in, STDOUT_FILENO);
 		posix_spawn_file_actions_adddup2(&actions, cmd->in, STDERR_FILENO);
+	}
+
+	if (cmd->pending_stdin != NULL) {
+		posix_spawn_file_actions_adddup2(&actions, cmd->stdin_out, STDIN_FILENO);
+		posix_spawn_file_actions_addclose(&actions, cmd->stdin_in);
 	}
 
 	extern char** environ;
@@ -192,15 +232,31 @@ pid_t cmd_exec_async(cmd_t* cmd) {
 		LOG_ERROR("posix_spawnp: %s", strerror(errno));
 		pid = -1;
 
-		close(cmd->out);
-		cmd->out = -1;
+		if (cmd->redirect) {
+			close(cmd->out);
+			cmd->out = -1;
+		}
+
+		close(cmd->stdin_in);
+		cmd->stdin_in = -1;
 	}
 
 	posix_spawn_file_actions_destroy(&actions);
 
-	if (!debugging) {
+	if (cmd->redirect) {
 		close(cmd->in);
 		cmd->in = -1;
+	}
+
+	// stdin stuff.
+
+	close(cmd->stdin_out);
+	cmd->stdin_out = -1;
+
+	if (cmd->pending_stdin != NULL) {
+		write(cmd->stdin_in, cmd->pending_stdin, strlen(cmd->pending_stdin) + 1);
+		close(cmd->stdin_in);
+		cmd->stdin_in = -1;
 	}
 
 	return pid;
@@ -244,7 +300,7 @@ char* cmd_read_out(cmd_t* cmd) {
 	char* out = strdup("");
 	assert(out != NULL);
 
-	if (debugging) {
+	if (!cmd->redirect) {
 		return out;
 	}
 
@@ -358,12 +414,11 @@ void cmd_free(cmd_t* cmd) {
 		free(arg);
 	}
 
-	if (cmd->args != NULL) {
-		free(cmd->args);
-	}
-
+	free(cmd->args);
 	cmd->len = 0;
 	cmd->args = NULL;
+
+	free(cmd->pending_stdin);
 
 	if (cmd->in >= 0) {
 		close(cmd->in);
@@ -371,5 +426,13 @@ void cmd_free(cmd_t* cmd) {
 
 	if (cmd->out >= 0) {
 		close(cmd->out);
+	}
+
+	if (cmd->stdin_in >= 0) {
+		close(cmd->stdin_in);
+	}
+
+	if (cmd->stdin_out >= 0) {
+		close(cmd->stdin_out);
 	}
 }

@@ -132,25 +132,28 @@ void progress_update(progress_t* self, size_t numerator, size_t _denominator, ch
 }
 
 void log_already_done(char const* cookie, char const* prefix, char const* past) {
-	char* STR_CLEANUP path;
-	asprintf(&path, "%s.log", cookie);
-	assert(path != NULL);
-
 	char* STR_CLEANUP out = NULL;
-	FILE* const f = fopen(path, "r");
 
-	if (f != NULL) {
-		fseek(f, 0, SEEK_END);
-		size_t const size = ftell(f);
+	if (cookie != NULL) {
+		char* STR_CLEANUP path;
+		asprintf(&path, "%s.log", cookie);
+		assert(path != NULL);
 
-		out = malloc(size + 1);
-		assert(out != NULL);
+		FILE* const f = fopen(path, "r");
 
-		rewind(f);
-		fread(out, 1, size, f);
-		out[size] = '\0';
+		if (f != NULL) {
+			fseek(f, 0, SEEK_END);
+			size_t const size = ftell(f);
 
-		fclose(f);
+			out = malloc(size + 1);
+			assert(out != NULL);
+
+			rewind(f);
+			fread(out, 1, size, f);
+			out[size] = '\0';
+
+			fclose(f);
+		}
 	}
 
 	char* const suffix = out ? ":" : ".";
