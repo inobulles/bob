@@ -162,7 +162,7 @@ static int prep_exec(aquarium_state_t* state, flamingo_arg_list_t* args) {
 	bss->state = state;
 	bss->cmd = cmd;
 
-	return add_build_step(MAGIC ^ strhash(__func__) + exec_count++, "Executing command on aquarium", exec_step, bss);
+	return add_build_step((MAGIC ^ strhash(__func__)) + exec_count++, "Executing command on aquarium", exec_step, bss);
 }
 
 static int prep_image(aquarium_state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
