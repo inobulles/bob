@@ -126,7 +126,7 @@ static int image_step(size_t data_count, void** data) {
 	return 0;
 }
 
-static int add_kernel(aquarium_state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+static int add_kernel(aquarium_state_t* state, flamingo_arg_list_t* args) {
 	assert(args->count == 1);
 
 	if (args->args[0]->kind != FLAMINGO_VAL_KIND_STR) {
@@ -187,7 +187,7 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 	aquarium_state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "add_kernel", callable->name_size) == 0) {
-		return add_kernel(state, args, rv);
+		return add_kernel(state, args);
 	}
 
 	else if (flamingo_cstrcmp(callable->name, "exec", callable->name_size) == 0) {
