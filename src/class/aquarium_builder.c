@@ -182,7 +182,7 @@ static int install_to_step(size_t data_count, void** data) {
 			"export HOME=/root\n"
 			"export PATH\n"
 			"cd proj\n"
-			"bob -p " INSTALL_TO_MOUNTPOINT "/usr/local install\n"
+			"bob -p " INSTALL_TO_MOUNTPOINT " install\n"
 		);
 		// clang-format on
 
@@ -201,7 +201,7 @@ static int install_to_step(size_t data_count, void** data) {
 	return 0;
 }
 
-static int prep_install_to(state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+static int prep_install_to(state_t* state, flamingo_arg_list_t* args) {
 	assert(args->count == 1);
 	flamingo_val_t* const arg = args->args[0];
 
@@ -234,7 +234,7 @@ static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_va
 	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "install_to", callable->name_size) == 0) {
-		return prep_install_to(state, args, rv);
+		return prep_install_to(state, args);
 	}
 
 	*consumed = false;
