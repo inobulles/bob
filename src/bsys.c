@@ -27,8 +27,10 @@ bsys_t const* bsys_identify(void) {
 }
 
 int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
+	dep_node_t* tree = NULL;
+
 	if (bsys->dep_tree == NULL) {
-		return 0;
+		goto no_tree;
 	}
 
 	// Parse the arguments as a list of hashes.
@@ -43,23 +45,21 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	// Create dependency tree.
 
 	bool circular;
-	dep_node_t* const tree = bsys->dep_tree(argc, hashes, &circular);
+	tree = bsys->dep_tree(argc, hashes, &circular);
 	free(hashes);
 
-	if (tree == NULL) {
-		if (circular) {
-			printf(BOB_DEPS_CIRCULAR);
-			return 0;
-		}
-
-		return -1;
+	if (tree == NULL && circular) {
+		printf(BOB_DEPS_CIRCULAR);
+		return 0;
 	}
 
 	assert(!circular);
 
 	// Serialize and output it.
 
-	char* const STR_CLEANUP serialized = dep_node_serialize(tree);
+no_tree:;
+
+	char* const STR_CLEANUP serialized = tree == NULL ? strdup("") : dep_node_serialize(tree);
 	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
 
 	deps_tree_free(tree);
