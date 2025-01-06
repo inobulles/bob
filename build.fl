@@ -17,6 +17,7 @@ let cmd = Linker(["-lm", "-lpthread"]).link(obj)
 install = {
 	cmd: "bin/bob",
 	"import/bob.fl": "share/flamingo/import/bob.fl",
+	"import/bob": "share/flamingo/import/bob",
 	"skeletons": "share/bob/skeletons",
 }
 
