@@ -34,7 +34,14 @@ static int build_step(size_t data_count, void** data) {
 
 static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	if (args->count != 0) {
-		LOG_FATAL(CARGO ".build: Didn't expect any arguments, got %zu", args->count);
+		LOG_FATAL(CARGO ".build: Didn't expect any arguments, got %zu.", args->count);
+		return -1;
+	}
+
+	// Check for cargo executable.
+
+	if (!cmd_exists("cargo")) {
+		LOG_FATAL(CARGO ".build: Couldn't find 'cargo' executable in PATH. Cargo is something you must install separately.");
 		return -1;
 	}
 
