@@ -28,8 +28,10 @@ bsys_t const* bsys_identify(void) {
 
 int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 	dep_node_t* tree = NULL;
+	int rv = -1;
 
 	if (bsys->dep_tree == NULL) {
+		rv = 0;
 		goto no_tree;
 	}
 
@@ -53,6 +55,10 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 		return 0;
 	}
 
+	if (tree != NULL) {
+		rv = 0;
+	}
+
 	assert(!circular);
 
 	// Serialize and output it.
@@ -63,7 +69,7 @@ no_tree:;
 	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
 
 	deps_tree_free(tree);
-	return tree == NULL ? -1 : 0;
+	return rv;
 }
 
 static int do_build_deps(bsys_t const* bsys) {
