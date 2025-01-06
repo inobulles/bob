@@ -35,6 +35,8 @@ void cmd_add_argv(cmd_t* cmd, int argc, char* argv[]);
 void cmd_set_redirect(cmd_t* cmd, bool redirect);
 void cmd_prepare_stdin(cmd_t* cmd, char* data);
 
+bool cmd_exists(char const* cmd);
+
 int cmd_exec_inplace(cmd_t* cmd);
 pid_t cmd_exec_async(cmd_t* cmd);
 int cmd_exec(cmd_t* cmd);
