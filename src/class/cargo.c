@@ -48,7 +48,7 @@ static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	// Return "target" directory.
 	// We don't attempt to put this in '.bob' so we don't interfere with existing tooling (like LSPs and stuff).
 
-	*rv = flamingo_val_make_cstr("target/release/");
+	*rv = flamingo_val_make_cstr("target/debug/");
 
 	// Add build step.
 
