@@ -63,7 +63,7 @@ no_tree:;
 	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
 
 	deps_tree_free(tree);
-	return 0;
+	return tree == NULL ? -1 : 0;
 }
 
 static int do_build_deps(bsys_t const* bsys) {
