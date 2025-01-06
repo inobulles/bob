@@ -7,7 +7,6 @@
 #include <str.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -167,7 +166,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		if (path == NULL) {
 			path = tuple;
-			human = NULL;
+			node->human = NULL;
 		}
 
 		else {
