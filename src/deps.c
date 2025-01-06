@@ -20,7 +20,15 @@ static bool build_task(void* data) {
 
 	// Log that we're building.
 
-	char const* const human = dep->human == NULL ? strrchr(dep->path, '/') + 1 : dep->human;
+	char const* human = dep->human;
+
+	if (human == NULL) {
+		human = strrchr(dep->path, '/');
+
+		if (human++ == NULL) {
+			human = dep->path;
+		}
+	}
 
 	pthread_mutex_lock(&logging_lock);
 	LOG_INFO("%s" CLEAR ": Building dependency...", human);
