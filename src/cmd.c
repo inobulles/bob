@@ -119,9 +119,9 @@ static bool is_executable(char const* path) {
 	return access(path, X_OK) == 0;
 }
 
-static char* find_bin(cmd_t* cmd) {
-	if (is_executable(cmd->args[0])) {
-		return strdup(cmd->args[0]);
+static char* find_bin(char const* cmd) {
+	if (is_executable(cmd)) {
+		return strdup(cmd);
 	}
 
 	// Look for binary in $PATH.
@@ -130,7 +130,7 @@ static char* find_bin(cmd_t* cmd) {
 	char* const path = getenv("PATH");
 
 	if (path == NULL) {
-		LOG_ERROR("getenv(\"PATH\"): couldn't find '$PATH' (and binary '%s' was not found)", cmd->args[0]);
+		LOG_ERROR("getenv(\"PATH\"): couldn't find '$PATH' (and binary '%s' was not found)", cmd);
 		_exit(EXIT_FAILURE);
 	}
 
@@ -142,7 +142,7 @@ static char* find_bin(cmd_t* cmd) {
 
 	while ((tok = strsep(&search, ":"))) {
 		char* full_path = NULL;
-		asprintf(&full_path, "%s/%s", tok, cmd->args[0]);
+		asprintf(&full_path, "%s/%s", tok, cmd);
 		assert(full_path != NULL);
 
 		if (is_executable(full_path)) {
@@ -152,13 +152,18 @@ static char* find_bin(cmd_t* cmd) {
 		free(full_path);
 	}
 
-	LOG_ERROR("Couldn't find binary '%s' in '$PATH'.", cmd->args[0]);
+	LOG_ERROR("Couldn't find binary '%s' in '$PATH'.", cmd);
 	return NULL;
+}
+
+bool cmd_exists(char const* cmd) {
+	char* const STR_CLEANUP path = find_bin(cmd);
+	return path != NULL;
 }
 
 int cmd_exec_inplace(cmd_t* cmd) {
 	assert(cmd->len > 1);
-	char* const STR_CLEANUP path = find_bin(cmd);
+	char* const STR_CLEANUP path = find_bin(cmd->args[0]);
 
 	if (path == NULL) {
 		return -1;
@@ -170,7 +175,7 @@ int cmd_exec_inplace(cmd_t* cmd) {
 pid_t cmd_exec_async(cmd_t* cmd) {
 	// Find binary.
 
-	char* const STR_CLEANUP path = find_bin(cmd);
+	char* const STR_CLEANUP path = find_bin(cmd->args[0]);
 
 	if (path == NULL) {
 		return -1;
