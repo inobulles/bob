@@ -245,6 +245,10 @@ void deps_node_free(dep_node_t* node) {
 }
 
 void deps_tree_free(dep_node_t* tree) {
+	if (tree == NULL) {
+		return;
+	}
+
 	deps_node_free(tree);
 	free(tree);
 }
