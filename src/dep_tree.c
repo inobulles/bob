@@ -126,7 +126,7 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			char* STR_CLEANUP abs_path = NULL;
 
 			if (gen_local_path(path, &abs_path, &human, &dep_path) < 0) {
-				LOG_FATAL("Could not get local dependency at '%s'.", path);
+				LOG_FATAL("Could not find local dependency at '%s'.", path);
 				return -1;
 			}
 
