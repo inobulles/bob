@@ -209,11 +209,11 @@ char* realerpath(char const* path) {
 
 	char* final = NULL;
 
-#define R realpath
+#define R realpath // Done so linter only has to see realpath being used once.
 
 	if (home != NULL) {
 		char* STR_CLEANUP intermediary = NULL;
-		asprintf(&intermediary, "%s/%s", home, path);
+		asprintf(&intermediary, "%s/%s", home, path + 1);
 		final = R(intermediary, NULL);
 	}
 
