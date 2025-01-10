@@ -165,6 +165,10 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			char* const STR_CLEANUP tmp = strndup(git_url->str.str, git_url->str.size);
 			assert(tmp != NULL);
 
+			while (tmp[strlen(tmp) - 1] == '/') {
+				tmp[strlen(tmp) - 1] = '\0';
+			}
+
 			human = strrchr(tmp, '/');
 			human = strdup(human == NULL ? tmp : human + 1);
 			assert(human != NULL);
