@@ -195,6 +195,8 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			cmd_add(&cmd, "1");
 			cmd_add(&cmd, "--branch");
 			cmd_addf(&cmd, "%.*s", (int) git_branch->str.size, git_branch->str.str);
+			cmd_add(&cmd, "--recurse-submodules");
+			cmd_add(&cmd, "--shallow-submodules");
 
 			LOG_INFO("%s" CLEAR ": Git cloning...", human);
 
