@@ -19,6 +19,20 @@ static bool identify(void) {
 	return access(BUILD_PATH, F_OK) != -1;
 }
 
+static int setup(void) {
+	if (!cmd_exists("meson")) {
+		LOG_FATAL("Couldn't find 'meson' executable in PATH. Meson is something you must install separately.");
+		return -1;
+	}
+
+	if (!cmd_exists("ninja")) {
+		LOG_FATAL("Couldn't find 'ninja' executable in PATH. Ninja is something you must install separately, and is necessary for the Meson BSYS.");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int build(void) {
 	LOG_INFO("Meson setup...");
 
@@ -80,6 +94,7 @@ bsys_t const BSYS_MESON = {
 	.name = "Meson",
 	.key = "meson",
 	.identify = identify,
+	.setup = setup,
 	.build = build,
 	.install = install,
 };
