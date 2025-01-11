@@ -15,10 +15,10 @@
 
 char* gen_cookie(char* path, size_t path_size, char const* ext) {
 	char* cookie = NULL;
-	asprintf(&cookie, "%s/bob/%.*s.cookie.%" PRIx64 ".%s", out_path, (int) path_size, path, str_hash(path, path_size), ext);
+	asprintf(&cookie, "%s/%.*s.cookie.%" PRIx64 ".%s", bsys_out_path, (int) path_size, path, str_hash(path, path_size), ext);
 	assert(cookie != NULL);
 
-	size_t const prefix_len = strlen(out_path) + strlen("/bob/");
+	size_t const prefix_len = strlen(bsys_out_path) + strlen("/");
 
 	for (size_t i = prefix_len; i < prefix_len + path_size; i++) {
 		if (cookie[i] == '/') {

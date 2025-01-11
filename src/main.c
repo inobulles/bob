@@ -31,6 +31,7 @@ char const* bootstrap_import_path = "import";
 
 char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
+char* bsys_out_path = NULL;
 
 char* deps_path = NULL;
 bool build_deps = true;
@@ -282,6 +283,11 @@ int main(int argc, char* argv[]) {
 	if (bsys == NULL) {
 		LOG_FATAL("Could not identify build system.");
 		return EXIT_FAILURE;
+	}
+
+	if (bsys->key != NULL) {
+		asprintf(&bsys_out_path, "%s/%s", abs_out_path, bsys->key);
+		assert(bsys_out_path != NULL);
 	}
 
 	if (bsys->setup && bsys->setup() < 0) {

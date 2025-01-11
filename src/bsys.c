@@ -123,16 +123,12 @@ int bsys_build(bsys_t const* bsys) {
 	// TODO Do this with mkdir_recursive? Do this in main.c?
 
 	if (bsys->key != NULL) {
-		char* STR_CLEANUP path;
-		asprintf(&path, "%s/%s", out_path, bsys->key);
-		assert(path != NULL);
-
-		if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
-			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
+		if (mkdir_wrapped(bsys_out_path, 0755) < 0 && errno != EEXIST) {
+			LOG_FATAL("mkdir(\"%s\"): %s", bsys_out_path, strerror(errno));
 			return -1;
 		}
 
-		set_owner(path);
+		set_owner(bsys_out_path);
 	}
 
 	// Actually build.
