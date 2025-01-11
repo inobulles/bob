@@ -125,3 +125,17 @@ elif ! echo $out | grep -q "Could not find local dependency at 'this-dep-doesnt-
 	echo "Another issue occurred when attempting to create a dependency tree with a dependency which doesn't exist: $out" >&2
 	exit 1
 fi
+
+# Test that we output an empty tree if there are no dependencies.
+# Regression test for d1619dd "bsys: Output empty dependency tree if bsys doesn't have `dep_tree` function".
+
+cp tests/deps/build.none.fl tests/deps/build.fl
+out=$(bob -C tests/deps dep-tree 2>&1)
+
+if [ $? != 0 ]; then
+	echo "Failed when attempting to create a dependency tree with no dependencies: $out" >&2
+	exit 1
+elif ! echo $out | grep -q "<bob-dep-tree> </bob-dep-tree>"; then
+	echo "Dependency tree not empty when attempting to create a dependency tree with no dependencies: $out" >&2
+	exit 1
+fi
