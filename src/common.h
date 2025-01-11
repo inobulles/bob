@@ -23,6 +23,7 @@ extern char const* bootstrap_import_path;
 
 extern char const* out_path;
 extern char const* abs_out_path;
+extern char* bsys_out_path;
 
 extern char* deps_path;
 extern _Bool build_deps;

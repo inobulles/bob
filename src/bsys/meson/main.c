@@ -20,10 +20,6 @@ static bool identify(void) {
 }
 
 static int build(void) {
-	char* STR_CLEANUP meson_path = NULL;
-	asprintf(&meson_path, "%s/meson", out_path);
-	assert(meson_path != NULL);
-
 	LOG_INFO("Meson setup...");
 
 	char* STR_CLEANUP prefix = NULL;
@@ -31,7 +27,7 @@ static int build(void) {
 	assert(prefix != NULL);
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, "meson", "setup", meson_path, prefix, NULL);
+	cmd_create(&cmd, "meson", "setup", bsys_out_path, prefix, NULL);
 	cmd_set_redirect(&cmd, false);
 
 	if (cmd_exec(&cmd) < 0) {
@@ -46,7 +42,7 @@ static int build(void) {
 	LOG_INFO("Ninja build...");
 
 	cmd_free(&cmd);
-	cmd_create(&cmd, "ninja", "-C", meson_path, NULL);
+	cmd_create(&cmd, "ninja", "-C", bsys_out_path, NULL);
 	cmd_set_redirect(&cmd, false);
 
 	if (cmd_exec(&cmd) < 0) {
@@ -62,14 +58,10 @@ static int build(void) {
 }
 
 static int install(void) {
-	char* STR_CLEANUP meson_path = NULL;
-	asprintf(&meson_path, "%s/meson", out_path);
-	assert(meson_path != NULL);
-
 	LOG_SUCCESS("Ninja install...");
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, "ninja", "-C", meson_path, "install", NULL);
+	cmd_create(&cmd, "ninja", "-C", bsys_out_path, "install", NULL);
 	cmd_set_redirect(&cmd, false);
 
 	if (cmd_exec(&cmd) < 0) {
