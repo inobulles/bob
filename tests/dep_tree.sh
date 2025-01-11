@@ -121,7 +121,7 @@ out=$(bob -C tests/deps dep-tree 2>&1)
 if [ $? = 0 ]; then
 	echo "Succeeded when attempting to create a dependency tree with a dependency which doesn't exist: $out" >&2
 	exit 1
-elif ! echo $out | grep -q "Could not get local dependency at 'this-dep-doesnt-exist'"; then
+elif ! echo $out | grep -q "Could not find local dependency at 'this-dep-doesnt-exist'"; then
 	echo "Another issue occurred when attempting to create a dependency tree with a dependency which doesn't exist: $out" >&2
 	exit 1
 fi
