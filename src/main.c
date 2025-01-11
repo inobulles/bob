@@ -286,7 +286,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (bsys->key != NULL) {
-		asprintf(&bsys_out_path, "%s/%s", abs_out_path, bsys->key);
+		asprintf(&bsys_out_path, "%s/%s", out_path, bsys->key);
 		assert(bsys_out_path != NULL);
 	}
 
