@@ -91,7 +91,7 @@ static bool next_batch(
 	if (tree->built_deps) {
 		for (size_t i = 0; i < *already_built_count; i++) {
 			if (strcmp(tree->path, already_built[i]) == 0) {
-				return false;
+				return true;
 			}
 		}
 
