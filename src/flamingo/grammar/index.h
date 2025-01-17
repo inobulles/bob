@@ -6,9 +6,8 @@
 #include "expr.h"
 
 #include "../common.h"
-#include "../scope.h"
 
-static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
+static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, bool lhs) {
 	assert(strcmp(ts_node_type(node), "index") == 0);
 
 	// Get indexed expression.
@@ -99,7 +98,7 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) 
 	}
 
 	else if (is_map) {
-		size_t const indexed_count = indexed_val->map.count;
+		size_t indexed_count = indexed_val->map.count;
 		flamingo_val_t** const indexed_keys = indexed_val->map.keys;
 		flamingo_val_t** const indexed_vals = indexed_val->map.vals;
 
@@ -116,8 +115,29 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) 
 			}
 		}
 
+		// No key found.
+		// Create a new value.
+
 		*val = val_alloc();
 		(*val)->kind = FLAMINGO_VAL_KIND_NONE;
+
+		// Add that new entry to the map if we're on the LHS.
+
+		if (lhs) {
+			indexed_count = ++indexed_val->map.count;
+
+			indexed_val->map.keys = realloc(indexed_val->map.keys, indexed_count * sizeof *indexed_val->map.keys);
+			assert(indexed_val->map.keys != NULL);
+
+			indexed_val->map.vals = realloc(indexed_val->map.vals, indexed_count * sizeof *indexed_val->map.vals);
+			assert(indexed_val->map.vals != NULL);
+
+			indexed_val->map.keys[indexed_count - 1] = index_val;
+			indexed_val->map.vals[indexed_count - 1] = *val;
+
+			val_incref(index_val);
+			val_incref(*val);
+		}
 
 		return 0;
 	}

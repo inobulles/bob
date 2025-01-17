@@ -7,7 +7,6 @@
 #include "expr.h"
 
 #include "../common.h"
-#include "../scope.h"
 #include "../val.h"
 #include "../var.h"
 
@@ -59,7 +58,7 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 	}
 
 	else if (strcmp(left_type, "index") == 0) {
-		if (parse_index(flamingo, left_node, &val) < 0) {
+		if (parse_index(flamingo, left_node, &val, true) < 0) {
 			return -1;
 		}
 	}
