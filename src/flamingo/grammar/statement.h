@@ -1,5 +1,5 @@
 // This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2024 Aymeric Wibo
+// v. 1.0. Copyright (c) 2024-2025 Aymeric Wibo
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "assignment.h"
 #include "block.h"
 #include "function_declaration.h"
+#include "if_chain.h"
 #include "import.h"
 #include "print.h"
 #include "return.h"
@@ -37,6 +38,10 @@ static int parse_statement(flamingo_t* flamingo, TSNode node) {
 
 	if (strcmp(type, "class_declaration") == 0) {
 		return parse_function_declaration(flamingo, node, FLAMINGO_FN_KIND_CLASS);
+	}
+
+	if (strcmp(type, "if_chain") == 0) {
+		return parse_if_chain(flamingo, node);
 	}
 
 	// All the line sensitive statements (which are wrapped by an explicit 'statement' node).

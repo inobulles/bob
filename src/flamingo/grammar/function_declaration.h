@@ -10,7 +10,6 @@
 #include "../var.h"
 #include "params.h"
 #include "static.h"
-#include "var_decl.h"
 
 static int parse_function_declaration(flamingo_t* flamingo, TSNode node, flamingo_fn_kind_t kind) {
 	size_t const child_count = ts_node_child_count(node);
