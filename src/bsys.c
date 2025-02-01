@@ -200,6 +200,7 @@ static int install(bsys_t const* bsys, bool default_to_tmp_prefix) {
 }
 
 static void setup_environment(void) {
+	prepend_env("PREFIX", "%s", install_prefix);
 	prepend_env("PATH", "%s/bin", install_prefix);
 
 	prepend_env(

@@ -16,6 +16,11 @@ if [ "$(bob sh -- sh -c "echo \$PATH" | tail -n1 | cut -d':' -f1)" != "$(realpat
 	exit 1
 fi
 
+if [ "$(bob sh -- sh -c "echo \$PREFIX" | tail -n1)" != "$(realpath .bob/prefix)" ]; then
+	echo "\$PREFIX not set to temporary installation prefix." >&2
+	exit 1
+fi
+
 # XXX Can't really test 'bob sh' on it's own "properly" I don't think.
 
 export SHELL=uname
