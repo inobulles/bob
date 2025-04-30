@@ -9,15 +9,29 @@
 #include <logging.h>
 #include <str.h>
 
+#include <assert.h>
+
 #define GO "Go"
 
 static flamingo_val_t* build_val = NULL;
+
+static void set_env(char const* key, char const* flag, char const* subdir) {
+	char* STR_CLEANUP val = getenv(key);
+	asprintf(&val, "%s %s%s/%s", val ? val : "", flag, install_prefix, subdir);
+	assert(val != NULL);
+	setenv(key, val, true);
+}
 
 static int build_step(size_t data_count, void** data) {
 	if (data_count != 1) {
 		LOG_FATAL(GO ".build can't be called more than once (was called %zu times).", data_count);
 		return -1;
 	}
+
+	// Set up environment for cgo to know where to find the headers and libraries.
+
+	set_env("CGO_CFLAGS", "-I", "include");
+	set_env("CGO_LDFLAGS", "-L", "lib");
 
 	// Run "go build".
 
