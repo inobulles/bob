@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Aymeric Wibo
+
+#include <common.h>
+
+#include <build_step.h>
+#include <class/class.h>
+#include <cmd.h>
+#include <logging.h>
+#include <str.h>
+
+#define GO "Go"
+
+static flamingo_val_t* build_val = NULL;
+
+static int build_step(size_t data_count, void** data) {
+	if (data_count != 1) {
+		LOG_FATAL(GO ".build can't be called more than once (was called %zu times).", data_count);
+		return -1;
+	}
+
+	// Run "go build".
+
+	LOG_INFO(GO ": Building...");
+
+	cmd_t CMD_CLEANUP cmd = {0};
+	cmd_create(&cmd, "go", "build", NULL);
+
+	int const rv = cmd_exec(&cmd);
+	cmd_log(&cmd, NULL, "Go project", "build", "built", true);
+
+	return rv;
+}
+
+static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	if (args->count != 0) {
+		LOG_FATAL(GO ".build: Didn't expect any arguments, got %zu.", args->count);
+		return -1;
+	}
+
+	// Check for go executable.
+
+	if (!cmd_exists("go")) {
+		LOG_FATAL(GO ".build: Couldn't find 'go' executable in PATH. Go is something you must install separately.");
+		return -1;
+	}
+
+	// TODO Return output directory.
+	// TODO Don't forget to update the prototype when I do this.
+
+	// Add build step.
+
+	return add_build_step(strhash(GO), "Go build", build_step, NULL);
+}
+
+static void populate(char* key, size_t key_size, flamingo_val_t* val) {
+	if (flamingo_cstrcmp(key, "build", key_size) == 0) {
+		build_val = val;
+	}
+}
+
+static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
+	*consumed = true;
+
+	if (callable == build_val) {
+		return build(args, rv);
+	}
+
+	*consumed = false;
+	return 0;
+}
+
+bob_class_t BOB_CLASS_GO = {
+	.name = GO,
+	.populate = populate,
+	.call = call,
+};
