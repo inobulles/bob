@@ -6,10 +6,12 @@
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
+#include <install.h>
 #include <logging.h>
 #include <str.h>
 
 #include <assert.h>
+#include <inttypes.h>
 
 #define GO "Go"
 
@@ -38,10 +40,17 @@ static int build_step(size_t data_count, void** data) {
 	LOG_INFO(GO ": Building...");
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, "go", "build", NULL);
+	cmd_create(&cmd, "go", "build", "-o", NULL);
+	cmd_addf(&cmd, "%s/go.build.cookie.exe", bsys_out_path);
 
-	int const rv = cmd_exec(&cmd);
+	int rv = cmd_exec(&cmd);
 	cmd_log(&cmd, NULL, "Go project", "build", "built", true);
+
+	// Install.
+
+	if (rv == 0) {
+		rv = install_cookie(cmd.args[3], true);
+	}
 
 	return rv;
 }
@@ -59,8 +68,12 @@ static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 		return -1;
 	}
 
-	// TODO Return output directory.
-	// TODO Don't forget to update the prototype when I do this.
+	// Return output directory.
+
+	char* STR_CLEANUP cookie = NULL;
+	asprintf(&cookie, "%s/go.build.cookie.exe", bsys_out_path);
+	assert(cookie != NULL);
+	*rv = flamingo_val_make_cstr(cookie);
 
 	// Add build step.
 
