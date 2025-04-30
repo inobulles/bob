@@ -6,6 +6,7 @@
 #include "assert.h"
 #include "assignment.h"
 #include "block.h"
+#include "for_loop.h"
 #include "function_declaration.h"
 #include "if_chain.h"
 #include "import.h"
@@ -42,6 +43,10 @@ static int parse_statement(flamingo_t* flamingo, TSNode node) {
 
 	if (strcmp(type, "if_chain") == 0) {
 		return parse_if_chain(flamingo, node);
+	}
+
+	if (strcmp(type, "for_loop") == 0) {
+		return parse_for_loop(flamingo, node);
 	}
 
 	// All the line sensitive statements (which are wrapped by an explicit 'statement' node).
