@@ -21,9 +21,9 @@ typedef struct {
 
 static flamingo_val_t* build_val = NULL;
 
-static void set_env(char const* key, char const* flag, char const* subdir) {
+static void set_env(char const* key, char const* flag, char const* subdir, char const* extra) {
 	char* STR_CLEANUP val = getenv(key);
-	asprintf(&val, "%s %s%s/%s", val ? val : "", flag, install_prefix, subdir);
+	asprintf(&val, "%s %s%s/%s %s", val ? val : "", flag, install_prefix, subdir, extra);
 	assert(val != NULL);
 	setenv(key, val, true);
 }
@@ -38,8 +38,14 @@ static int build_step(size_t data_count, void** data) {
 
 	// Set up environment for cgo to know where to find the headers and libraries.
 
-	set_env("CGO_CFLAGS", "-I", "include");
-	set_env("CGO_LDFLAGS", "-L", "lib");
+#if defined(__APPLE__)
+	char const* extra = "-Wl,-rpath,@loader_path/..";
+#else
+	char const* extra = "";
+#endif
+
+	set_env("CGO_CFLAGS", "-I", "include", "");
+	set_env("CGO_LDFLAGS", "-L", "lib", extra);
 
 	// Run "go build".
 
