@@ -15,6 +15,10 @@
 
 #define GO "Go"
 
+typedef struct {
+	flamingo_val_t* flags;
+} build_step_state_t;
+
 static flamingo_val_t* build_val = NULL;
 
 static void set_env(char const* key, char const* flag, char const* subdir) {
@@ -30,6 +34,8 @@ static int build_step(size_t data_count, void** data) {
 		return -1;
 	}
 
+	build_step_state_t* const bss = *data;
+
 	// Set up environment for cgo to know where to find the headers and libraries.
 
 	set_env("CGO_CFLAGS", "-I", "include");
@@ -42,6 +48,11 @@ static int build_step(size_t data_count, void** data) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "go", "build", "-o", NULL);
 	cmd_addf(&cmd, "%s/go.build.cookie.exe", bsys_out_path);
+
+	for (size_t i = 0; i < bss->flags->vec.count; i++) {
+		flamingo_val_t* const flag = bss->flags->vec.elems[i];
+		cmd_addf(&cmd, "%.*s", (int) flag->str.size, flag->str.str);
+	}
 
 	int rv = cmd_exec(&cmd);
 	cmd_log(&cmd, NULL, "Go project", "build", "built", true);
@@ -56,9 +67,27 @@ static int build_step(size_t data_count, void** data) {
 }
 
 static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
-	if (args->count != 0) {
-		LOG_FATAL(GO ".build: Didn't expect any arguments, got %zu.", args->count);
+	// Validate flags argument.
+
+	if (args->count != 1) {
+		LOG_FATAL(GO ".build: Expected 1 argument, got %zu.", args->count);
 		return -1;
+	}
+
+	if (args->args[0]->kind != FLAMINGO_VAL_KIND_VEC) {
+		LOG_FATAL(GO ".build: Expected argument to be a vector.");
+		return -1;
+	}
+
+	flamingo_val_t* const flags = args->args[0];
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+
+		if (flag->kind != FLAMINGO_VAL_KIND_STR) {
+			LOG_FATAL(GO ".build: Expected %zu-th vector element to be a string.", i);
+			return -1;
+		}
 	}
 
 	// Check for go executable.
@@ -77,7 +106,12 @@ static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 
 	// Add build step.
 
-	return add_build_step(strhash(GO), "Go build", build_step, NULL);
+	build_step_state_t* const bss = malloc(sizeof *bss);
+	assert(bss != NULL);
+
+	bss->flags = flags;
+
+	return add_build_step(strhash(GO), "Go build", build_step, bss);
 }
 
 static void populate(char* key, size_t key_size, flamingo_val_t* val) {

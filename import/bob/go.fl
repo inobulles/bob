@@ -2,5 +2,5 @@
 # Copyright (c) 2025 Aymeric Wibo
 
 class Go {
-	static proto build -> str
+	static proto build(flags: vec<str>) -> str
 }

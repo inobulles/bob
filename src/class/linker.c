@@ -258,12 +258,12 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 	// Validate flags argument.
 
 	if (args->count != 1) {
-		LOG_FATAL(LINKER ": Expected 1 argument, got %zu", args->count);
+		LOG_FATAL(LINKER ": Expected 1 argument, got %zu.", args->count);
 		return -1;
 	}
 
 	if (args->args[0]->kind != FLAMINGO_VAL_KIND_VEC) {
-		LOG_FATAL(LINKER ": Expected argument to be a vector");
+		LOG_FATAL(LINKER ": Expected argument to be a vector.");
 		return -1;
 	}
 
@@ -273,7 +273,7 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
 
 		if (flag->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL(LINKER ": Expected %zu-th vector element to be a string", i);
+			LOG_FATAL(LINKER ": Expected %zu-th vector element to be a string.", i);
 			return -1;
 		}
 	}
