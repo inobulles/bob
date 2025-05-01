@@ -328,10 +328,16 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	asprintf(&tree_path, "%s/deps.tree", out_path);
 	assert(tree_path != NULL);
 
+	if (force_dep_tree_rebuild) {
+		LOG_INFO("Forcing dependency tree to be rebuilt.");
+		goto build_tree;
+	}
+
 	FILE* const hash_f = fopen(hash_path, "r");
 
 	if (hash_f == NULL) {
 		LOG_INFO("No cached dependency tree found, building it.");
+		force_dep_tree_rebuild = true; // So that all our children are forced to rebuild their dependency trees too. See #89.
 		goto build_tree;
 	}
 
@@ -403,7 +409,13 @@ build_tree:;
 		// Run the 'dep-tree' command on the dependency and add the resulting dependency trees to ours.
 
 		cmd_t CMD_CLEANUP cmd;
-		cmd_create(&cmd, init_name, "-C", dep->path, "dep-tree", NULL);
+		cmd_create(&cmd, init_name, "-C", dep->path, NULL);
+
+		if (force_dep_tree_rebuild) {
+			cmd_add(&cmd, "-f");
+		}
+
+		cmd_add(&cmd, "dep-tree");
 
 		for (size_t j = 0; j < path_len; j++) {
 			cmd_addf(&cmd, "%" PRIx64, path_hashes[j]);

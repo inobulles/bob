@@ -32,3 +32,5 @@ extern _Bool own_prefix;
 extern char const* install_prefix;
 extern char* default_final_install_prefix;
 extern char* default_tmp_install_prefix;
+
+extern _Bool force_dep_tree_rebuild;

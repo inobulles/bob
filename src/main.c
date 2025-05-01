@@ -41,6 +41,8 @@ char const* install_prefix = NULL;
 char* default_final_install_prefix = NULL;
 char* default_tmp_install_prefix = NULL;
 
+bool force_dep_tree_rebuild = false;
+
 bool running_as_root = false;
 uid_t owner = 0;
 
@@ -79,7 +81,7 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:Dj:Oo:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:Dfj:Oo:p:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
@@ -101,6 +103,9 @@ int main(int argc, char* argv[]) {
 			break;
 		case 'p':
 			install_prefix = optarg;
+			break;
+		case 'f':
+			force_dep_tree_rebuild = true;
 			break;
 		default:
 			usage();
