@@ -16,7 +16,7 @@ cc_flags="
 	-Isrc/flamingo/runtime
 	-Wall -Wextra -Werror -Wno-unused-parameter
 	-Wno-unused-command-line-argument
-	-lm
+	-lm -lpthread
 	-fsanitize=address,undefined -fno-omit-frame-pointer
 "
 
