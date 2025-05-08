@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2025 Aymeric Wibo
 
 #include <common.h>
 
@@ -59,21 +59,36 @@ static bool build_task(void* data) {
 	return rv < 0;
 }
 
-static size_t reset_built_deps(dep_node_t* tree, size_t* max_child_count) {
-	*max_child_count = MAX(*max_child_count, tree->child_count);
+/**
+ * Reset the built_deps flag for all nodes in the tree.
+ *
+ * @param tree The root of the dependency tree.
+ * @return The total number of descendant nodes in the (sub-)tree, root node included.
+ */
+static size_t reset_built_deps(dep_node_t* tree) {
 	size_t total_node_count = 1;
 
 	for (size_t i = 0; i < tree->child_count; i++) {
-		size_t const child_count = reset_built_deps(&tree->children[i], max_child_count);
-
-		total_node_count += child_count;
-		*max_child_count = MAX(*max_child_count, child_count);
+		dep_node_t* const child = &tree->children[i];
+		total_node_count += reset_built_deps(child);
 	}
 
-	tree->built_deps = !tree->child_count;
+	tree->built_deps = tree->child_count == 0; // I.e. is a leaf in the unbuilt tree.
 	return total_node_count;
 }
 
+/**
+ * Traverse the tree and get the next batch of leaves to build from the dependency tree.
+ *
+ * Nodes which have the built_deps flag are considered to have been removed from the tree for this operation.
+ *
+ * @param tree The root of the dependency tree.
+ * @param leaves The array of leaves to fill.
+ * @param leaf_count Pointer whose value is set to the number of leaves in the array.
+ * @param already_built The array of already built dependencies. This used by this function to know which dependencies have already been built and to avoid adding them to the leaves array. This function will also add the leaves of the batch to this array.
+ * @param already_built_count Pointer whose value is set to the number of already built dependencies in the array.
+ * @return true if the tree is empty (i.e., all nodes have been built), false otherwise. This is used to stop the recursion.
+ */
 static bool next_batch(
 	dep_node_t* tree,
 	dep_node_t** leaves,
@@ -123,18 +138,17 @@ int deps_build(dep_node_t* tree) {
 	// To do this most efficiently, we start by popping off all the leaves and building them in parallel.
 	// Once that's done, we pop off the next set of leaves, and so on, until we reach the root node (which this current Bob process is meant to build).
 
-	size_t max_child_count = tree->child_count;
-	size_t const total_child_count = reset_built_deps(tree, &max_child_count);
+	size_t const total_node_count = reset_built_deps(tree);
 
-	char* already_built[total_child_count + 1]; // XXX +1 because zero-length VLA UB.
+	char* already_built[total_node_count + 1]; // XXX +1 because zero-length VLA is UB.
 	size_t already_built_count = 0;
 
 	for (;;) {
-		dep_node_t* leaves[max_child_count + 1]; // XXX +1 because zero-length VLA UB.
+		dep_node_t* leaves[total_node_count + 1]; // XXX +1 because zero-length VLA is UB.
 		size_t leaf_count = 0;
 
 		next_batch(tree, leaves, &leaf_count, already_built, &already_built_count);
-		assert(leaf_count <= max_child_count);
+		assert(leaf_count <= total_node_count);
 
 		if (leaf_count == 0) {
 			break;
