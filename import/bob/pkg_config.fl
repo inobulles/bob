@@ -3,5 +3,5 @@
 
 class PkgConfig {
 	static proto cflags(module: str) -> vec<str>
-	static proto ldflags(module: str) -> vec<str>
+	static proto libs(module: str) -> vec<str>
 }
