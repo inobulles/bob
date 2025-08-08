@@ -19,6 +19,7 @@ extern bob_class_t BOB_CLASS_CARGO;
 extern bob_class_t BOB_CLASS_FS;
 extern bob_class_t BOB_CLASS_GO;
 extern bob_class_t BOB_CLASS_LINKER;
+extern bob_class_t BOB_CLASS_PKG_CONFIG;
 extern bob_class_t BOB_CLASS_PLATFORM;
 
 static bob_class_t* const BOB_CLASSES[] = {
@@ -27,5 +28,6 @@ static bob_class_t* const BOB_CLASSES[] = {
 	&BOB_CLASS_FS,
 	&BOB_CLASS_GO,
 	&BOB_CLASS_LINKER,
+	&BOB_CLASS_PKG_CONFIG,
 	&BOB_CLASS_PLATFORM,
 };
