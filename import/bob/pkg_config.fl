@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Aymeric Wibo
+
+class PkgConfig {
+	static proto cflags(module: str) -> vec<str>
+	static proto ldflags(module: str) -> vec<str>
+}
