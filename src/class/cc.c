@@ -72,12 +72,13 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	add_common(&cmd);
 
 	int const rv = cmd_exec(&cmd);
-	char* STR_CLEANUP out = cmd_read_out(&cmd);
 
 	if (rv < 0) {
 		LOG_WARN("Couldn't figure out include dependencies for %s - modifications to included files will not trigger a rebuild!", task->src, cc);
 		return;
 	}
+
+	char* STR_CLEANUP out = cmd_read_out(&cmd);
 
 	// Open file for writing out include deps.
 
