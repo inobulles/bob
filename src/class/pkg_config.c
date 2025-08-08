@@ -7,6 +7,7 @@
 #include <str.h>
 
 #include <assert.h>
+#include <string.h>
 
 #define PKG_CONFIG "PkgConfig"
 
