@@ -86,6 +86,8 @@ int flamingo_create(flamingo_t* flamingo, char const* progname, char* src, size_
 	flamingo->cur_fn_body = NULL;
 	flamingo->cur_fn_rv = NULL;
 
+	flamingo->in_loop = false;
+
 	// Set up Tree-sitter and parser.
 
 	ts_state_t* const ts_state = calloc(1, sizeof *ts_state);

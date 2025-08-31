@@ -223,6 +223,12 @@ struct flamingo_t {
 	flamingo_ts_node_t cur_fn_body;
 	flamingo_val_t* cur_fn_rv;
 
+	// Current loop stuff.
+
+	bool in_loop;
+	bool breaking;
+	bool continuing;
+
 	// Variables on primitive types.
 	// This is for stuff like e.g. '"zonnebloemgranen".endswith("granen")'.
 
