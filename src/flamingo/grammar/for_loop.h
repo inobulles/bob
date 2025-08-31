@@ -1,5 +1,5 @@
-// This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2025 Aymeric Wibo
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2025 Aymeric Wibo
 
 #pragma once
 
@@ -73,6 +73,10 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 
 	// Run for loop.
 
+	flamingo->in_loop = true;
+	flamingo->breaking = false;
+	flamingo->continuing = false;
+
 	for (size_t i = 0; i < count; i++) {
 		flamingo_val_t* const elem = elems[i];
 
@@ -88,6 +92,8 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 		cur_var->val = elem;
 
 		// Parse body.
+		// TODO It would be nice if parse_block didn't create a new scope for us.
+		//      That way, the body can't shadow the current variable.
 
 		if (parse_block(flamingo, body_node, NULL) < 0) {
 			return -1;
@@ -97,12 +103,19 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 
 		val_decref(elem);
 		env_pop_scope(flamingo->env);
+
+		// Check that we're breaking and reset loop state otherwise.
+
+		if (flamingo->breaking) {
+			break;
+		}
+
+		flamingo->continuing = false;
 	}
 
-	// TODO continue/break.
-	//      I'm thinking that the flamingo object should probably store the closest loop in each stack frame for continues/breaks.
-	//      Let's shy away from the temptation of using this infrastructure to implement gotos, at least for now when I'm not yet entirely sure if I want this language to be Turing-complete or not.
+	// Housekeeping.
 
+	flamingo->in_loop = false;
 	val_decref(iterator);
 
 	return 0;
