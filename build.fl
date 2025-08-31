@@ -1,16 +1,21 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2024 Aymeric Wibo
+# Copyright (c) 2024-2025 Aymeric Wibo
 
 import bob
 
 let src = Fs.list("src").where(|path| path.endswith(".c") && !path.startswith("src/flamingo")) + ["src/flamingo/flamingo.c"]
-
-let obj = Cc([
-	"-std=c11", "-g",
+let flags = [
+	"-std=c11",
 	"-Wall", "-Wextra", "-Werror",
 	"-Wno-unused-parameter",
 	"-Isrc", "-Isrc/flamingo/runtime",
-]).compile(src)
+]
+
+if Platform.getenv("DEBUG") != none {
+	flags = flags + ["-g", "-O0", "-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
+}
+
+let obj = Cc(flags).compile(src)
 
 let cmd = Linker(["-lm", "-lpthread"]).link(obj)
 
