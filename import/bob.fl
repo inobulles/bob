@@ -47,6 +47,7 @@ class Linker(flags: vec<str>) {
 
 class Platform {
 	static proto os -> str
+	static proto getenv(key: str) -> str
 }
 
 let deps: vec<Dep> = []
