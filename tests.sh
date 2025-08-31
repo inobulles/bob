@@ -6,7 +6,7 @@ echo "Bootstrapping Bob..."
 sh bootstrap.sh
 
 echo "Installing Bob..."
-SUDO .bootstrap/bob install > /dev/null
+DEBUG=1 SUDO .bootstrap/bob install
 
 # Actually run the tests.
 
