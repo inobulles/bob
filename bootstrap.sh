@@ -11,13 +11,12 @@ mkdir -p .bootstrap
 # Compile all objects.
 
 cc_flags="
-	-std=c11 -g -O0 -Isrc
+	-std=c11 -Isrc
 	-isystem=/usr/local/include -L/usr/local/lib
 	-Isrc/flamingo/runtime
 	-Wall -Wextra -Werror -Wno-unused-parameter
 	-Wno-unused-command-line-argument
 	-lm -lpthread
-	-fsanitize=address,undefined -fno-omit-frame-pointer
 "
 
 srcs=$(find src -name "*.c" -o -path src/flamingo -prune -type f)
