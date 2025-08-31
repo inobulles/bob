@@ -4,20 +4,20 @@
 import bob
 
 let src = Fs.list("src").where(|path| path.endswith(".c") && !path.startswith("src/flamingo")) + ["src/flamingo/flamingo.c"]
-let flags = [
+let debug_flags = []
+
+if Platform.getenv("DEBUG") != none {
+	debug_flags = ["-g", "-O0", "-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
+}
+
+let obj = Cc([
 	"-std=c11",
 	"-Wall", "-Wextra", "-Werror",
 	"-Wno-unused-parameter",
 	"-Isrc", "-Isrc/flamingo/runtime",
-]
+] + debug_flags).compile(src)
 
-if Platform.getenv("DEBUG") != none {
-	flags = flags + ["-g", "-O0", "-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
-}
-
-let obj = Cc(flags).compile(src)
-
-let cmd = Linker(["-lm", "-lpthread"]).link(obj)
+let cmd = Linker(["-lm", "-lpthread"] + debug_flags).link(obj)
 
 install = {
 	cmd: "bin/bob",
