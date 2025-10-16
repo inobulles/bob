@@ -35,3 +35,5 @@ wait
 
 objs=$(find .bootstrap -name "*.o" -type f)
 $CC $objs $cc_flags -o .bootstrap/bob
+
+echo "Success!"
