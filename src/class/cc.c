@@ -79,7 +79,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 		return;
 	}
 
-	char* STR_CLEANUP out = cmd_read_out(&cmd);
+	char* const out = cmd_read_out(&cmd);
 
 	// Open file for writing out include deps.
 

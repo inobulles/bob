@@ -53,7 +53,7 @@ static int common(
 	cmd_set_redirect(&cmd, true, true);
 
 	int const cmd_rv = cmd_exec(&cmd);
-	char* STR_CLEANUP orig_out = cmd_read_out(&cmd);
+	char* orig_out = cmd_read_out(&cmd);
 
 	if (cmd_rv != 0) {
 		LOG_ERROR(PKG_CONFIG ".%s: pkg-config failed:", fn, orig_out);

@@ -46,6 +46,7 @@ void cmd_create(cmd_t* cmd, ...) {
 
 	cmd_set_redirect(cmd, true, false);
 
+	cmd->out_buf = NULL;
 	cmd->in = -1;
 	cmd->out = -1;
 
@@ -295,25 +296,22 @@ int cmd_exec(cmd_t* cmd) {
 	}
 
 	cmd->sig = 0;
-	cmd->rv = wait_for_process(pid, &cmd->sig);
 
-	return cmd->rv;
-}
-
-char* cmd_read_out(cmd_t* cmd) {
-	// Actually read pipe output.
-
-	char* out = strdup("");
-	assert(out != NULL);
+	free(cmd->out_buf);
+	cmd->out_buf = strdup("");
+	assert(cmd->out_buf != NULL);
 
 	if (!cmd->redirect) {
-		return out;
+		goto just_wait;
 	}
+
+	// If redirecting output, continuously read it.
+	// This is to prevent the process blocking if it has filled its pipe buffer.
 
 	int const pipe = cmd->out;
 
 	if (pipe == -1) {
-		goto dont_read_pipe;
+		goto just_wait;
 	}
 
 	size_t total = 0;
@@ -324,37 +322,48 @@ char* cmd_read_out(cmd_t* cmd) {
 	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
-		out = realloc(out, total + 1);
-		assert(out != NULL);
-		memcpy(out + total - bytes, chunk, bytes);
+		cmd->out_buf = realloc(cmd->out_buf, total + 1);
+		assert(cmd->out_buf != NULL);
+		memcpy(cmd->out_buf + total - bytes, chunk, bytes);
 	}
 
 	if (bytes < 0) {
 		LOG_WARN("%s: Failed to read from %d: %s", __func__, pipe, strerror(errno));
 	}
 
-dont_read_pipe:
+	cmd->out_buf[total] = '\0';
+
+just_wait:
+
+	cmd->rv = wait_for_process(pid, &cmd->sig);
+	return cmd->rv;
+}
+
+char* cmd_read_out(cmd_t* cmd) {
+	if (cmd->sig == 0) {
+		return cmd->out_buf;
+	}
 
 	// If we terminated due to a signal, append that to the output.
 
-	if (cmd->sig != 0) {
-		char* STR_CLEANUP sig_str = NULL;
-		asprintf(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
-		assert(sig_str != NULL);
-		size_t const sig_len = strlen(sig_str);
+	char* STR_CLEANUP sig_str = NULL;
+	asprintf(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
+	assert(sig_str != NULL);
+	size_t const sig_len = strlen(sig_str);
 
-		out = realloc(out, total + sig_len + 1);
-		assert(out != NULL);
-		memcpy(out + total, sig_str, sig_len);
-		total += sig_len;
-	}
+	size_t total = strlen(cmd->out_buf);
 
-	out[total] = '\0';
-	return out;
+	cmd->out_buf = realloc(cmd->out_buf, total + sig_len + 1);
+	assert(cmd->out_buf != NULL);
+	memcpy(cmd->out_buf + total, sig_str, sig_len);
+	total += sig_len;
+
+	cmd->out_buf[total] = '\0';
+	return cmd->out_buf;
 }
 
 void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* infinitive, char const* past, bool log_success) {
-	char* const STR_CLEANUP out = cmd_read_out(cmd);
+	char* const out = cmd_read_out(cmd);
 	bool const is_out = out[0] != '\0';
 	bool const log_out = is_out && (log_success || cmd->rv < 0);
 	char* const suffix = log_out ? ":" : ".";
@@ -424,6 +433,7 @@ void cmd_free(cmd_t* cmd) {
 	cmd->len = 0;
 	cmd->args = NULL;
 
+	free(cmd->out_buf);
 	free(cmd->pending_stdin);
 
 	if (cmd->in >= 0) {

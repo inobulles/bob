@@ -182,6 +182,8 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	if (dylib && apple_set_install_id(install_path, val, &err) < 0) {
 		LOG_WARN("Failed to set Apple install ID for dylib '%s': %s", install_path, err);
 	}
+
+	free(err);
 #endif
 
 	LOG_SUCCESS("%s" CLEAR ": Successfully %sinstalled.", val, is_cookie ? "pre" : "");
