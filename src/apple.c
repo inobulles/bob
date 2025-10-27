@@ -13,7 +13,7 @@ int apple_set_install_id(char const* path, char const* id, char** err) {
 	int const rv = cmd_exec(&cmd);
 
 	if (rv < 0 && err != NULL) {
-		*err = cmd_read_out(&cmd);
+		*err = strdup(cmd_read_out(&cmd));
 		size_t const len = strlen(*err);
 
 		if (len >= 1) {

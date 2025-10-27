@@ -424,7 +424,7 @@ build_tree:;
 		cmd_addf(&cmd, "%" PRIx64, would_be_hash);
 
 		int const rv = cmd_exec(&cmd);
-		char* const STR_CLEANUP out = cmd_read_out(&cmd);
+		char* const out = cmd_read_out(&cmd);
 
 		if (rv < 0) {
 			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");

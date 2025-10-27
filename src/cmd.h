@@ -16,6 +16,8 @@ typedef struct {
 
 	// Pipe (stdout & stderr).
 
+	char* out_buf;
+
 	int in;
 	int out;
 
