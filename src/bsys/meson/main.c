@@ -42,7 +42,7 @@ static int build(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "meson", "setup", bsys_out_path, prefix, NULL);
-	cmd_set_redirect(&cmd, false);
+	cmd_set_redirect(&cmd, false, false);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("Meson setup failed.");
@@ -57,7 +57,7 @@ static int build(void) {
 
 	cmd_free(&cmd);
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, NULL);
-	cmd_set_redirect(&cmd, false);
+	cmd_set_redirect(&cmd, false, false);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("Ninja build failed.");
@@ -76,7 +76,7 @@ static int install(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, "install", NULL);
-	cmd_set_redirect(&cmd, false);
+	cmd_set_redirect(&cmd, false, false);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("Ninja install failed.");
