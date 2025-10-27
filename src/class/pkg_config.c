@@ -56,7 +56,8 @@ static int common(
 	char* STR_CLEANUP orig_out = cmd_read_out(&cmd);
 
 	if (cmd_rv != 0) {
-		LOG_ERROR(PKG_CONFIG ".%s: pkg-config failed:\n", fn, orig_out);
+		LOG_ERROR(PKG_CONFIG ".%s: pkg-config failed:", fn, orig_out);
+		printf("%s", orig_out);
 		return -1;
 	}
 
