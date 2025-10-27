@@ -50,6 +50,7 @@ static int common(
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "pkg-config", flag, module, NULL);
+	cmd_set_redirect(&cmd, true, true);
 
 	int const cmd_rv = cmd_exec(&cmd);
 	char* STR_CLEANUP orig_out = cmd_read_out(&cmd);

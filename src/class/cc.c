@@ -70,6 +70,7 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	cmd_create(&cmd, cc, "-MM", "-MT", "", task->src, NULL);
 	add_flags(&cmd, task);
 	add_common(&cmd);
+	cmd_set_redirect(&cmd, true, true);
 
 	int const rv = cmd_exec(&cmd);
 
