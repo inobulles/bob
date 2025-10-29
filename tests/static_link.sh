@@ -9,9 +9,9 @@ set -e
 BOB_PATH=tests/static_link/.bob
 rm -rf $BOB_PATH
 
-LIB1=$BOB_PATH/prefix/lib/lib1.a
-LIB2=$BOB_PATH/prefix/lib/lib2.a
-CMD=$BOB_PATH/prefix/bin/cmd
+LIB1=$BOB_PATH/$BOB_TARGET/prefix/lib/lib1.a
+LIB2=$BOB_PATH/$BOB_TARGET/prefix/lib/lib2.a
+CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
 
 # Build everything and get initial times.
 
