@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2023 Aymeric Wibo
+// Copyright (c) 2023-2025 Aymeric Wibo
 
 #include <common.h>
 
@@ -77,7 +77,7 @@ void usage(void) {
 
 int main(int argc, char* argv[]) {
 	init_name = argv[0];
-	char const* out_path = ".bob"; // Default output path.
+	char* out_path = ".bob"; // Default output path (without target).
 	char const* project_path = NULL;
 	logging_init();
 
@@ -210,23 +210,7 @@ int main(int argc, char* argv[]) {
 		owner = sb.st_uid;
 	}
 
-	// Ensure the output path exists.
-
-	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
-		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-	// Get absolute output path.
-
-	abs_out_path = realerpath(out_path);
-
-	if (abs_out_path == NULL) {
-		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-	// Get target.
+	// Get target and append to out path.
 
 	char* target = getenv("BOB_TARGET");
 
@@ -244,10 +228,29 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+	asprintf(&out_path, "%s/%s", out_path, target);
+	assert(out_path != NULL);
+
+	// Ensure the output path exists.
+
+	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+	// Get absolute output path.
+
+	abs_out_path = realerpath(out_path);
+
+	if (abs_out_path == NULL) {
+		LOG_FATAL("realpath(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	// Get default final and temporary install prefixes.
 
 	default_final_install_prefix = "/usr/local";
-	asprintf(&default_tmp_install_prefix, "%s/prefix/%s", abs_out_path, target);
+	asprintf(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
 	assert(default_tmp_install_prefix != NULL);
 
 	// Ensure all installation prefixes (explicitly set, final, and temporary) exist.
