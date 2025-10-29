@@ -21,7 +21,7 @@ extern char const* instr;
 extern char const* init_name;
 extern char const* bootstrap_import_path;
 
-extern char const* out_path;
+extern char* out_path;
 extern char const* abs_out_path;
 extern char* bsys_out_path;
 
