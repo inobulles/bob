@@ -210,6 +210,13 @@ int main(int argc, char* argv[]) {
 		owner = sb.st_uid;
 	}
 
+	// Ensure the output path exists.
+
+	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	// Get target and append to out path.
 
 	char* target = getenv("BOB_TARGET");
@@ -231,7 +238,7 @@ int main(int argc, char* argv[]) {
 	asprintf(&out_path, "%s/%s", out_path, target);
 	assert(out_path != NULL);
 
-	// Ensure the output path exists.
+	// Ensure the target path exists too.
 
 	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
 		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
