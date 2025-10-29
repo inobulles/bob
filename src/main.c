@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #if defined(__linux__)
@@ -225,10 +226,28 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Get target.
+
+	char* target = getenv("BOB_TARGET");
+
+	if (target == NULL) {
+		struct utsname u;
+
+		if (uname(&u) < 0) {
+			LOG_WARN("uname(): %s");
+			target = "unknown";
+		}
+
+		else {
+			asprintf(&target, "%s-%s", u.machine, u.sysname);
+			assert(target != NULL);
+		}
+	}
+
 	// Get default final and temporary install prefixes.
 
 	default_final_install_prefix = "/usr/local";
-	asprintf(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
+	asprintf(&default_tmp_install_prefix, "%s/prefix/%s", abs_out_path, target);
 	assert(default_tmp_install_prefix != NULL);
 
 	// Ensure all installation prefixes (explicitly set, final, and temporary) exist.
@@ -246,7 +265,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		if (mkdir_wrapped(prefix, 0755) < 0 && errno != EEXIST) {
+		if (mkdir_recursive(prefix, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", prefix, strerror(errno));
 			return -1;
 		}
