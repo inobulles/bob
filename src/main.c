@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #if defined(__linux__)
@@ -29,7 +30,7 @@ bool debugging = false;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
 
-char const* out_path = ".bob"; // Default output path.
+char* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char* bsys_out_path = NULL;
 
@@ -62,10 +63,13 @@ void usage(void) {
 
 	fprintf(
 		stderr,
+		// clang-format off
 		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] build\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] install\n" "       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] clean\n",
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] install\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] clean\n",
+		// clang-format on
 		progname
 	);
 
@@ -213,6 +217,34 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Get target and append to out path.
+
+	char* target = getenv("BOB_TARGET");
+
+	if (target == NULL) {
+		struct utsname u;
+
+		if (uname(&u) < 0) {
+			LOG_WARN("uname(): %s");
+			target = "unknown";
+		}
+
+		else {
+			asprintf(&target, "%s-%s", u.machine, u.sysname);
+			assert(target != NULL);
+		}
+	}
+
+	asprintf(&out_path, "%s/%s", out_path, target);
+	assert(out_path != NULL);
+
+	// Ensure the target path exists too.
+
+	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
+		return EXIT_FAILURE;
+	}
+
 	// Get absolute output path.
 
 	abs_out_path = realerpath(out_path);
@@ -243,7 +275,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		if (mkdir_wrapped(prefix, 0755) < 0 && errno != EEXIST) {
+		if (mkdir_recursive(prefix, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", prefix, strerror(errno));
 			return -1;
 		}
