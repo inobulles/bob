@@ -11,7 +11,7 @@ if [ "$(bob sh echo test | tail -n1)" != "test" ]; then
 	exit 1
 fi
 
-if [ "$(bob sh -- sh -c "echo \$PATH" | tail -n1 | cut -d':' -f1)" != "$(realpath .bob/prefix/bin)" ]; then
+if [ "$(bob sh -- sh -c "echo \$PATH" | tail -n1 | cut -d':' -f1)" != "$(realpath .bob/$BOB_TARGET/prefix/bin)" ]; then
 	echo "Temporary installation prefix not in \$PATH." >&2
 	exit 1
 fi

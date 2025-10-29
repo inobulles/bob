@@ -30,13 +30,13 @@ build() {
 }
 
 get_mtimes() {
-	export src1_${1}mtime=$(date -r $BOB_PATH/bob/src1.c.cookie.6531c664ecf.o +%s)
-	export src2_${1}mtime=$(date -r $BOB_PATH/bob/src2.c.cookie.6531c665310.o +%s)
-	export linked_${1}mtime=$(date -r $BOB_PATH/bob/linker.link.cookie.33faaddbf5af8a68.l +%s)
+	export src1_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/bob/src1.c.cookie.6531c664ecf.o +%s)
+	export src2_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/bob/src2.c.cookie.6531c665310.o +%s)
+	export linked_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/bob/linker.link.cookie.12a65fcdd69986e8.l +%s)
 
-	export obj1_${1}mtime=$(date -r $BOB_PATH/prefix/obj1.o +%s)
-	export obj2_${1}mtime=$(date -r $BOB_PATH/prefix/obj2.o +%s)
-	export bin_${1}mtime=$(date -r $BOB_PATH/prefix/bin +%s)
+	export obj1_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/prefix/obj1.o +%s)
+	export obj2_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/prefix/obj2.o +%s)
+	export bin_${1}mtime=$(date -r $BOB_PATH/$BOB_TARGET/prefix/bin +%s)
 }
 
 update() {
