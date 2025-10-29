@@ -34,9 +34,9 @@ get_mtimes() {
 	export src2_${1}mtime=$(date -r $BOB_PATH/bob/src2.c.cookie.6531c665310.o +%s)
 	export linked_${1}mtime=$(date -r $BOB_PATH/bob/linker.link.cookie.33faaddbf5af8a68.l +%s)
 
-	export obj1_${1}mtime=$(date -r $BOB_PATH/prefix/obj1.o +%s)
-	export obj2_${1}mtime=$(date -r $BOB_PATH/prefix/obj2.o +%s)
-	export bin_${1}mtime=$(date -r $BOB_PATH/prefix/bin +%s)
+	export obj1_${1}mtime=$(date -r $BOB_PATH/prefix/*/obj1.o +%s)
+	export obj2_${1}mtime=$(date -r $BOB_PATH/prefix/*/obj2.o +%s)
+	export bin_${1}mtime=$(date -r $BOB_PATH/prefix/*/bin +%s)
 }
 
 update() {
