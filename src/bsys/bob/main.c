@@ -269,7 +269,7 @@ found:
 		}
 	}
 
-	return deps_tree(vec->val, path_len, path_hashes, circular);
+	return get_deps_tree(vec->val, path_len, path_hashes, circular);
 }
 
 static int build(void) {

@@ -72,7 +72,21 @@ static int gen_local_path(char* path, char** abs_path, char** human, char** dep_
 	return 0;
 }
 
-static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
+/**
+ * Ensure all dependencies are in Bob's dependency cache.
+ *
+ * Concretely, do the following:
+ * - Read the dependencies vector (Flamingo).
+ * - Ensure dependency is already in Bob's dependency cache (download or symlink it if not).
+ * - Write out dependency structs to deps array.
+ * - Compute total dependency hash.
+ *
+ * @param deps_vec The Flamingo dependency vector in the Bob config.
+ * @param deps The output dependency struct array.
+ * @param hash The output computed total dependency hash.
+ * @return 0 on success, -1 on failure.
+ */
+static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 	assert(*hash == 0);
 
 	// Download (git) or symlink (local) all the dependencies to the dependencies directory.
@@ -298,17 +312,17 @@ void deps_list_free(dep_t* deps, size_t count) {
 	}
 }
 
-dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular) {
+dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular) {
 	assert(circular != NULL);
 	*circular = false;
 
 	// Start off by going though all our direct dependencies and making sure they're downloaded.
 
-	dep_t deps[deps_vec->vec.count + 1]; // Because a count of 0 is UB.
-	memset(deps, 0, sizeof deps);
+	dep_t deps[deps_vec->vec.count + 1]; // +1 because a count of 0 is UB.
+	memset(deps, 0, sizeof deps);        // Because VLAs can't be initialized.
 	uint64_t hash = 0;
 
-	if (download(deps_vec, deps, &hash) < 0) {
+	if (ensure_deps_cache(deps_vec, deps, &hash) < 0) {
 		deps_list_free(deps, deps_vec->vec.count);
 		return NULL;
 	}
