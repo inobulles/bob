@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2024 Aymeric Wibo
+# Copyright (c) 2024-2025 Aymeric Wibo
 
 let __bob_has_been_imported__
 
@@ -19,6 +19,10 @@ class Dep(_kind: str) {
 	let git_url: str
 	let git_branch: str
 
+	# Config.
+
+	let build_path = ""
+
 	# Constructors.
 
 	static fn local(path: str) -> Dep {
@@ -32,6 +36,13 @@ class Dep(_kind: str) {
 		dep.git_url = url
 		dep.git_branch = branch
 		return dep
+	}
+
+	# Config stuff.
+
+	fn cd(path: str) -> Dep {
+		build_path = path
+		return self
 	}
 }
 
