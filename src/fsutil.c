@@ -24,7 +24,12 @@ int rm(char const* path, char** err) {
 	int const rv = cmd_exec(&cmd);
 
 	if (rv < 0 && *err != NULL) {
-		*err = cmd_read_out(&cmd);
+		*err = strdup(cmd_read_out(&cmd));
+		size_t const len = strlen(*err);
+
+		if (len >= 1) {
+			(*err)[len - 1] = '\0';
+		}
 	}
 
 	cmd_free(&cmd);
@@ -68,7 +73,7 @@ int copy(char const* src, char const* dst, char** err) {
 	int const rv = cmd_exec(&cmd);
 
 	if (rv < 0 && err != NULL) {
-		*err = cmd_read_out(&cmd);
+		*err = strdup(cmd_read_out(&cmd));
 		size_t const len = strlen(*err);
 
 		if (len >= 1) {
