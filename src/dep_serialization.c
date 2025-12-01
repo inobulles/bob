@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2025 Aymeric Wibo
 
 #include <common.h>
 #include <deps.h>
@@ -40,21 +40,13 @@ static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
 }
 
 static char* serialize_inner(dep_node_t* node, size_t depth) {
-	size_t const path_len = strlen(node->path);
-	size_t const human_len = node->human == NULL ? 0 : strlen(node->human) + 1; // +1 to include the colon.
+	char* const STR_CLEANUP depth_chars = calloc(1, depth + 1);
+	assert(depth_chars != NULL);
+	memset(depth_chars, DEPTH_CHAR, depth);
 
-	size_t const size = human_len + path_len + 2;
-	char* const serialized = malloc(depth + size);
+	char* serialized = NULL;
+	asprintf(&serialized, "%s%d:%s:%s:%s\n", depth_chars, node->kind, node->human, node->path, node->build_path);
 	assert(serialized != NULL);
-	memset(serialized, DEPTH_CHAR, depth);
-
-	if (node->human == NULL) {
-		snprintf(serialized + depth, size, "%s\n", node->path);
-	}
-
-	else {
-		snprintf(serialized + depth, size, "%s:%s\n", node->human, node->path);
-	}
 
 	return add_children(serialized, node, depth + 1);
 }
@@ -138,8 +130,6 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		if (depth > prev_depth + 1) {
 			LOG_FATAL("Invalid depth in serialized dependency tree." PLZ_REPORT);
-
-			deps_node_free(root);
 			return -1;
 		}
 
@@ -152,6 +142,39 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		dep_node_t* const cur = stack[stack_size - 1];
 
+		// Read tuple.
+
+		char* tuple = tok + depth - 1;
+
+		char* const kind_str = strsep(&tuple, ":");
+		dep_kind_t const kind = kind_str == NULL ? DEP_KIND_INVALID : strtol(kind_str, NULL, 10);
+
+		if (kind == DEP_KIND_INVALID) {
+			LOG_FATAL("Could not read dependency tuple (kind, %s).", kind_str);
+			return -1;
+		}
+
+		char* const human = strsep(&tuple, ":");
+
+		if (human == NULL) {
+			LOG_FATAL("Could not read dependency tuple (human).");
+			return -1;
+		}
+
+		char* const path = strsep(&tuple, ":");
+
+		if (path == NULL) {
+			LOG_FATAL("Could not read dependency tuple (path).");
+			return -1;
+		}
+
+		char* const build_path = strsep(&tuple, ":");
+
+		if (build_path == NULL) {
+			LOG_FATAL("Could not read dependency tuple (build path).");
+			return -1;
+		}
+
 		// Actually create the node object.
 
 		cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
@@ -159,27 +182,16 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 		dep_node_t* const node = &cur->children[cur->child_count++];
 
 		node->is_root = false;
+		node->kind = kind;
 
-		char const* const tuple = tok + depth - 1;
-		char const* human = tuple;
-		char const* path = strrchr(tuple, ':');
-
-		if (path == NULL) {
-			path = tuple;
-			node->human = NULL;
-		}
-
-		else {
-			assert(human != NULL);
-			path++;
-
-			node->human = strdup(human);
-			assert(node->human != NULL);
-			node->human[path - human - 1] = '\0';
-		}
+		node->human = strdup(human);
+		assert(node->human != NULL);
 
 		node->path = strdup(path);
 		assert(node->path != NULL);
+
+		node->build_path = strdup(build_path);
+		assert(node->build_path != NULL);
 
 		node->child_count = 0;
 		node->children = NULL;
