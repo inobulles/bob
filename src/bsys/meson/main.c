@@ -9,7 +9,6 @@
 #include <logging.h>
 #include <str.h>
 
-#include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -36,12 +35,9 @@ static int setup(void) {
 static int build(void) {
 	LOG_INFO("Meson setup...");
 
-	char* STR_CLEANUP prefix = NULL;
-	asprintf(&prefix, "-Dprefix=%s", install_prefix);
-	assert(prefix != NULL);
-
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, "meson", "setup", bsys_out_path, prefix, NULL);
+	cmd_create(&cmd, "meson", "setup", bsys_out_path, NULL);
+	cmd_addf(&cmd, "-Dprefix=%s", install_prefix);
 	cmd_set_redirect(&cmd, false, false);
 
 	if (cmd_exec(&cmd) < 0) {
