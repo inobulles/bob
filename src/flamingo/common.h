@@ -1,5 +1,5 @@
-// This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2024 Aymeric Wibo
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2024 Aymeric Wibo
 
 #pragma once
 
@@ -8,9 +8,6 @@
 
 #include <assert.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 // Grammar parsing prototypes.
 
@@ -31,6 +28,7 @@ static inline int parse_continue(flamingo_t* flamingo);
 static inline int parse_assert(flamingo_t* flamingo, TSNode node);
 static inline int parse_literal(flamingo_t* flamingo, TSNode node, flamingo_val_t** val);
 static inline int parse_identifier(flamingo_t* flamingo, TSNode node, flamingo_val_t** val);
+static inline int parse_self(flamingo_t* flamingo, TSNode node, flamingo_val_t** val);
 static inline int parse_call(flamingo_t* flamingo, TSNode node, flamingo_val_t** val);
 static inline int parse_var_decl(flamingo_t* flamingo, TSNode node);
 static inline int parse_assignment(flamingo_t* flamingo, TSNode node);
