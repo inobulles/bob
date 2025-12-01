@@ -19,7 +19,7 @@ cp tests/deps/build.normal.fl tests/deps/build.fl
 rm -rf tests/deps/.bob tests/deps/dep1/.bob tests/deps/dep2/.bob
 try "Failed to create dependency tree"
 
-DEPS_TREE_PATH=tests/deps/.bob/deps.tree
+DEPS_TREE_PATH=tests/deps/.bob/$BOB_TARGET/deps.tree
 
 if [ ! -f $DEPS_TREE_PATH ]; then
 	echo "Dependency tree not created." >&2
