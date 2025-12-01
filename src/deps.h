@@ -35,14 +35,32 @@ struct dep_node_t {
 	 * Path to actual dependency in Bob's dependency cache.
 	 */
 	char* path;
-	char* human; // Can be NULL.
 
-	size_t child_count;
+	/**
+	 * Human-readable name for this dependency.
+	 *
+	 * E.g. for git repos, this is just the repo name, and for local dependencies this is the last component in the path.
+	 */
+	char* human;
+
+	/**
+	 * Path to change into to build the dependency.
+	 *
+	 * E.g. ZSTD's lib Meson script is at build/meson/meson.build, so you must cd to build/meson.
+	 */
+	char* build_path;
+
+	/**
+	 * The children of this node, i.e. all the dependencies it depends on.
+	 */
 	struct dep_node_t* children;
+	size_t child_count;
 
-	// Field only used during the dependency build process.
-	// If all the dependencies of this node have already been built, this is set.
-
+	/**
+	 * If all the dependencies of this node have already been built, this is set.
+	 *
+	 * This field is only used during the dependency build process.
+	 */
 	bool built_deps;
 };
 
