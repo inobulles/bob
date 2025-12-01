@@ -68,7 +68,22 @@ int deps_build(dep_node_t* tree);
 
 // Dependency tree stuff.
 
-dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular);
+/**
+ * Ensure consistency of dependency tree.
+ *
+ * This is kind of a kitchen sink function, which:
+ * - Makes sure all our direct dependencies are downloaded (and holds on to hash for later). See {@link ensure_deps_cache}.
+ * - Maps out the dependency tree and makes sure it isn't circular (see {@link path_hashes}.
+ * - If the hash computed earlier has not changed v. 'deps.hash' (previous hash), deserialize dependency tree cache and finish.
+ * - Otherwise, if anything could not be found or has changed, rebuild the dependency tree and write it out along with its hash.
+ *
+ * @param deps_vec The Flamingo dependency vector in the Bob config.
+ * @param path_len Length of the path of dependencies leading up to the one the current Bob process is running for, i.e. its parents, i.e. the callers.
+ * @param path_hashes Path of dependency hashes leading up to the one the current Bob process is running for, i.e. its parents, i.e. the callers.
+ * @param circular Set to true if tree was found to be circular, false if not.
+ * @return The dependency tree.
+ */
+dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_hashes, bool* circular);
 void deps_node_free(dep_node_t* node);
 void deps_tree_free(dep_node_t* tree);
 
