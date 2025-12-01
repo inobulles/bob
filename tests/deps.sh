@@ -4,6 +4,7 @@
 
 # Test Bob dependencies.
 # TODO Check that we're caching dependencies correctly (i.e. same version same cache, different versions different cache).
+# TODO Check that deps with same build path are not rebuilt but ones with different ones are treated differently. By the way, when checking, make sure we normalize these paths.
 
 # Test of regular usage of dependencies.
 
