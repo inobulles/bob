@@ -18,6 +18,8 @@ static pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool build_task(void* data) {
 	dep_node_t* const dep = data;
 
+	// TODO If dep->kind == DEP_KIND_GIT, we should not be rebuilding this at all so long as a relative $out_path (I think?) directory exists (though what happens if we need to reinstall?).
+
 	// Log that we're building.
 
 	char const* human = dep->human;

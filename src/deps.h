@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2025 Aymeric Wibo
 
 #pragma once
 
@@ -12,10 +12,28 @@
 
 #define BOB_DEPS_CIRCULAR "<" TAG_NAME " circular />\n"
 
+typedef enum {
+	DEP_KIND_INVALID = 0, // Set to 0 explicitly, because we want strtoi failures to return DEP_KIND_INVALID.
+	DEP_KIND_LOCAL,
+	DEP_KIND_GIT,
+} dep_kind_t;
+
 typedef struct dep_node_t dep_node_t;
 
+/**
+ * Node (i.e. dependency) in the dependency tree.
+ */
 struct dep_node_t {
-	bool is_root; // The root dependency node is self.
+	/**
+	 * Whether this node is the root dependency node.
+	 */
+	bool is_root;
+
+	dep_kind_t kind;
+
+	/**
+	 * Path to actual dependency in Bob's dependency cache.
+	 */
 	char* path;
 	char* human; // Can be NULL.
 

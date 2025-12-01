@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2025 Aymeric Wibo
 
 #include <common.h>
 
@@ -18,6 +18,8 @@
 #include <unistd.h>
 
 typedef struct {
+	dep_kind_t kind;
+
 	char* path;
 	char* human;
 } dep_t;
@@ -105,10 +107,13 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			return -1;
 		}
 
+		dep_kind_t dep_kind = DEP_KIND_INVALID;
 		char* STR_CLEANUP dep_path = NULL;
 		char* STR_CLEANUP human = NULL;
 
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
+			dep_kind = DEP_KIND_LOCAL;
+
 			if (local_path == NULL) {
 				LOG_FATAL("Local dependency must have a 'local_path' attribute." PLZ_REPORT);
 				return -1;
@@ -140,6 +145,8 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 		}
 
 		else if (flamingo_cstrcmp(kind->str.str, "git", kind->str.size) == 0) {
+			dep_kind = DEP_KIND_GIT;
+
 			if (git_url == NULL) {
 				LOG_FATAL("Git dependency must have a 'git_url' attribute." PLZ_REPORT);
 				return -1;
@@ -213,6 +220,8 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			return -1;
 		}
 
+		assert(dep_kind != DEP_KIND_INVALID);
+
 		// If we're here, we've successfully downloaded the dependency.
 
 downloaded:
@@ -223,6 +232,7 @@ downloaded:
 		// Create the dependency object.
 
 		*hash ^= str_hash(dep_path, strlen(dep_path));
+		deps[i].kind = dep_kind;
 
 		deps[i].path = strdup(dep_path);
 		assert(deps[i].path != NULL);
@@ -458,6 +468,8 @@ build_tree:;
 		}
 
 		node.is_root = false;
+
+		node.kind = dep->kind;
 
 		node.path = strdup(dep->path);
 		assert(node.path != NULL);
