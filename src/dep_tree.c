@@ -17,11 +17,25 @@
 #include <string.h>
 #include <unistd.h>
 
+/**
+ * Local dependency object.
+ *
+ * This is sort of a precursor to the {@link dep_node_t} struct.
+ * The values in common are documented there.
+ */
 typedef struct {
 	dep_kind_t kind;
 
+	/**
+	 * Unique identifier for this dependency.
+	 *
+	 * This should be completely unique per dependency of course, but also per version (which e.g. git dependencies will take care of in the path which the hash is based on) and per build path.
+	 */
+	uint64_t hash;
+
 	char* path;
 	char* human;
+	char* build_path;
 } dep_t;
 
 static int gen_local_path(char* path, char** abs_path, char** human, char** dep_path) {
@@ -75,6 +89,8 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 		flamingo_val_t* git_url = NULL;
 		flamingo_val_t* git_branch = NULL;
 
+		flamingo_val_t* build_path = NULL;
+
 		for (size_t j = 0; j < val->inst.scope->vars_size; j++) {
 			flamingo_var_t* const inner = &val->inst.scope->vars[j];
 
@@ -93,7 +109,13 @@ static int download(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* hash) {
 			else if (flamingo_cstrcmp(inner->key, "git_branch", inner->key_size) == 0) {
 				git_branch = inner->val;
 			}
+
+			else if (flamingo_cstrcmp(inner->key, "build_path", inner->key_size) == 0) {
+				build_path = inner->val;
+			}
 		}
+
+		assert(build_path != NULL); // Can only happen if someone touched bob.fl...
 
 		// Make sure everything checks out and take action.
 
@@ -231,14 +253,20 @@ downloaded:
 
 		// Create the dependency object.
 
-		*hash ^= str_hash(dep_path, strlen(dep_path));
 		deps[i].kind = dep_kind;
+
+		deps[i].hash = str_hash(dep_path, strlen(dep_path)) ^
+			str_hash(build_path->str.str, build_path->str.size);
+		*hash ^= deps[i].hash;
 
 		deps[i].path = strdup(dep_path);
 		assert(deps[i].path != NULL);
 
 		deps[i].human = strdup(human);
 		assert(deps[i].human != NULL);
+
+		deps[i].build_path = strndup(build_path->str.str, build_path->str.size);
+		assert(deps[i].build_path != NULL);
 	}
 
 	return 0;
@@ -401,16 +429,15 @@ build_tree:;
 		// The rationale behind skipping it silently rather than erroring or even emitting a warning is that it might make build scripts simpler to allow this, and I don't particularly see a downside as pruning this here is cheap.
 
 		bool skip = false;
-		uint64_t const hash = str_hash(dep->path, strlen(dep->path));
 
 		for (size_t j = 0; j < i; j++) {
-			if (hash == hashes[j]) {
+			if (dep->hash == hashes[j]) {
 				skip = true;
 				break;
 			}
 		}
 
-		hashes[i] = str_hash(dep->path, strlen(dep->path));
+		hashes[i] = dep->hash;
 
 		if (skip) {
 			continue;
@@ -419,7 +446,8 @@ build_tree:;
 		// Run the 'dep-tree' command on the dependency and add the resulting dependency trees to ours.
 
 		cmd_t CMD_CLEANUP cmd;
-		cmd_create(&cmd, init_name, "-C", dep->path, NULL);
+		cmd_create(&cmd, init_name, "-C", NULL);
+		cmd_addf(&cmd, "%s/%s", dep->path, dep->build_path);
 
 		if (force_dep_tree_rebuild) {
 			cmd_add(&cmd, "-f");
@@ -476,6 +504,9 @@ build_tree:;
 
 		node.human = strdup(dep->human);
 		assert(node.human != NULL);
+
+		node.build_path = strdup(dep->build_path);
+		assert(node.build_path != NULL);
 
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);

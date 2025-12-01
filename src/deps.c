@@ -42,7 +42,8 @@ static bool build_task(void* data) {
 	// Since we're just building at the moment (no installing), only pass -t, not -p.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", dep->path, NULL);
+	cmd_create(&cmd, init_name, "-D", "-p", install_prefix, "-C", NULL);
+	cmd_addf(&cmd, "%s/%s", dep->path, dep->build_path);
 
 	bool dep_own_prefix;
 	assert(would_set_owner(install_prefix, &dep_own_prefix) == 0);
