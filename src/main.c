@@ -29,7 +29,6 @@ bool debugging = false;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
 
-char const* out_path = ".bob"; // Default output path.
 char const* abs_out_path = NULL;
 char* bsys_out_path = NULL;
 
@@ -74,6 +73,7 @@ void usage(void) {
 
 int main(int argc, char* argv[]) {
 	init_name = argv[0];
+	char const* out_path = ".bob"; // Default output path.
 	char const* project_path = NULL;
 	logging_init();
 
@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (bsys->key != NULL) {
-		asprintf(&bsys_out_path, "%s/%s", out_path, bsys->key);
+		asprintf(&bsys_out_path, "%s/%s", abs_out_path, bsys->key);
 		assert(bsys_out_path != NULL);
 	}
 

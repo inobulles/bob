@@ -321,11 +321,11 @@ dep_node_t* deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* path_
 	char* STR_CLEANUP serialized = NULL;
 
 	char* STR_CLEANUP hash_path;
-	asprintf(&hash_path, "%s/deps.hash", out_path);
+	asprintf(&hash_path, "%s/deps.hash", abs_out_path);
 	assert(hash_path != NULL);
 
 	char* STR_CLEANUP tree_path;
-	asprintf(&tree_path, "%s/deps.tree", out_path);
+	asprintf(&tree_path, "%s/deps.tree", abs_out_path);
 	assert(tree_path != NULL);
 
 	if (force_dep_tree_rebuild) {
