@@ -1,13 +1,11 @@
-// This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2024 Aymeric Wibo
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2024 Aymeric Wibo
 
 #pragma once
 
 #include "../call.h"
 #include "../common.h"
-#include "../scope.h"
 
-#include "block.h"
 #include "expr.h"
 
 static int parse_call(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {

@@ -15,7 +15,7 @@ fi
 # Update flamingo.
 
 rm -rf src/flamingo 2>/dev/null || true
-git clone $URL --depth 1
+git clone $URL --depth 1 --branch v0.1.4
 
 mv flamingo/flamingo src/flamingo
 rm -rf flamingo

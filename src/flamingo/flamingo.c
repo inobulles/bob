@@ -1,13 +1,9 @@
-// This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2024 Aymeric Wibo
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2024 Aymeric Wibo
 
 #if __linux__
 # define _GNU_SOURCE
 #endif
-
-#include "runtime/tree_sitter/api.h" // Must be included before parser.h (which is included by parser.c).
-
-#include "parser.c"
 
 // XXX Tree-sitter defines this, but 'features.h' on Linux defines this as well when '_DEFAULT_SOURCE' is set.
 //     I don't know if this is bug in Tree-sitter or not (should it check if defined or undef itself?), but for now just undef it ourselves.
@@ -15,6 +11,8 @@
 #undef _POSIX_C_SOURCE
 
 #include "runtime/lib.c"
+
+#include "parser.c"
 
 #include "common.h"
 #include "env.h"

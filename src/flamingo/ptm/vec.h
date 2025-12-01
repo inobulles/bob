@@ -5,7 +5,6 @@
 
 #include "../common.h"
 #include "../val.h"
-#include "../var.h"
 
 #include "../grammar/call.h"
 

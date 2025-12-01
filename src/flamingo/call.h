@@ -1,5 +1,5 @@
-// This Source Form is subject to the terms of the AQUA Software License,
-// v. 1.0. Copyright (c) 2024 Aymeric Wibo
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2024 Aymeric Wibo
 
 #pragma once
 
@@ -227,6 +227,11 @@ static int call(
 		if (flamingo->class_inst_cb != NULL && flamingo->class_inst_cb(flamingo, *rv, flamingo->class_inst_cb_data, args) < 0) {
 			return -1;
 		}
+
+		// Add self variable to inner scope.
+
+		flamingo_var_t* const self = scope_add_var(inner_scope, "self", 4);
+		var_set_val(self, *rv);
 
 		goto done;
 	}
