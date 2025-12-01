@@ -16,6 +16,8 @@
 
 #define COMMON_INCLUDED
 
+#define VERSION "v0.2.19"
+
 /**
  * Whether the BOB_BUIlD_DEBUGGING envvar is set.
  */
