@@ -11,7 +11,7 @@ mkdir -p .bootstrap
 # Compile all objects.
 
 cc_flags="
-	-std=c11 -Isrc
+	-std=c11 -g -Isrc
 	-isystem=/usr/local/include -L/usr/local/lib
 	-Isrc/flamingo/runtime
 	-Wall -Wextra -Werror -Wno-unused-parameter
