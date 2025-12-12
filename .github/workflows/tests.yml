@@ -25,7 +25,7 @@ jobs:
   run_tests_macos:
     strategy:
       matrix:
-        os: [macos-13, macos-latest] # 'macos-13' is Intel, 'macos-latest' is M1.
+        os: [macos-15-intel, macos-latest] # 'macos-latest' is arm64.
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
