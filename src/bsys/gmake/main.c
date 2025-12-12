@@ -28,7 +28,7 @@ static bool identify(void) {
 
 static int setup(void) {
 	if (!cmd_exists("gmake")) {
-		LOG_FATAL("Couldn't find 'gmake' executable in PATH. Meson is something you must install separately.");
+		LOG_FATAL("Couldn't find 'gmake' executable in PATH. GNU Make is something you must install separately.");
 		return -1;
 	}
 
