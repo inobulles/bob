@@ -113,6 +113,8 @@ int bsys_build(bsys_t const* bsys) {
 		install_prefix = default_tmp_install_prefix;
 	}
 
+	setenv("BOB_PREFIX", install_prefix, true);
+
 	// Build dependencies here.
 
 	if (build_deps && do_build_deps(bsys) < 0) {
@@ -200,7 +202,6 @@ static int install(bsys_t const* bsys, bool default_to_tmp_prefix) {
 }
 
 static void setup_environment(void) {
-	setenv("BOB_PREFIX", install_prefix, true);
 	prepend_env("PATH", "%s/bin", install_prefix);
 
 	prepend_env(
