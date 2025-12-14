@@ -56,11 +56,54 @@ class Linker(flags: vec<str>) {
 	proto archive(obj: vec<str>) -> str
 }
 
+# This class provides platform-specific information.
 class Platform {
+	# Return the OS of the platform Bob is running on.
+	# The output of this function is equivalent to the output of the uname(1) POSIX command.
 	static proto os -> str
 	static proto getenv(key: str) -> str
 }
 
+# This class provides a way to create and interact with aquariums.
+# Bob does not come with aquariums by default, so you must have already installed it.
+# It uses the aquarium command line tool to build aquariums, so you don't need to re-link it if you installed aquariums a posteriori.
+#
+# The constructor just creates a new aquarium from a template.
+class Aquarium(template: str) {
+	# Add a kernel template to the aquarium.
+	proto add_kernel(kernel: str) -> void
+
+	# Execute an arbitrary command in the aquarium.
+	proto exec(cmd: str) -> void
+
+	# Create a bootable image from the aquarium.
+	# A kernel must have been added to the aquarium with `set_kernel()` before calling this method.
+	proto image -> str
+}
+
+# This class provides a way to build projects inside of aquariums.
+# All the same disclaimers from the `Aquarium` class apply here too.
+#
+# The constructor creates a builder aquarium from the template and will have Bob installed to it.
+# Then, the project at the given path will be copied over to the builder aquarium and be built within that aquarium.
+class AquariumBuilder(template: str, project_path: str) {
+	# Add overlay template to the builder aquarium.
+	proto add_overlay(overlay: str) -> void
+
+	# Install the built project to a target aquarium.
+	proto install_to(target: Aquarium) -> void
+}
+
+# Vector of other projects this project depends on.
 let deps: vec<Dep> = []
+
+# Map between cookies or source files and their corresponding (prefixless) install paths.
 let install: map<str, str>
+
+# Vector of the default run command for when using `bob run`.
+# This is usually a command in the temporary install prefix.
+# For example, if my project was the echo(1) POSIX command, the default run command could be `["echo"]`, such that I could run `bob run "Hello, world!"`.
+#
+# If this is set to `none`, running will be disabled and Bob will emit an error if the user tries to run `bob run`.
+# This is useful for projects that are not meant to be run directly, such as libraries.
 let run: vec<str> = []
