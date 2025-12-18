@@ -35,6 +35,11 @@ static int parse_vec(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
 	}
 
 	if (val == NULL) {
+		for (size_t i = 0; i < elem_count; i++) {
+			val_decref(elems[i]);
+		}
+
+		free(elems);
 		return 0;
 	}
 

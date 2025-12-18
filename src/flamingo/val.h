@@ -1,9 +1,21 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2025 Drake Fletcher
+
+/*
+ * Values.
+ *
+ * Values are the fundamental data units in Flamingo.
+ * They are reference-counted and can represent various types, including primitives (integers, strings, booleans), collections (vectors, maps), and callables (functions, classes).
+ *
+ * Each value can have an optional name and an "owner" scope, which is used for memory management and debugging.
+ */
 
 #pragma once
 
 #include "common.h"
+#include "env.h"
+#include "scope.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -110,10 +122,38 @@ static flamingo_val_t* val_copy(flamingo_val_t* val) {
 		assert(copy->str.str != NULL);
 		break;
 	case FLAMINGO_VAL_KIND_VEC:
+		copy->vec.elems = malloc(val->vec.count * sizeof *copy->vec.elems);
+		assert(copy->vec.elems != NULL);
+
+		for (size_t i = 0; i < val->vec.count; i++) {
+			copy->vec.elems[i] = val_incref(val->vec.elems[i]);
+		}
+
+		break;
 	case FLAMINGO_VAL_KIND_MAP:
+		copy->map.keys = malloc(val->map.count * sizeof *copy->map.keys);
+		assert(copy->map.keys != NULL);
+
+		copy->map.vals = malloc(val->map.count * sizeof *copy->map.vals);
+		assert(copy->map.vals != NULL);
+
+		for (size_t i = 0; i < val->map.count; i++) {
+			copy->map.keys[i] = val_incref(val->map.keys[i]);
+			copy->map.vals[i] = val_incref(val->map.vals[i]);
+		}
+
+		break;
 	case FLAMINGO_VAL_KIND_FN:
+		if (val->fn.env != NULL) {
+			copy->fn.env = env_close_over(val->fn.env);
+		}
+
+		break;
 	case FLAMINGO_VAL_KIND_INST:
-		// TODO
+		if (val->inst.scope != NULL) {
+			val->inst.scope->ref_count++;
+		}
+
 		break;
 	case FLAMINGO_VAL_KIND_COUNT:
 		break;
@@ -199,23 +239,55 @@ static bool val_eq(flamingo_val_t* x, flamingo_val_t* y) {
 }
 
 static void val_free(flamingo_val_t* val) {
-	if (val->kind == FLAMINGO_VAL_KIND_STR) {
+	free(val->name);
+
+	switch (val->kind) {
+	case FLAMINGO_VAL_KIND_STR:
 		free(val->str.str);
-	}
+		break;
+	case FLAMINGO_VAL_KIND_VEC:
+		for (size_t i = 0; i < val->vec.count; i++) {
+			val_decref(val->vec.elems[i]);
+		}
 
-	if (val->kind == FLAMINGO_VAL_KIND_FN) {
+		free(val->vec.elems);
+		break;
+	case FLAMINGO_VAL_KIND_MAP:
+		for (size_t i = 0; i < val->map.count; i++) {
+			val_decref(val->map.keys[i]);
+			val_decref(val->map.vals[i]);
+		}
+
+		free(val->map.keys);
+		free(val->map.vals);
+
+		break;
+	case FLAMINGO_VAL_KIND_FN:
 		free(val->fn.body);
-	}
+		free(val->fn.params);
 
-	if (val->kind == FLAMINGO_VAL_KIND_INST) {
-		scope_free(val->inst.scope);
+		if (val->fn.env != NULL) {
+			env_free(val->fn.env);
+		}
+
+		break;
+	case FLAMINGO_VAL_KIND_INST:
+		scope_decref(val->inst.scope);
 
 		if (val->inst.free_data != NULL) {
 			val->inst.free_data(val, val->inst.data);
 		}
+
+		break;
+	case FLAMINGO_VAL_KIND_BOOL:
+	case FLAMINGO_VAL_KIND_INT:
+	case FLAMINGO_VAL_KIND_NONE:
+		break;
+	default:
+		assert(false);
 	}
 
-	// TODO when should the memory pointed to by val itself be freed?
+	free(val);
 }
 
 static flamingo_val_t* val_decref(flamingo_val_t* val) {

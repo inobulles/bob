@@ -74,7 +74,7 @@ static int parse_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, f
 	}
 
 	if (strcmp(type, "index") == 0) {
-		return parse_index(flamingo, child, val, false);
+		return parse_index(flamingo, child, val, NULL, false);
 	}
 
 	return error(flamingo, "unknown expression type: %s", type);
