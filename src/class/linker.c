@@ -288,6 +288,8 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;
 
+	flamingo_val_incref(inst);
+
 	return 0;
 }
 

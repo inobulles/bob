@@ -115,7 +115,7 @@ static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	build_step_state_t* const bss = malloc(sizeof *bss);
 	assert(bss != NULL);
 
-	bss->flags = flags;
+	bss->flags = flamingo_val_incref(flags);
 
 	return add_build_step(strhash(GO), "Go build", build_step, bss);
 }
