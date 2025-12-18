@@ -348,7 +348,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	bss->state = state;
 	pthread_mutex_init(&bss->logging_lock, NULL);
 
-	bss->src_vec = srcs;
+	bss->src_vec = flamingo_val_incref(srcs);
 	bss->out_vec = *rv;
 
 	return add_build_step((uint64_t) state, "C source file compilation", compile_step, bss);
@@ -405,6 +405,8 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;
+
+	flamingo_val_incref(inst);
 
 	return 0;
 }
