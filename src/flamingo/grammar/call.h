@@ -1,5 +1,6 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2025 Drake Fletcher
 
 #pragma once
 
@@ -82,5 +83,16 @@ static int parse_call(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
 
 	// Actually call.
 
-	return call(flamingo, callable, accessed_val, val, &arg_list);
+	int const rv = call(flamingo, callable, accessed_val, val, &arg_list);
+
+	val_decref(callable);
+	val_decref(accessed_val);
+
+	if (has_args) {
+		for (size_t i = 0; i < arg_list.count; i++) {
+			val_decref(arg_list.args[i]);
+		}
+	}
+
+	return rv;
 }

@@ -94,7 +94,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 	// TODO It would be nice to find a way to check the operands are compatible with the operator before this point so we get errors. Though I don't think this is the only place where we're not doing this correctly so this might be a difficult change to make.
 
 	if (val == NULL) {
-		return 0;
+		goto done;
 	}
 
 	assert(*val == NULL);

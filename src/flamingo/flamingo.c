@@ -1,5 +1,13 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2025 Drake Fletcher
+
+/*
+ * Flamingo interpreter core.
+ *
+ * This file contains the main entry points for the Flamingo interpreter, including instance creation, destruction, and script execution.
+ * It also manages the integration with Tree-sitter for parsing.
+ */
 
 #if __linux__
 # define _GNU_SOURCE
@@ -19,6 +27,7 @@
 #include "grammar/statement.h"
 #include "primitive_type_member.h"
 #include "scope.h"
+#include "val.h"
 
 typedef struct {
 	TSParser* parser;
@@ -84,7 +93,7 @@ int flamingo_create(flamingo_t* flamingo, char const* progname, char* src, size_
 	flamingo->cur_fn_body = NULL;
 	flamingo->cur_fn_rv = NULL;
 
-	flamingo->in_loop = false;
+	flamingo->in_loop = 0;
 
 	// Set up Tree-sitter and parser.
 
@@ -163,14 +172,12 @@ void flamingo_destroy(flamingo_t* flamingo) {
 
 	// If we didn't inherit our scope stack, free it and all the scopes on it.
 
-	if (!flamingo->inherited_env) {
+	if (!flamingo->inherited_env && flamingo->env != NULL) {
 		for (size_t i = 0; i < flamingo->env->scope_stack_size; i++) {
-			scope_free(flamingo->env->scope_stack[i]);
+			scope_empty(flamingo->env->scope_stack[i]);
 		}
 
-		if (flamingo->env->scope_stack != NULL) {
-			free(flamingo->env->scope_stack);
-		}
+		env_free(flamingo->env);
 	}
 
 	// If we imported anything, free all the created flamingo instances and their sources.
@@ -274,7 +281,7 @@ int flamingo_run(flamingo_t* flamingo) {
 
 	if (!flamingo->inherited_env) {
 		if (flamingo->env != NULL) {
-			free(flamingo->env);
+			env_free(flamingo->env);
 		}
 
 		flamingo->env = env_alloc();
@@ -286,6 +293,14 @@ int flamingo_run(flamingo_t* flamingo) {
 
 flamingo_var_t* flamingo_find_var(flamingo_t* flamingo, char const* key, size_t key_size) {
 	return env_find_var(flamingo->env, key, key_size);
+}
+
+flamingo_val_t* flamingo_val_incref(flamingo_val_t* val) {
+	return val_incref(val);
+}
+
+flamingo_val_t* flamingo_val_decref(flamingo_val_t* val) {
+	return val_decref(val);
 }
 
 flamingo_val_t* flamingo_val_make_none(void) {

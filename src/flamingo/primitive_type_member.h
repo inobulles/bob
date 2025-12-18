@@ -1,6 +1,16 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
 
+/*
+ * Primitive type members (PTMs).
+ *
+ * PTMs provide a mechanism to attach methods and properties to the language's built-in data types, such as strings, vectors, and maps.
+ * This allows for syntax like `my_string.len()` or `my_vec.push(item)`.
+ *
+ * Internally, PTMs are implemented as a special kind of function ({@link FLAMINGO_FN_KIND_PTM}) that is associated with a {@link flamingo_val_kind_t}.
+ * When a member access is performed on a built-in value, the interpreter looks up the corresponding PTM and executes its C callback.
+ */
+
 #pragma once
 
 #include "common.h"
@@ -24,6 +34,7 @@ static void primitive_type_member_free(flamingo_t* flamingo) {
 
 		for (size_t i = 0; i < count; i++) {
 			flamingo_var_t* const var = &vars[i];
+			val_decref(var->val);
 			free(var->key);
 		}
 
@@ -62,6 +73,7 @@ static int primitive_type_member_add(flamingo_t* flamingo, flamingo_val_kind_t t
 	assert(vars != NULL);
 	flamingo_var_t* const var = &vars[count - 1];
 
+	var->val = NULL;
 	var->key_size = key_size;
 	var->key = malloc(key_size);
 	assert(var->key != NULL);

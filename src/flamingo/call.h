@@ -1,6 +1,14 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
 
+/*
+ * Function calling.
+ *
+ * This file implements the logic for calling various types of callables in Flamingo, including functions, classes, external functions, and primitive type members (PTMs).
+ *
+ * The {@link call} function handles environment switching, argument setup, and execution of the callable's body or callback.
+ */
+
 #pragma once
 
 #include "common.h"
@@ -23,6 +31,7 @@ static int setup_args_no_param(flamingo_t* flamingo, flamingo_arg_list_t* args) 
 		flamingo_var_t* const var = scope_add_var(scope, "nothing to see here!", 0);
 
 		var_set_val(var, args->args[i]);
+		val_incref(args->args[i]);
 	}
 
 	return 0;
@@ -71,6 +80,7 @@ static int setup_args(flamingo_t* flamingo, TSNode* params, flamingo_arg_list_t*
 
 		flamingo_var_t* const var = scope_add_var(scope, name, size);
 		var_set_val(var, args->args[i]);
+		val_incref(args->args[i]);
 	}
 
 	return 0;

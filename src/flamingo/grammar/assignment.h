@@ -1,5 +1,6 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2025 Drake Fletcher
 
 #pragma once
 
@@ -37,6 +38,11 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 	flamingo_var_t* var = NULL;
 	flamingo_val_t* val = NULL;
 
+	// Slot is a pointer to the value storage in the container (vector/map).
+	// It is used for index assignment to update the value in place.
+
+	flamingo_val_t** slot = NULL;
+
 	if (strcmp(left_type, "identifier") == 0) {
 		var = env_find_var(flamingo->env, lhs, lhs_size);
 
@@ -58,7 +64,7 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 	}
 
 	else if (strcmp(left_type, "index") == 0) {
-		if (parse_index(flamingo, left_node, &val, true) < 0) {
+		if (parse_index(flamingo, left_node, &val, &slot, true) < 0) {
 			return -1;
 		}
 	}
@@ -87,17 +93,28 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 		return -1;
 	}
 
+	if (rhs->kind != prev_type && (prev_type != FLAMINGO_VAL_KIND_NONE && rhs->kind != FLAMINGO_VAL_KIND_NONE)) {
+		val_decref(rhs);
+
+		if (slot != NULL) {
+			val_decref(val);
+		}
+
+		return error(flamingo, "cannot assign %s to '%.*s' (%s)", val_type_str(rhs), (int) lhs_size, lhs, prev_type_str);
+	}
+
 	if (var != NULL) {
-		val_decref(val);
+		val_decref(var->val);
 		var_set_val(var, rhs);
 	}
 
 	else {
-		memcpy(val, rhs, sizeof *val); // XXX I don't know if this is really the right way to do it lolz.
-	}
+		assert(slot != NULL);
 
-	if (val->kind != prev_type && (prev_type != FLAMINGO_VAL_KIND_NONE && val->kind != FLAMINGO_VAL_KIND_NONE)) {
-		return error(flamingo, "cannot assign %s to '%.*s' (%s)", val_type_str(val), (int) lhs_size, lhs, prev_type_str);
+		val_decref(*slot);
+		*slot = rhs;
+
+		val_decref(val);
 	}
 
 	return 0;

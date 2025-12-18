@@ -51,7 +51,7 @@ static int parse_unary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t** 
 	// We can stop here if we discard the result, as we've already evaluated our operand expressions (which we need to do as they might modify state).
 
 	if (val == NULL) {
-		return 0;
+		goto done;
 	}
 
 	assert(*val == NULL);

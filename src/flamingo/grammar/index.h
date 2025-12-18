@@ -1,5 +1,6 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2025 Drake Fletcher
 
 #pragma once
 
@@ -7,8 +8,12 @@
 
 #include "../common.h"
 
-static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, bool lhs) {
+static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, flamingo_val_t*** slot, bool lhs) {
 	assert(strcmp(ts_node_type(node), "index") == 0);
+
+	int rv = 0;
+	flamingo_val_t* indexed_val = NULL;
+	flamingo_val_t* index_val = NULL;
 
 	// Get indexed expression.
 
@@ -31,39 +36,45 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 	// Evaluate indexed expression.
 	// Make sure it is indexable in the first place.
 
-	flamingo_val_t* indexed_val = NULL;
-
 	if (parse_expr(flamingo, indexed_node, &indexed_val, NULL) < 0) {
-		return -1;
+		rv = -1;
+		goto cleanup;
 	}
 
 	bool const is_vec = indexed_val->kind == FLAMINGO_VAL_KIND_VEC;
 	bool const is_map = indexed_val->kind == FLAMINGO_VAL_KIND_MAP;
 
 	if (!is_vec && !is_map) {
-		return error(flamingo, "can only index vectors and maps, got %s", val_type_str(indexed_val));
+		rv = error(flamingo, "can only index vectors and maps, got %s", val_type_str(indexed_val));
+		goto cleanup;
 	}
 
 	// Evaluate index expression.
 	// Make sure it can be used as an index if indexing a vector.
 
-	flamingo_val_t* index_val = NULL;
-
 	if (parse_expr(flamingo, index_node, &index_val, NULL) < 0) {
-		return -1;
+		rv = -1;
+		goto cleanup;
 	}
 
 	if (is_vec && index_val->kind != FLAMINGO_VAL_KIND_INT) {
-		return error(flamingo, "can only use integers as indices, got %s", val_type_str(index_val));
+		rv = error(flamingo, "can only use integers as indices, got %s", val_type_str(index_val));
+		goto cleanup;
 	}
 
 	// Prepare result value and exit here if we discard it.
 
-	if (val == NULL) {
-		return 0;
+	if (val == NULL && slot == NULL) {
+		goto cleanup;
 	}
 
-	assert(*val == NULL);
+	if (val != NULL) {
+		assert(*val == NULL);
+	}
+
+	if (slot != NULL) {
+		*slot = NULL;
+	}
 
 	// Do the indexing operation per indexed type.
 
@@ -74,27 +85,28 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 
 		// Check bounds.
 
-		if (index >= 0 && (size_t) index >= indexed_count) {
-			return error(flamingo, "index %" PRId64 " is out of bounds for vector of size %zu", index, indexed_count);
-		}
-
-		if (index < 0 && (size_t) -index > indexed_count) {
-			return error(flamingo, "index %" PRId64 " is out of bounds for vector of size %zu", index, indexed_count);
+		if (
+			(index >= 0 && (size_t) index >= indexed_count) ||
+			(index < 0 && (size_t) -index > indexed_count)
+		) {
+			rv = error(flamingo, "index %" PRId64 " is out of bounds for vector of size %zu", index, indexed_count);
+			goto cleanup;
 		}
 
 		// Actually index vector.
 
-		if (index >= 0) {
-			*val = indexed_elems[index];
+		flamingo_val_t** const target_slot = &indexed_elems[index >= 0 ? index : indexed_count + index];
+
+		if (val != NULL) {
+			*val = *target_slot;
 			val_incref(*val);
 		}
 
-		else {
-			*val = indexed_elems[indexed_count + index];
-			val_incref(*val);
+		if (slot != NULL) {
+			*slot = target_slot;
 		}
 
-		return 0;
+		goto cleanup;
 	}
 
 	else if (is_map) {
@@ -108,18 +120,25 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 			flamingo_val_t* const key = indexed_keys[i];
 
 			if (val_eq(key, index_val)) {
-				*val = indexed_vals[i];
-				val_incref(*val);
+				if (val != NULL) {
+					*val = indexed_vals[i];
+					val_incref(*val);
+				}
 
-				return 0;
+				if (slot != NULL) {
+					*slot = &indexed_vals[i];
+				}
+
+				goto cleanup;
 			}
 		}
 
 		// No key found.
 		// Create a new value.
 
-		*val = val_alloc();
-		(*val)->kind = FLAMINGO_VAL_KIND_NONE;
+		if (val != NULL) {
+			*val = val_alloc();
+		}
 
 		// Add that new entry to the map if we're on the LHS.
 
@@ -133,15 +152,31 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 			assert(indexed_val->map.vals != NULL);
 
 			indexed_val->map.keys[indexed_count - 1] = index_val;
-			indexed_val->map.vals[indexed_count - 1] = *val;
+
+			// If val was created (new NONE), use it. Otherwise we need a new NONE.
+			// But wait, if val was created above, we can use it.
+			// If val was NOT requested (val==NULL), we still need to put something in the map.
+
+			flamingo_val_t* const new_val = val != NULL ? *val : val_alloc();
+			indexed_val->map.vals[indexed_count - 1] = new_val;
 
 			val_incref(index_val);
-			val_incref(*val);
+			val_incref(new_val);
+
+			if (slot != NULL) {
+				*slot = &indexed_val->map.vals[indexed_count - 1];
+			}
 		}
 
-		return 0;
+		goto cleanup;
 	}
 
 	assert(false);
-	return 0;
+
+cleanup:
+
+	val_decref(indexed_val);
+	val_decref(index_val);
+
+	return rv;
 }

@@ -76,6 +76,14 @@ static int parse_map(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
 	}
 
 	if (val == NULL) {
+		for (size_t i = 0; i < count; i++) {
+			val_decref(keys[i]);
+			val_decref(vals[i]);
+		}
+
+		free(keys);
+		free(vals);
+
 		return 0;
 	}
 

@@ -73,7 +73,7 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 
 	// Run for loop.
 
-	flamingo->in_loop = true;
+	flamingo->in_loop++;
 	flamingo->breaking = false;
 	flamingo->continuing = false;
 
@@ -101,7 +101,6 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 
 		// Unwind.
 
-		val_decref(elem);
 		env_pop_scope(flamingo->env);
 
 		// Check that we're breaking and reset loop state otherwise.
@@ -115,7 +114,7 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 
 	// Housekeeping.
 
-	flamingo->in_loop = false;
+	flamingo->in_loop--;
 	val_decref(iterator);
 
 	return 0;

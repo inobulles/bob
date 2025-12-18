@@ -103,13 +103,18 @@ static int parse_access(flamingo_t* flamingo, TSNode node, flamingo_val_t** val,
 	// Set value.
 
 	if (val == NULL) {
-		return 0;
+		goto cleanup;
 	}
 
 	assert(*val == NULL);
 	*val = var->val;
 	val_incref(*val);
 
-	// TODO val_decref(accessed_val);
+cleanup:
+
+	if (accessed_val_ref == NULL) {
+		val_decref(accessed_val);
+	}
+
 	return 0;
 }
