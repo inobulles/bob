@@ -95,7 +95,7 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 
 		// Actually index vector.
 
-		flamingo_val_t** const target_slot = &indexed_elems[index >= 0 ? index : indexed_count + index];
+		flamingo_val_t** const target_slot = &indexed_elems[index >= 0 ? (size_t) index : (size_t) (indexed_count + index)];
 
 		if (val != NULL) {
 			*val = *target_slot;
