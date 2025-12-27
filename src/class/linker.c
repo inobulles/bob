@@ -224,8 +224,8 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	bss->present = present;
 	bss->past = past;
 
-	bss->src_vec = srcs;
-	bss->out_str = *rv;
+	bss->src_vec = flamingo_val_incref(srcs);
+	bss->out_str = flamingo_val_incref(*rv);
 
 	// We never want to merge these build steps because the output hash from one set of source files to another is (hopefully) always different.
 
