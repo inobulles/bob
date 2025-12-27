@@ -349,7 +349,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	pthread_mutex_init(&bss->logging_lock, NULL);
 
 	bss->src_vec = flamingo_val_incref(srcs);
-	bss->out_vec = *rv;
+	bss->out_vec = flamingo_val_incref(*rv);
 
 	return add_build_step((uint64_t) state, "C source file compilation", compile_step, bss);
 }
