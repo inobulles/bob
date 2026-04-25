@@ -32,25 +32,32 @@ static int setup(void) {
 	return 0;
 }
 
+static int configure(bool reconfigure) {
+	cmd_t CMD_CLEANUP cmd = {0};
+	cmd_create(&cmd, "meson", "setup", NULL);
+
+	if (reconfigure) {
+		cmd_add(&cmd, "--reconfigure");
+	}
+
+	cmd_add(&cmd, bsys_out_path);
+	cmd_addf(&cmd, "-Dprefix=%s", install_prefix);
+
+	cmd_set_redirect(&cmd, false, false);
+	return cmd_exec(&cmd);
+}
+
 static int build(void) {
 	LOG_INFO("Meson setup...");
 
-	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, "meson", "setup", bsys_out_path, NULL);
-	cmd_addf(&cmd, "-Dprefix=%s", install_prefix);
-	cmd_set_redirect(&cmd, false, false);
+	// We don't check for failure here, because if we've already run setup, this will fail saying we don't need to run this again.
+	// If there is a real error, it will be caught by the Ninja build anyway.
 
-	if (cmd_exec(&cmd) < 0) {
-		LOG_FATAL("Meson setup failed.");
-		return -1;
-	}
-
-	else {
-		LOG_SUCCESS("Meson setup succeeded.");
-	}
+	configure(false);
 
 	LOG_INFO("Ninja build...");
 
+	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_free(&cmd);
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, NULL);
 	cmd_set_redirect(&cmd, false, false);
@@ -72,9 +79,28 @@ static int install(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, "install", NULL);
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, true, true);
 
-	if (cmd_exec(&cmd) < 0) {
+	int rv = cmd_exec(&cmd);
+
+	// If Ninja suggests we reconfigure directory, do that.
+	// This can happen e.g. if there's a big Meson version change.
+
+	if (strstr(cmd.out_buf, "Consider reconfiguring the directory") != NULL) {
+		LOG_INFO("Try to reconfigure the Meson build directory...");
+
+		if (configure(true) < 0) {
+			LOG_FATAL("Meson reconfigure failed.");
+			return -1;
+		}
+
+		// Retry Ninja install.
+
+		cmd_set_redirect(&cmd, false, false);
+		rv = cmd_exec(&cmd);
+	}
+
+	if (rv < 0) {
 		LOG_FATAL("Ninja install failed.");
 		return -1;
 	}
