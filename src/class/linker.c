@@ -40,6 +40,107 @@ typedef struct {
 	flamingo_val_t* out_str;
 } build_step_state_t;
 
+// Check if link output needs rebuilding.
+// Like frugal_mtime, but also resolves -lXXX/-l:filename flags (searching -L dirs and the install prefix lib dir) to actual static lib paths and includes them as deps.
+
+static int frugal_link(bool* do_link, flamingo_val_t* flags, size_t src_count, char** srcs, char const* log_prefix, char* out) {
+	// Collect lib search dirs: install prefix + any -L flags.
+
+	size_t search_dir_count = 1;
+	char** search_dirs = malloc(sizeof *search_dirs);
+	assert(search_dirs != NULL);
+	asprintf(&search_dirs[0], "%s/lib", install_prefix);
+	assert(search_dirs[0] != NULL);
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		size_t const flen = flag->str.size;
+		char const* const fstr = flag->str.str;
+
+		if (flen <= 2 || strncmp(fstr, "-L", 2) != 0) {
+			continue;
+		}
+
+		search_dirs = realloc(search_dirs, (search_dir_count + 1) * sizeof *search_dirs);
+		assert(search_dirs != NULL);
+		search_dirs[search_dir_count++] = strndup(fstr + 2, flen - 2);
+		assert(search_dirs[search_dir_count - 1] != NULL);
+	}
+
+	// Resolve -lXXX (→ libXXX.a) and -l:filename (→ exact name) to real paths.
+
+	size_t extra_count = 0;
+	char** extra = NULL;
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		size_t const flen = flag->str.size;
+		char const* const fstr = flag->str.str;
+
+		if (flen <= 2 || strncmp(fstr, "-l", 2) != 0) {
+			continue;
+		}
+
+		bool const exact = flen > 3 && fstr[2] == ':';
+		char const* const name = fstr + (exact ? 3 : 2);
+		size_t const nlen = flen - (exact ? 3 : 2);
+
+		for (size_t j = 0; j < search_dir_count; j++) {
+			char* path = NULL;
+
+			if (exact) {
+				asprintf(&path, "%s/%.*s", search_dirs[j], (int) nlen, name);
+			}
+
+			else {
+				asprintf(&path, "%s/lib%.*s.a", search_dirs[j], (int) nlen, name);
+			}
+
+			assert(path != NULL);
+
+			struct stat sb;
+
+			if (stat(path, &sb) == 0) {
+				extra = realloc(extra, (extra_count + 1) * sizeof *extra);
+				assert(extra != NULL);
+				extra[extra_count++] = path;
+				break;
+			}
+
+			free(path);
+		}
+	}
+
+	for (size_t i = 0; i < search_dir_count; i++) {
+		free(search_dirs[i]);
+	}
+
+	free(search_dirs);
+
+	// Run mtime check with combined deps.
+
+	size_t const total = src_count + extra_count;
+	char** deps = malloc(total * sizeof *deps);
+	assert(deps != NULL);
+	memcpy(deps, srcs, src_count * sizeof *srcs);
+
+	if (extra_count > 0) {
+		memcpy(deps + src_count, extra, extra_count * sizeof *extra);
+	}
+
+	int const rv = frugal_mtime(do_link, log_prefix, total, deps, out);
+
+	free(deps);
+
+	for (size_t i = 0; i < extra_count; i++) {
+		free(extra[i]);
+	}
+
+	free(extra);
+
+	return rv;
+}
+
 static int link_step(size_t data_count, void** data) {
 	assert(data_count == 1); // See comment just before 'add_build_step' in 'prep_link'.
 
@@ -84,7 +185,7 @@ static int link_step(size_t data_count, void** data) {
 
 	bool do_link;
 
-	if (frugal_mtime(&do_link, bss->log_prefix, src_count, srcs, out) < 0) {
+	if (frugal_link(&do_link, bss->state->flags, src_count, srcs, bss->log_prefix, out) < 0) {
 		goto link;
 	}
 
