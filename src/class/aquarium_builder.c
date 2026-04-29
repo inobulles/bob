@@ -43,7 +43,7 @@ static int create_step(size_t data_count, void** data) {
 		// Generate the cookie.
 
 		uint64_t const hash = strhash(state->template) ^ strhash(state->overlays) ^ strhash(state->project_path);
-		asprintf(&state->cookie, "%s/bob/aquarium_builder.cookie.%" PRIx64 ".aquarium", out_path, hash);
+		asprintf(&state->cookie, "%s/aquarium_builder.cookie.%" PRIx64 ".aquarium", bsys_out_path, hash);
 		assert(state->cookie != NULL);
 
 		// If it doesn't yet exist, create the aquarium.
@@ -71,7 +71,7 @@ static int create_step(size_t data_count, void** data) {
 			cmd_add(&cmd, "create");
 			cmd_add(&cmd, state->cookie);
 
-			cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
+			cmd_set_redirect(&cmd, false, false); // So we can get progress if a template needs to be downloaded e.g.
 			int rv = cmd_exec(&cmd);
 
 			if (rv == 0) {
@@ -104,7 +104,7 @@ static int create_step(size_t data_count, void** data) {
 			);
 			// clang-format on
 
-			cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+			cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
 
 			if (cmd_exec(&cmd) < 0) {
 				LOG_FATAL("%s" CLEAR ": Failed to install Bob to the builder aquarium.", pretty);
@@ -146,7 +146,7 @@ static int create_step(size_t data_count, void** data) {
 		);
 		// clang-format on
 
-		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
 
 		if (cmd_exec(&cmd) < 0) {
 			LOG_FATAL("%s" CLEAR ": Failed to build project in the builder aquarium.", pretty);
@@ -196,7 +196,7 @@ static int install_to_step(size_t data_count, void** data) {
 		);
 		// clang-format on
 
-		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
 
 		if (cmd_exec(&cmd) < 0) {
 			LOG_FATAL("%s" CLEAR ": Failed to install built project to target aquarium.", bss->state->template);
