@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
+#include <common.h>
+
+#include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
 #include <logging.h>
@@ -11,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 bool frugal_flags(flamingo_val_t* flags, char* out) {
 	char path[strlen(out) + 7];
@@ -86,8 +90,14 @@ write_out:
 	return true;
 }
 
-int frugal_mtime(bool* do_work, char const prefix[static 1], size_t dep_count, char* const* deps, char* target) {
-	assert(prefix != NULL);
+int frugal_mtime(
+	bool* do_work,
+	char const log_prefix[static 1],
+	size_t dep_count,
+	char* const* deps,
+	char* target
+) {
+	assert(log_prefix != NULL);
 	*do_work = true; // When in doubt, do the work.
 
 	// If target file doesn't exist yet, we need to do work.
@@ -96,7 +106,7 @@ int frugal_mtime(bool* do_work, char const prefix[static 1], size_t dep_count, c
 
 	if (stat(target, &target_sb) < 0) {
 		if (errno != ENOENT) {
-			LOG_FATAL("%s: Failed to stat target '%s': %s", prefix, target, strerror(errno));
+			LOG_FATAL("%s: Failed to stat target '%s': %s", log_prefix, target, strerror(errno));
 			return -1;
 		}
 
@@ -113,7 +123,7 @@ int frugal_mtime(bool* do_work, char const prefix[static 1], size_t dep_count, c
 		struct stat dep_sb;
 
 		if (stat(dep, &dep_sb) < 0) {
-			LOG_FATAL("%s: Failed to stat dependency '%s': %s", prefix, dep, strerror(errno));
+			LOG_FATAL("%s: Failed to stat dependency '%s': %s", log_prefix, dep, strerror(errno));
 			return -1;
 		}
 
@@ -129,4 +139,154 @@ int frugal_mtime(bool* do_work, char const prefix[static 1], size_t dep_count, c
 
 	*do_work = false;
 	return 0;
+}
+
+int frugal_link(
+	bool* do_link,
+	char const log_prefix[static 1],
+	flamingo_val_t* flags,
+	size_t obj_count,
+	char** objs,
+	char* out
+) {
+	*do_link = true;
+
+	// Re-link if flags have changed.
+
+	if (frugal_flags(flags, out)) {
+		return 0;
+	}
+
+	// Re-link if any statically linked dependencies have changed.
+	// We know we have a static dependency when there's a cookie in the flags.
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+
+		if (has_built_cookie(flag->str.str, flag->str.size)) {
+			return 0;
+		}
+	}
+
+	// Now, this is a little more involved.
+	// We're going to want to look through all library search paths and -l flags to look for static libraries which might have changed.
+	// Collect lib search paths.
+
+	size_t search_path_count = 1;
+	char** search_paths = malloc(search_path_count + sizeof *search_paths);
+	assert(search_paths != NULL);
+
+	// First lib search path is just /lib in the install prefix.
+
+	asprintf(&search_paths[0], "%s/lib", install_prefix);
+	assert(search_paths[0] != NULL);
+
+	// Next lib search paths are all the -L flags.
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* flag = flags->vec.elems[i];
+		size_t flen = flag->str.size;
+		char const* fstr = flag->str.str;
+
+		if (strncmp(fstr, "-L", 2) != 0) {
+			continue;
+		}
+
+		search_paths = realloc(search_paths, (search_path_count + 1) * sizeof *search_paths);
+		assert(search_paths != NULL);
+
+		char* search_path;
+
+		if (flen == 2) { // If we only have -L, then go to next element in vector.
+			if (i >= flags->vec.count - 1) {
+				LOG_FATAL("%s: No search path provided after -L", log_prefix);
+				return -1;
+			}
+
+			flag = flags->vec.elems[i + 1];
+			search_path = strndup(flag->str.str, flag->str.size);
+		} else {
+			assert(flen > 2);
+			search_path = strndup(fstr + 2, flen - 2);
+			assert(search_path != NULL);
+		}
+
+		if (access(search_path, F_OK) != 0) {
+			LOG_FATAL("%s: Failed to access library search path '%s': %s", log_prefix, search_path, strerror(errno));
+			return -1;
+		}
+
+		search_paths[search_path_count++] = search_path;
+	}
+
+	// Resolve -lXXX (→ libXXX.a) and -l:filename (→ exact name) to real paths.
+
+	size_t extra_count = 0;
+	char** extra = NULL;
+
+	for (size_t i = 0; i < flags->vec.count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		size_t const flen = flag->str.size;
+		char const* const fstr = flag->str.str;
+
+		if (strncmp(fstr, "-l", 2) != 0) {
+			continue;
+		}
+
+		bool const exact = flen > 3 && fstr[2] == ':';
+		char const* const name = fstr + (exact ? 3 : 2);
+		size_t const nlen = flen - (exact ? 3 : 2);
+
+		// This is the correct order for processing search paths.
+
+		for (size_t j = 0; j < search_path_count; j++) {
+			char* path = NULL;
+
+			if (exact) {
+				asprintf(&path, "%s/%.*s", search_paths[j], (int) nlen, name);
+			} else {
+				asprintf(&path, "%s/lib%.*s.a", search_paths[j], (int) nlen, name);
+			}
+
+			assert(path != NULL);
+
+			if (access(path, F_OK) == 0) {
+				extra = realloc(extra, (extra_count + 1) * sizeof *extra);
+				assert(extra != NULL);
+				extra[extra_count++] = path;
+				break;
+			}
+
+			free(path);
+		}
+	}
+
+	// Free all our search paths as we don't need em no more.
+
+	for (size_t i = 0; i < search_path_count; i++) {
+		free(search_paths[i]);
+	}
+
+	free(search_paths);
+
+	// Run mtime check with combined deps.
+
+	size_t const total = obj_count + extra_count;
+	char** deps = malloc(total * sizeof *deps);
+	assert(deps != NULL);
+
+	memcpy(deps, objs, obj_count * sizeof *objs);
+	memcpy(deps + obj_count, extra, extra_count * sizeof *extra);
+
+	int const rv = frugal_mtime(do_link, log_prefix, total, deps, out);
+
+	free(deps);
+
+	for (size_t i = 0; i < extra_count; i++) {
+		free(extra[i]);
+	}
+
+	free(extra);
+
+	return rv;
 }
