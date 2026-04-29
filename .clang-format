@@ -101,7 +101,7 @@ BraceWrapping:
   AfterUnion: false
   AfterExternBlock: false
   BeforeCatch: true
-  BeforeElse: true
+  BeforeElse: false
   BeforeWhile: false
   IndentBraces: false # GNU is crazy for this
   SplitEmptyFunction: false # redundant with AllowShortFunctionsOnASingleLine I think
