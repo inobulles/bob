@@ -3,8 +3,9 @@ set -e
 
 . tests/common.sh
 
-# Regression test for the following PR:
+# Regression tests for the following PRs:
 # https://github.com/inobulles/bob/pull/85
+# https://github.com/inobulles/bob/pull/120
 
 BOB_PATH=tests/static_link/.bob
 rm -rf $BOB_PATH
@@ -58,3 +59,82 @@ new_cmd_mtime=$(date -r $CMD +%s)
 [ $lib1_mtime -lt $new_lib1_mtime ]
 [ $lib2_mtime -eq $(date -r $LIB2 +%s) ]
 [ $cmd_mtime -lt $new_cmd_mtime ]
+
+# Test: changed static lib in install_prefix/lib causes relink.
+
+BOB_PATH=tests/static_link/dash_l/.bob
+CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
+rm -rf $BOB_PATH
+
+bob -C tests/static_link/dash_l build
+cmd_mtime=$(date -r $CMD +%s)
+
+sleep 1
+bob -C tests/static_link/dash_l build
+[ $cmd_mtime -eq $(date -r $CMD +%s) ]
+
+sleep 1
+touch tests/static_link/dash_l/lib.c
+bob -C tests/static_link/dash_l build
+[ $cmd_mtime -lt $(date -r $CMD +%s) ]
+
+# Test: changed static lib in a custom -L search path causes relink.
+
+BOB_PATH=tests/static_link/custom_l/.bob
+CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
+rm -rf $BOB_PATH tests/static_link/custom_l/custom-libs
+
+mkdir -p tests/static_link/custom_l/custom-libs
+printf 'void custom_fn(void){}\n' | cc -x c - -c -o tests/static_link/custom_l/custom-libs/empty.o
+ar rcs tests/static_link/custom_l/custom-libs/libcustom.a tests/static_link/custom_l/custom-libs/empty.o
+
+bob -C tests/static_link/custom_l build
+cmd_mtime=$(date -r $CMD +%s)
+
+sleep 1
+bob -C tests/static_link/custom_l build
+[ $cmd_mtime -eq $(date -r $CMD +%s) ]
+
+sleep 1
+touch tests/static_link/custom_l/custom-libs/libcustom.a
+bob -C tests/static_link/custom_l build
+[ $cmd_mtime -lt $(date -r $CMD +%s) ]
+
+# Test: changed static lib given by -l: causes relink.
+
+BOB_PATH=tests/static_link/colon_l/.bob
+CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
+rm -rf $BOB_PATH
+
+bob -C tests/static_link/colon_l build
+cmd_mtime=$(date -r $CMD +%s)
+
+sleep 1
+bob -C tests/static_link/colon_l build
+[ $cmd_mtime -eq $(date -r $CMD +%s) ]
+
+sleep 1
+touch tests/static_link/colon_l/lib.c
+bob -C tests/static_link/colon_l build
+[ $cmd_mtime -lt $(date -r $CMD +%s) ]
+
+# Test: changed shared object does NOT cause relink.
+
+BOB_PATH=tests/static_link/shared/.bob
+CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
+rm -rf $BOB_PATH tests/static_link/shared/fake-libs
+
+mkdir -p tests/static_link/shared/fake-libs
+printf 'void shared_fn(void){}\n' | cc -shared -fPIC -x c - -o tests/static_link/shared/fake-libs/libshared.so
+
+bob -C tests/static_link/shared build
+cmd_mtime=$(date -r $CMD +%s)
+
+sleep 1
+bob -C tests/static_link/shared build
+[ $cmd_mtime -eq $(date -r $CMD +%s) ]
+
+sleep 1
+touch tests/static_link/shared/fake-libs/libshared.so
+bob -C tests/static_link/shared build
+[ $cmd_mtime -eq $(date -r $CMD +%s) ]

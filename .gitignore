@@ -12,4 +12,6 @@ compile_commands.json
 .bootstrap
 .test-out
 tests/deps/build.fl
+tests/static_link/custom_l/custom-libs/
+tests/static_link/shared/fake-libs/
 .deps
