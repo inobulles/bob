@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Aymeric Wibo
+
+import bob
+
+let cmd = Linker(["-Lfake-libs", "-lshared"]).link(Cc([]).compile(["main.c"]))
+
+install = {
+	cmd: "bin/cmd"
+}
