@@ -101,22 +101,25 @@ bob -C tests/static_link/custom_l build
 [ $cmd_mtime -lt $(date -r $CMD +%s) ]
 
 # Test: changed static lib given by -l: causes relink.
+# The -l: syntax is not supported by the Apple linker, so skip on macOS.
 
-BOB_PATH=tests/static_link/colon_l/.bob
-CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
-rm -rf $BOB_PATH
+if [ $(uname) != Darwin ]; then
+	BOB_PATH=tests/static_link/colon_l/.bob
+	CMD=$BOB_PATH/$BOB_TARGET/prefix/bin/cmd
+	rm -rf $BOB_PATH
 
-bob -C tests/static_link/colon_l build
-cmd_mtime=$(date -r $CMD +%s)
+	bob -C tests/static_link/colon_l build
+	cmd_mtime=$(date -r $CMD +%s)
 
-sleep 1
-bob -C tests/static_link/colon_l build
-[ $cmd_mtime -eq $(date -r $CMD +%s) ]
+	sleep 1
+	bob -C tests/static_link/colon_l build
+	[ $cmd_mtime -eq $(date -r $CMD +%s) ]
 
-sleep 1
-touch tests/static_link/colon_l/lib.c
-bob -C tests/static_link/colon_l build
-[ $cmd_mtime -lt $(date -r $CMD +%s) ]
+	sleep 1
+	touch tests/static_link/colon_l/lib.c
+	bob -C tests/static_link/colon_l build
+	[ $cmd_mtime -lt $(date -r $CMD +%s) ]
+fi
 
 # Test: changed shared object does NOT cause relink.
 
