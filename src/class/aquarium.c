@@ -39,7 +39,7 @@ static int create_step(size_t data_count, void** data) {
 
 		// Generate the cookie.
 
-		asprintf(&state->cookie, "%s/bob/aquarium.cookie.%zu.aquarium", out_path, id);
+		asprintf(&state->cookie, "%s/aquarium.cookie.%zu.aquarium", bsys_out_path, id);
 		assert(state->cookie != NULL);
 
 		// If the cookie already exists, remove it.
@@ -63,7 +63,7 @@ static int create_step(size_t data_count, void** data) {
 		cmd_add(&cmd, "create");
 		cmd_add(&cmd, state->cookie);
 
-		cmd_set_redirect(&cmd, false); // So we can get progress if a template needs to be downloaded e.g.
+		cmd_set_redirect(&cmd, false, true); // So we can get progress if a template needs to be downloaded e.g.
 		int const rv = cmd_exec(&cmd);
 
 		if (rv == 0) {
@@ -92,8 +92,8 @@ static int exec_step(size_t data_count, void** data) {
 		asprintf(&cmd.pending_stdin, "export HOME=/root\n%s\n", bss->cmd);
 		assert(cmd.pending_stdin != NULL);
 
-		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
-		cmd_exec(&cmd);                // XXX Return values don't matter to us here, commands can fail.
+		cmd_set_redirect(&cmd, false, true); // It's nice to see these logs.
+		cmd_exec(&cmd);                      // XXX Return values don't matter to us here, commands can fail.
 
 		cmd_log(&cmd, NULL, bss->state->template, "execute command on aquarium", "executed command on aquarium", true);
 	}
@@ -109,7 +109,7 @@ static int image_step(size_t data_count, void** data) {
 
 		cmd_t CMD_CLEANUP cmd = {0};
 		cmd_create(&cmd, "aquarium", "image", bss->state->cookie, bss->cookie, NULL);
-		cmd_set_redirect(&cmd, false); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, false, true); // It's nice to see these logs.
 		int rv = cmd_exec(&cmd);
 
 		if (rv == 0) {
@@ -173,7 +173,7 @@ static int prep_image(aquarium_state_t* state, flamingo_arg_list_t* args, flamin
 
 	bss->state = state;
 
-	asprintf(&bss->cookie, "%s/bob/aquarium.cookie.%zu.img", out_path, image_id++);
+	asprintf(&bss->cookie, "%s/aquarium.cookie.%zu.img", bsys_out_path, image_id++);
 	assert(bss->cookie != NULL);
 
 	*rv = flamingo_val_make_cstr(bss->cookie);
