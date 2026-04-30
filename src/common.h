@@ -17,6 +17,13 @@
 #define COMMON_INCLUDED
 
 /**
+ * Current Bob version.
+ *
+ * Should always be one higher than the latest tag, unless we are the commit of that tag itself.
+ */
+#define VERSION "v0.2.24"
+
+/**
  * Whether the BOB_BUIlD_DEBUGGING envvar is set.
  */
 extern _Bool debugging;
