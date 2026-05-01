@@ -56,14 +56,14 @@ extern char const* init_name;
 extern char const* bootstrap_import_path;
 
 /**
- * The absolute ".bob" output path.
+ * The absolute ".bob/$TARGET/" output path.
  */
 extern char const* abs_out_path;
 
 /**
  * The current build system's output path, including the ".bob" prefix.
  *
- * E.g. ".bob/bob/", or ".bob/meson/".
+ * E.g. ".bob/$TARGET/bob/", or ".bob/$TARGET/meson/".
  */
 extern char* bsys_out_path;
 
@@ -96,7 +96,7 @@ extern char* default_final_install_prefix;
 /**
  * Default temporary installation prefix.
  *
- * Set to '.bob/prefix/' (depending on the value of {@link abs_out_path}).
+ * Set to '.bob/$TARGET/prefix/' (depending on the value of {@link abs_out_path}).
  */
 extern char* default_tmp_install_prefix;
 
