@@ -165,7 +165,7 @@ clear:
 
 int main(int argc, char* argv[]) {
 	init_name = argv[0];
-	char* out_path = ".bob"; // Default output path (without target).
+	char* out_path = ".bob"; // Default output path (without target, for now).
 	char const* project_path = NULL;
 	logging_init();
 
@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
 
 		if (mkdir_recursive(prefix, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", prefix, strerror(errno));
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 
