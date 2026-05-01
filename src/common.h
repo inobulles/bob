@@ -24,6 +24,14 @@
 #define VERSION "v0.2.24"
 
 /**
+ * Bob build ID.
+ *
+ * This is a combination of the current Bob version and date & time of the build.
+ * It is saved to the output directory and the dependency cache directory, and if it changes, the dependency cache directory is cleared and the full project rebuilt.
+ */
+#define BUILD_ID VERSION "\t" __DATE__ "\t" __TIME__
+
+/**
  * Whether the BOB_BUIlD_DEBUGGING envvar is set.
  */
 extern _Bool debugging;
