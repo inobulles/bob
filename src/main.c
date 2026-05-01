@@ -129,7 +129,7 @@ static int clear_out_path_if_bob_update(void) {
 	fclose(f);
 
 	if (strcmp(stored, BUILD_ID) != 0) {
-		LOG_WARN("Bob was updated, clearing output path.");
+		LOG_INFO("Bob was updated, clearing output path.");
 		goto clear;
 	}
 
