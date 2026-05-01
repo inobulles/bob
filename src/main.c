@@ -135,7 +135,6 @@ static int clear_out_path_if_bob_update(void) {
 
 	// Otherwise, just return now.
 
-	fclose(f);
 	return 0;
 
 clear:
