@@ -8,6 +8,7 @@
 #include <fsutil.h>
 #include <logging.h>
 #include <ncpu.h>
+#include <str.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -101,6 +102,63 @@ static int get_and_ensure_deps_path(void) {
 		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
 		return -1;
 	}
+
+	return 0;
+}
+
+static int clear_out_path_if_bob_update(void) {
+	char* STR_CLEANUP err = NULL;
+
+	char* STR_CLEANUP version_path = NULL;
+	asprintf(&version_path, "%s/version", abs_out_path);
+	assert(version_path != NULL);
+
+	FILE* const f = fopen(version_path, "r");
+
+	// If version file doesn't exist, clear cache.
+	// Don't log here, because it might just be the first time creating this directory.
+
+	if (f == NULL) {
+		goto clear;
+	}
+
+	// If stored version changed, clear cache.
+
+	char stored[64] = {0};
+	fread(stored, 1, sizeof stored - 1, f);
+	fclose(f);
+
+	if (strcmp(stored, BUILD_ID) != 0) {
+		LOG_WARN("Bob was updated, clearing output path.");
+		goto clear;
+	}
+
+	// Otherwise, just return now.
+
+	fclose(f);
+	return 0;
+
+clear:
+
+	if (rm(abs_out_path, &err) < 0) {
+		LOG_FATAL("Failed to clear output path (\"%s\"): %s", abs_out_path, err);
+		return -1;
+	}
+
+	if (mkdir_recursive(abs_out_path, 0755) < 0) {
+		LOG_FATAL("mkdir_recursive(\"%s\"): %s", abs_out_path, strerror(errno));
+		return -1;
+	}
+
+	FILE* const new_version_f = fopen(version_path, "w");
+
+	if (new_version_f == NULL) {
+		LOG_FATAL("fopen(\"%s\"): %s", version_path, strerror(errno));
+		return -1;
+	}
+
+	fputs(BUILD_ID, new_version_f);
+	fclose(new_version_f);
 
 	return 0;
 }
@@ -284,9 +342,17 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	// Clear output directory if the Bob build ID changed.
+	// Has to be done before we ensure the temporary installation prefix exists, or we might remove it and it won't be recreated.
+
+	if (clear_out_path_if_bob_update() < 0) {
+		return EXIT_FAILURE;
+	}
+
 	// Get default final and temporary install prefixes.
 
 	default_final_install_prefix = "/usr/local";
+
 	asprintf(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
 	assert(default_tmp_install_prefix != NULL);
 
