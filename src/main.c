@@ -75,7 +75,7 @@ void usage(void) {
 	exit(EXIT_FAILURE);
 }
 
-static void get_deps_path(void) {
+static int get_and_ensure_deps_path(void) {
 	deps_path = getenv("BOB_DEPS_PATH");
 
 	if (deps_path == NULL) {
@@ -94,6 +94,15 @@ static void get_deps_path(void) {
 
 		assert(deps_path != NULL);
 	}
+
+	// Ensure it exists.
+
+	if (mkdir_recursive(deps_path, 0755) < 0) {
+		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
+		return -1;
+	}
+
+	return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -302,14 +311,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	// Get the dependencies path.
+	// Get the dependencies path and ensure it exists.
 
-	get_deps_path();
-
-	// Ensure it exists.
-
-	if (mkdir_recursive(deps_path, 0755) < 0) {
-		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
+	if (get_and_ensure_deps_path() < 0) {
 		return EXIT_FAILURE;
 	}
 
