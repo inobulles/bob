@@ -22,10 +22,11 @@ bool colour_support = false;
 
 static bool supports_colour(void) {
 	// if we're forced to do colours, oblige 😞
+	// CLICOLOR_FORCE=0 means "don't force", anything else (non-empty) means "force"
 
-	bool const clicolor_force = !!getenv("CLICOLOR_FORCE");
+	char* const clicolor_force = getenv("CLICOLOR_FORCE");
 
-	if (clicolor_force) {
+	if (clicolor_force && strcmp(clicolor_force, "0") != 0) {
 		return true;
 	}
 
