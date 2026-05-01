@@ -158,6 +158,7 @@ clear:
 
 	fputs(BUILD_ID, new_version_f);
 	fclose(new_version_f);
+	set_owner(version_path);
 
 	return 0;
 }
