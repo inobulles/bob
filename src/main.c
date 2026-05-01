@@ -313,10 +313,6 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// TODO Make sure relative bin path is in '.gitignore'.
-
-	// validate_gitignore((char*) rel_bin_path);
-
 	// Identify the build system.
 
 	bsys_t const* const bsys = bsys_identify();
