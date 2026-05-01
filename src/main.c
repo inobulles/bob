@@ -75,6 +75,27 @@ void usage(void) {
 	exit(EXIT_FAILURE);
 }
 
+static void get_deps_path(void) {
+	deps_path = getenv("BOB_DEPS_PATH");
+
+	if (deps_path == NULL) {
+		char const* const home = getenv("HOME");
+
+		// XXX Don't worry about freeing these.
+
+		if (home != NULL) {
+			asprintf(&deps_path, "%s/%s", home, ".cache/bob/deps");
+		}
+
+		else {
+			asprintf(&deps_path, "%s/%s", abs_out_path, "deps");
+			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
+		}
+
+		assert(deps_path != NULL);
+	}
+}
+
 int main(int argc, char* argv[]) {
 	init_name = argv[0];
 	char* out_path = ".bob"; // Default output path (without target).
@@ -283,24 +304,7 @@ int main(int argc, char* argv[]) {
 
 	// Get the dependencies path.
 
-	deps_path = getenv("BOB_DEPS_PATH");
-
-	if (deps_path == NULL) {
-		char const* const home = getenv("HOME");
-
-		// XXX Don't worry about freeing these.
-
-		if (home != NULL) {
-			asprintf(&deps_path, "%s/%s", home, ".cache/bob/deps");
-		}
-
-		else {
-			asprintf(&deps_path, "%s/%s", abs_out_path, "deps");
-			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
-		}
-
-		assert(deps_path != NULL);
-	}
+	get_deps_path();
 
 	// Ensure it exists.
 
