@@ -84,53 +84,6 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 	free(msg);
 }
 
-progress_t* progress_new(void) {
-	progress_t* self = calloc(1, sizeof *self);
-	self->frac = 0;
-
-	return self;
-}
-
-void progress_del(progress_t* self) {
-	free(self);
-}
-
-void progress_complete(progress_t* self) {
-	self->frac = 1;
-
-	printf(REPLACE_LINE);
-	fflush(stdout);
-}
-
-#define BAR_SIZE 16
-
-void progress_update(progress_t* self, size_t numerator, size_t _denominator, char const* fmt, ...) {
-	float const denominator = (float) _denominator - 1;
-	self->frac = 0.5; // if something goes wrong (e.g. there's only one item in
-							// our progress bar), default to 50%
-
-	if (denominator > 0) {
-		self->frac = numerator / denominator;
-	}
-
-	printf(colour_support ? REPLACE_LINE BOLD BLUE "🚧 [" : "🚧 [");
-
-	for (size_t i = 0; i < BAR_SIZE; i++) {
-		printf(i < self->frac * (BAR_SIZE + 1) ? "=" : ".");
-	}
-
-	printf(colour_support ? " %3d%%] " REGULAR BLUE : " %3d%%] ", (int) (self->frac * 100));
-
-	va_list args;
-	va_start(args, fmt);
-
-	vprintf(fmt, args);
-	printf(CLEAR);
-	fflush(stdout);
-
-	va_end(args);
-}
-
 void log_already_done(char const* cookie, char const* prefix, char const* past) {
 	char* STR_CLEANUP out = NULL;
 
