@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2023-2025 Aymeric Wibo
+// Copyright (c) 2023-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -31,6 +31,7 @@ bool debugging = false;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
 
+char const* targetless_out_path = NULL;
 char const* abs_out_path = NULL;
 char* bsys_out_path = NULL;
 
@@ -165,7 +166,7 @@ clear:
 
 int main(int argc, char* argv[]) {
 	init_name = argv[0];
-	char* out_path = ".bob"; // Default output path (without target, for now).
+	targetless_out_path = ".bob"; // Default output path.
 	char const* project_path = NULL;
 	logging_init();
 
@@ -191,7 +192,7 @@ int main(int argc, char* argv[]) {
 			own_prefix = true;
 			break;
 		case 'o':
-			out_path = optarg;
+			targetless_out_path = optarg;
 			break;
 		case 'p':
 			install_prefix = optarg;
@@ -300,8 +301,8 @@ int main(int argc, char* argv[]) {
 
 	// Ensure the output path exists.
 
-	if (mkdir_wrapped(out_path, 0755) < 0 && errno != EEXIST) {
-		LOG_FATAL("mkdir(\"%s\"): %s", out_path, strerror(errno));
+	if (mkdir_wrapped(targetless_out_path, 0755) < 0 && errno != EEXIST) {
+		LOG_FATAL("mkdir(\"%s\"): %s", targetless_out_path, strerror(errno));
 		return EXIT_FAILURE;
 	}
 
@@ -323,7 +324,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	asprintf(&out_path, "%s/%s", out_path, target);
+	char* STR_CLEANUP out_path = NULL;
+
+	asprintf(&out_path, "%s/%s", targetless_out_path, target);
 	assert(out_path != NULL);
 
 	// Ensure the target path exists too.

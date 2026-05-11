@@ -56,6 +56,11 @@ extern char const* init_name;
 extern char const* bootstrap_import_path;
 
 /**
+ * The top-level ".bob" (without target subdir) output path.
+ */
+extern char const* targetless_out_path;
+
+/**
  * The absolute ".bob/$TARGET/" output path.
  */
 extern char const* abs_out_path;
