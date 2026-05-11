@@ -12,4 +12,11 @@ int would_set_owner(char const* path, bool* would);
 int set_owner(char const* path);
 int mkdir_wrapped(char const* path, mode_t mode);
 int mkdir_recursive(char const* path, mode_t mode);
+
+/**
+ * Like realpath(3), but also expands a leading '~' to $HOME.
+ *
+ * @param path Path to resolve.
+ * @return Resolved absolute path (heap-allocated), or NULL if resolution failed or $HOME is unset when path starts with '~'.
+ */
 char* realerpath(char const* path);
