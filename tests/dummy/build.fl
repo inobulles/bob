@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Aymeric Wibo
+
+import bob
+
+# Literally meant to be the bare minimum possible Bob project.
+# I don't even know why I'm bothering with a license header, pretty sure this isn't copyrightable lolz.
