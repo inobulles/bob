@@ -6,6 +6,7 @@
 #include <bsys.h>
 #include <build_step.h>
 #include <fsutil.h>
+#include <gitignore.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <str.h>
@@ -478,6 +479,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	free_build_steps();
+
+	// Check output path is in .gitignore.
+	// Done last so the message isn't buried under build output.
+
+	check_gitignore(targetless_out_path);
 
 	return rv;
 }
