@@ -119,3 +119,18 @@ extern char const* install_prefix;
  * Used to propagate dependency tree rebuild through all children processes.
  */
 extern _Bool force_dep_tree_rebuild;
+
+/**
+ * Whether to generate/update compile_commands.json.
+ *
+ * Set unconditionally by 'bob lsp', or automatically by 'bob build' if compile_commands.json
+ * already exists next to build.fl.
+ */
+extern _Bool gen_compile_commands;
+
+/**
+ * Absolute path to the project directory (set after chdir'ing into it).
+ *
+ * Used as the "directory" field in compile_commands.json entries.
+ */
+extern char const* project_cwd;

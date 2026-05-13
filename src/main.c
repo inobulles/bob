@@ -5,6 +5,7 @@
 
 #include <bsys.h>
 #include <build_step.h>
+#include <class/cc_compile_commands.h>
 #include <fsutil.h>
 #include <gitignore.h>
 #include <logging.h>
@@ -31,6 +32,7 @@ char const* instr = NULL;
 bool debugging = false;
 char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
+char const* project_cwd = NULL;
 
 char const* targetless_out_path = NULL;
 char const* abs_out_path = NULL;
@@ -67,6 +69,7 @@ void usage(void) {
 		stderr,
 		// clang-format off
 		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] lsp\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
 		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] install\n"
@@ -285,6 +288,8 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	project_cwd = project_path;
+
 	// Get the owner of the project directory.
 	// If running as root, we'll use this owner for the binary output directory.
 
@@ -424,7 +429,30 @@ int main(int argc, char* argv[]) {
 			usage();
 		}
 
+		// Auto-update compile_commands.json if it already exists next to build.fl.
+
+		if (access("compile_commands.json", F_OK) == 0) {
+			gen_compile_commands = true;
+		}
+
 		if (bsys_build(bsys) == 0) {
+			if (gen_compile_commands) {
+				cc_compile_commands_write(); // Best-effort; don't fail the build.
+			}
+
+			rv = EXIT_SUCCESS;
+		}
+	}
+
+	else if (strcmp(instr, "lsp") == 0) {
+		if (argc != 0) {
+			LOG_FATAL("Extraneous arguments to '%s'.", instr);
+			usage();
+		}
+
+		gen_compile_commands = true;
+
+		if (bsys_build(bsys) == 0 && cc_compile_commands_write() == 0) {
 			rv = EXIT_SUCCESS;
 		}
 	}
@@ -483,7 +511,7 @@ int main(int argc, char* argv[]) {
 	// Check output path is in .gitignore.
 	// Done last so the message isn't buried under build output.
 
-	check_gitignore(targetless_out_path);
+	check_gitignore();
 
 	return rv;
 }

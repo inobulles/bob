@@ -31,9 +31,14 @@ void check_gitignore(void) {
 	char* STR_CLEANUP real_out_path = realerpath(targetless_out_path);
 	assert(real_out_path != NULL);
 
+	// Only check compile_commands.json if it exists.
+
+	char* STR_CLEANUP real_ccj_path = realerpath("compile_commands.json");
+
 	char* STR_CLEANUP line = NULL; // getline(3) is weird but... trust this is correct, and we don't needa realloc or anything.
 	size_t len = 0;
-	bool found = false;
+	bool found_out = false;
+	bool found_ccj = false;
 	size_t line_count = 0;
 
 	while (getline(&line, &len, f) != -1) {
@@ -52,15 +57,22 @@ void check_gitignore(void) {
 			continue;
 		}
 
-		if (strcmp(real_out_path, real_gitignore_path) == 0) {
-			found = true;
-			break;
+		if (!found_out && strcmp(real_out_path, real_gitignore_path) == 0) {
+			found_out = true;
+		}
+
+		if (real_ccj_path != NULL && !found_ccj && strcmp(real_ccj_path, real_gitignore_path) == 0) {
+			found_ccj = true;
 		}
 	}
 
 	fclose(f);
 
-	if (!found) {
+	if (!found_out) {
 		LOG_WARN("\"%s\" is not in .gitignore. Consider adding it.", targetless_out_path);
+	}
+
+	if (real_ccj_path != NULL && !found_ccj) {
+		LOG_WARN("\"compile_commands.json\" is not in .gitignore. Consider adding it.");
 	}
 }

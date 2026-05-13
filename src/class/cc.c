@@ -4,6 +4,7 @@
 #include <common.h>
 
 #include <build_step.h>
+#include <class/cc_compile_commands.h>
 #include <class/class.h>
 #include <cmd.h>
 #include <cookie.h>
@@ -116,6 +117,56 @@ static void get_include_deps(compile_task_t* task, char* cc) {
 	set_owner(deps_path);
 }
 
+static void record_compile_command(state_t* state, char const* src, char const* out) {
+	if (!gen_compile_commands) {
+		return;
+	}
+
+	char* cc = getenv("CC");
+
+	if (cc == NULL) {
+		cc = "cc";
+	}
+
+	flamingo_val_t* const flags = state->flags;
+	size_t const flag_count = flags->vec.count;
+
+	// Reconstruct: <cc> -fdiagnostics-color=always -c <src> -o <out> [flags] -isystem<prefix>/include
+
+	size_t const args_count = 6 + flag_count + 1;
+	char** args = malloc(args_count * sizeof *args);
+	assert(args != NULL);
+
+	size_t n = 0;
+	args[n++] = cc;
+	args[n++] = "-fdiagnostics-color=always";
+	args[n++] = "-c";
+	args[n++] = (char*) src;
+	args[n++] = "-o";
+	args[n++] = (char*) out;
+
+	for (size_t i = 0; i < flag_count; i++) {
+		flamingo_val_t* const flag = flags->vec.elems[i];
+		args[n++] = strndup(flag->str.str, flag->str.size);
+	}
+
+	char* isystem = NULL;
+	asprintf(&isystem, "-isystem%s/include", install_prefix);
+	assert(isystem != NULL);
+	args[n++] = isystem;
+
+	assert(n == args_count);
+
+	cc_compile_commands_add(src, project_cwd, args, args_count);
+
+	for (size_t i = 6; i < 6 + flag_count; i++) {
+		free(args[i]);
+	}
+
+	free(isystem);
+	free(args);
+}
+
 static bool compile_task(void* data) {
 	compile_task_t* const task = data;
 	bool stop = false;
@@ -141,6 +192,8 @@ static bool compile_task(void* data) {
 	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 	add_flags(&cmd, task);
 	add_common(&cmd);
+
+	record_compile_command(task->bss->state, task->src, task->out);
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -275,6 +328,7 @@ static int compile_step(size_t data_count, void** data) {
 			}
 
 			if (vres == VALIDATION_RES_SKIP) {
+				record_compile_command(bss->state, src, out);
 				log_already_done(out, src, "compiled");
 
 				if (install_cookie(out, false) < 0) {
