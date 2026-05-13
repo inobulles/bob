@@ -4,10 +4,9 @@
 #pragma once
 
 /**
- * Check that the output path is listed in .gitignore.
+ * Check that relevant generated paths are listed in .gitignore.
  *
- * Warns if .gitignore doesn't exist or if out_path is not found in it.
- *
- * @param out_path Output path to look for (e.g. ".bob").
+ * Warns if .gitignore doesn't exist or if the output path / compile_commands.json are not in it.
+ * compile_commands.json is only checked if the file currently exists.
  */
-void check_gitignore(char const* out_path);
+void check_gitignore(void);
