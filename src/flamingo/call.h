@@ -1,5 +1,5 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 /*
  * Function calling.
@@ -124,33 +124,36 @@ static int call(
 		flamingo->env = callable->fn.env;
 	}
 
-	// Create a new scope for the function for the argument assignments.
-	// It's important to set 'scope->class_scope' to false for functions as new scopes will copy the 'class_scope' property from their parents otherwise.
+	// A couple more declarations before we start goto'ing...
 
-	flamingo_scope_t* const scope = env_push_scope(flamingo->env);
-	scope->class_scope = is_class;
+	int err = -1;
+	TSNode* const body = callable->fn.body;
+	bool const is_expr = body != NULL && strcmp(ts_node_type(*body), "expression") == 0;
+	flamingo_scope_t* inner_scope;
+
+	// Create a new scope for the function for the argument assignments.
+	// It's important to set 'arg_scope->class_scope' to false for functions as new scopes will copy the 'class_scope' property from their parents otherwise.
+
+	flamingo_scope_t* const arg_scope = env_push_scope(flamingo->env);
+	arg_scope->class_scope = is_class;
 
 	if (is_ptm) {
 		if (setup_args_no_param(flamingo, args) < 0) {
-			return -1;
+			goto unwind;
 		}
 	}
 
 	else if (setup_args(flamingo, callable->fn.params, args) < 0) {
-		return -1;
+		goto unwind;
 	}
 
 	// If external function or primitive type member: call the function's callback.
 	// If function or class: actually parse the function's body.
 
-	TSNode* const body = callable->fn.body;
-	bool const is_expr = body != NULL && strcmp(ts_node_type(*body), "expression") == 0;
-
-	flamingo_scope_t* inner_scope;
-
 	if (is_extern || is_ptm) {
 		if (is_extern && flamingo->external_fn_cb == NULL) {
-			return error(flamingo, "cannot call external function without a external function callback being set");
+			error(flamingo, "cannot call external function without a external function callback being set");
+			goto unwind;
 		}
 
 		// Create arg list.
@@ -175,11 +178,11 @@ static int call(
 		assert(flamingo->cur_fn_rv == NULL);
 
 		if (is_extern && flamingo->external_fn_cb(flamingo, callable, flamingo->external_fn_cb_data, &arg_list, &flamingo->cur_fn_rv) < 0) {
-			return -1;
+			goto unwind;
 		}
 
 		else if (is_ptm && callable->fn.ptm_cb(flamingo, accessed_val, &arg_list, &flamingo->cur_fn_rv)) {
-			return -1;
+			goto unwind;
 		}
 
 		free(args);
@@ -189,15 +192,20 @@ static int call(
 		assert(callable->fn.kind == FLAMINGO_FN_KIND_FUNCTION); // The only kind of callable that can have an expression body.
 
 		if (parse_expr(flamingo, *body, rv, NULL) < 0) {
-			return -1;
+			goto unwind;
 		}
 	}
 
 	else if (parse_block(flamingo, *body, is_class ? &inner_scope : NULL) < 0) {
-		return -1;
+		goto unwind;
 	}
 
-	// Unwind the scope stack and switch back to previous source, current function body context, and environment..
+	err = 0;
+
+	// Unwind the scope stack and switch back to previous source, current function body context, and environment.
+	// If there was an error, stop here.
+
+unwind:
 
 	env_pop_scope(flamingo->env);
 
@@ -206,6 +214,10 @@ static int call(
 
 	flamingo->cur_fn_body = prev_fn_body;
 	flamingo->env = prev_env;
+
+	if (err != 0) {
+		goto done;
+	}
 
 	// If the function body was an expression, we're done (no return value, call value was already set).
 
@@ -269,5 +281,5 @@ static int call(
 done:
 
 	flamingo->cur_fn_rv = NULL;
-	return 0;
+	return err;
 }

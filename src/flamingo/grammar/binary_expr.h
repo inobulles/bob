@@ -54,7 +54,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 	TSNode const op_node = ts_node_child_by_field_name(node, "operator", 8);
 	char const* const op_type = ts_node_type(op_node);
 
-	if (strstr("operator", op_type) != 0) { // XXX Yes, I'm being lazy.
+	if (strstr("operator", op_type) != NULL) { // XXX Yes, I'm being lazy.
 		return error(flamingo, "expected operator, got %s", op_type);
 	}
 
