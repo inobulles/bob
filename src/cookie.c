@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -44,11 +44,18 @@ void add_built_cookie(char* cookie) {
 }
 
 bool has_built_cookie(char* cookie, size_t len) {
+	bool rv = false;
+	pthread_mutex_lock(&built_cookies_mutex);
+
 	for (size_t i = 0; i < built_cookie_count; i++) {
 		if (flamingo_cstrcmp(cookie, built_cookies[i], len) == 0) {
-			return true;
+			rv = true;
+			goto done;
 		}
 	}
 
-	return false;
+done:
+
+	pthread_mutex_unlock(&built_cookies_mutex);
+	return rv;
 }
