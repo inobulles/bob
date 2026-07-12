@@ -44,7 +44,7 @@ void cmd_create(cmd_t* cmd, ...) {
 
 	va_end(va);
 
-	cmd_set_redirect(cmd, true, false);
+	cmd_set_redirect(cmd, CMD_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	cmd->out_buf = NULL;
 	cmd->in = -1;
@@ -90,7 +90,7 @@ void cmd_add_argv(cmd_t* cmd, int argc, char* argv[]) {
 	}
 }
 
-void cmd_set_redirect(cmd_t* cmd, bool redirect, bool force) {
+void cmd_set_redirect(cmd_t* cmd, cmd_redirect_t redirect, cmd_force_redirect_t force) {
 	// We don't do any of this output pipe stuff if we're debugging the build, because we want to see the outputs of commands in real-time before they terminate.
 	// Except if we necessarily need redirect (e.g. PkgConfig, Cc deps)!
 

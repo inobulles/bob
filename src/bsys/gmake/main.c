@@ -41,7 +41,7 @@ static int build(void) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "gmake", NULL);
 	cmd_addf(&cmd, "-j%zu", ncpu());
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("GNU Make build failed.");
@@ -62,7 +62,7 @@ static int install(void) {
 	cmd_create(&cmd, "gmake", NULL);
 	cmd_addf(&cmd, "PREFIX=%s", install_prefix);
 	cmd_add(&cmd, "install");
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	cmd_print(&cmd);
 

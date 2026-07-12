@@ -35,7 +35,7 @@ static int configure(void) {
 		cmd_add(&cmd, "-GNinja");
 	}
 
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 	return cmd_exec(&cmd);
 }
 
@@ -53,7 +53,7 @@ static int build(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "cmake", "--build", bsys_out_path, NULL);
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("CMake build failed.");
@@ -69,7 +69,7 @@ static int install(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "cmake", "--install", bsys_out_path, NULL);
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("CMake install failed.");

@@ -43,7 +43,7 @@ static int configure(bool reconfigure) {
 	cmd_add(&cmd, bsys_out_path);
 	cmd_addf(&cmd, "-Dprefix=%s", install_prefix);
 
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 	return cmd_exec(&cmd);
 }
 
@@ -60,7 +60,7 @@ static int build(void) {
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_free(&cmd);
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, NULL);
-	cmd_set_redirect(&cmd, false, false);
+	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("Ninja build failed.");
@@ -79,7 +79,7 @@ static int install(void) {
 
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "ninja", "-C", bsys_out_path, "install", NULL);
-	cmd_set_redirect(&cmd, true, true);
+	cmd_set_redirect(&cmd, CMD_REDIRECT, CMD_FORCE_REDIRECT);
 
 	int rv = cmd_exec(&cmd);
 
@@ -96,7 +96,7 @@ static int install(void) {
 
 		// Retry Ninja install.
 
-		cmd_set_redirect(&cmd, false, false);
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 		rv = cmd_exec(&cmd);
 	}
 
