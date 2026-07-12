@@ -32,6 +32,12 @@ jobs:
             echo "Error: 'realpath' is used in multiple places. Use 'realerpath' instead."
             exit 1
           fi
+      - name: Make sure raw booleans aren't used as arguments to 'cmd_set_redirect()'
+        run: |
+          if [ "$(cat $SRC | grep -E "cmd_set_redirect.*\b(true|false\b)")" != "" ]; then
+            echo "Error: 'cmd_set_redirect()' is called with raw booleans. Use 'CMD_{NO_,}{FORCE_,}REDIRECT' instead."
+            exit 1
+          fi
       - name: Set up tmate session
         if: ${{ failure() }}
         uses: mxschmitt/action-tmate@v3
