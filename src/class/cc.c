@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -20,6 +20,8 @@
 #include <fts.h>
 #include <stdio.h>
 #include <sys/stat.h>
+
+#include <class/pkg_config.h>
 
 #define CC "Cc"
 
@@ -47,7 +49,24 @@ static void add_flags(cmd_t* cmd, compile_task_t* task) {
 
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
-		cmd_addf(cmd, "%.*s", (int) flag->str.size, flag->str.str);
+
+		switch (flag->kind) {
+		case FLAMINGO_VAL_KIND_STR:
+			cmd_addf(cmd, "%.*s", (int) flag->str.size, flag->str.str);
+			break;
+		case FLAMINGO_VAL_KIND_INST:;
+			pkg_config_cookie_t* const cookie = flag->inst.data;
+
+			for (size_t i = 0; i < cookie->out_vec->vec.count; i++) {
+				flamingo_val_t* const flag = cookie->out_vec->vec.elems[i];
+				assert(flag->kind == FLAMINGO_VAL_KIND_STR); // Something went wrong in 'src/class/pkg_config.c' if this fails.
+				cmd_addf(cmd, "%.*s", (int) flag->str.size, flag->str.str);
+			}
+
+			break;
+		default:
+			assert(false); // This should've been checked in 'instantiate()'.
+		}
 	}
 }
 
@@ -390,8 +409,24 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
 
-		if (flag->kind != FLAMINGO_VAL_KIND_STR) {
-			LOG_FATAL(CC ": Expected %zu-th vector element to be a string", i);
+		switch (flag->kind) {
+		case FLAMINGO_VAL_KIND_STR:
+			break;
+		case FLAMINGO_VAL_KIND_INST:
+			if (flamingo_cstrcmp(flag->inst.class->name, "PkgConfigCookie", flag->inst.class->name_size) == 0) {
+				break;
+			}
+
+			LOG_FATAL(
+				CC ": Expected %zu-th vector element to be a string or 'PkgConfigCookie', not '%.*s' instance.",
+				i,
+				flag->inst.class->name_size,
+				flag->inst.class->name
+			);
+
+			return -1;
+		default:
+			LOG_FATAL(CC ": Expected %zu-th vector element to be a string or 'PkgConfigCookie()'", i);
 			return -1;
 		}
 	}
