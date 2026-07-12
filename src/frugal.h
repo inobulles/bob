@@ -1,6 +1,23 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024-2026 Aymeric Wibo
 
+/*
+ *          _.-'~~`~~'-._
+ *      .'`  B   E   R  `'.
+ *     / I               T \
+ *   /`       .-'~"-.       `\
+ *  ; L      / `-    \      Y ;
+ * ;        />  `.  -.|        ;
+ * |       /_     '-.__)       |
+ * |        |-  _.' \ |        |
+ * ;        `~~;     \\        ;
+ *  ;  INBOBWE /      \\)P    ;
+ *   \  TRUST '.___.-'`"     /
+ *    `\                   /`
+ *      '._   2 0 2 6   _.'
+ *  jgs    `'-..,,,..-'`
+ */
+
 #pragma once
 
 #include <flamingo/flamingo.h>
