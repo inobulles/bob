@@ -44,7 +44,7 @@ static flamingo_val_t* val_init(flamingo_val_t* val) {
 	return val;
 }
 
-static char const* val_type_str(flamingo_val_t const* val) {
+char const* flamingo_val_kind_str(flamingo_val_t const* val) {
 	switch (val->kind) {
 	case FLAMINGO_VAL_KIND_BOOL:
 		return "boolean";
@@ -87,7 +87,7 @@ static char const* val_role_str(flamingo_val_t* val) {
 	case FLAMINGO_VAL_KIND_INST:
 		return "variable";
 	case FLAMINGO_VAL_KIND_FN:
-		return val_type_str(val);
+		return flamingo_val_kind_str(val);
 	default:
 		return "unknown";
 	}

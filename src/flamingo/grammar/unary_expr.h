@@ -78,7 +78,7 @@ static int parse_unary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t** 
 	// XXX We don't actually need to decref if there's an error, as the flamingo engine will anyway be entirely freed.
 	//     This is robust w.r.t. failures in imported flamingo engines, since we fail if the imported program fails (so the scope is freed instantly).
 
-	return error(flamingo, "unknown operator '%.*s' for type %s", (int) op_size, op, val_type_str(operand_val));
+	return error(flamingo, "unknown operator '%.*s' for type %s", (int) op_size, op, flamingo_val_kind_str(operand_val));
 
 done:
 

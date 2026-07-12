@@ -45,7 +45,7 @@ static int parse_call(flamingo_t* flamingo, TSNode node, flamingo_val_t** val) {
 	}
 
 	if (callable->kind != FLAMINGO_VAL_KIND_FN) {
-		return error(flamingo, "callable expression is of type %s, which is not callable", val_type_str(callable));
+		return error(flamingo, "callable expression is of type %s, which is not callable", flamingo_val_kind_str(callable));
 	}
 
 	// Evaluate arguments.

@@ -31,7 +31,7 @@ static inline int vec_map(flamingo_t* flamingo, flamingo_val_t* self, flamingo_a
 	flamingo_val_t* const fn = args->args[0];
 
 	if (fn->kind != FLAMINGO_VAL_KIND_FN) {
-		return error(flamingo, "'vec.map' expected 'fn' argument to be a function, got a %s", val_type_str(fn));
+		return error(flamingo, "'vec.map' expected 'fn' argument to be a function, got a %s", flamingo_val_kind_str(fn));
 	}
 
 	// Actually map the vector.
@@ -74,7 +74,7 @@ static inline int vec_where(flamingo_t* flamingo, flamingo_val_t* self, flamingo
 	flamingo_val_t* const fn = args->args[0];
 
 	if (fn->kind != FLAMINGO_VAL_KIND_FN) {
-		return error(flamingo, "'vec.where' expected 'fn' argument to be a function, got a %s", val_type_str(fn));
+		return error(flamingo, "'vec.where' expected 'fn' argument to be a function, got a %s", flamingo_val_kind_str(fn));
 	}
 
 	// Actually filter the vector.
@@ -103,7 +103,7 @@ static inline int vec_where(flamingo_t* flamingo, flamingo_val_t* self, flamingo
 		if (keep->kind != FLAMINGO_VAL_KIND_BOOL) {
 			val_free(keep);
 			val_free(vec);
-			return error(flamingo, "'vec.where' expected 'fn' to return a boolean, got a %s", val_type_str(keep));
+			return error(flamingo, "'vec.where' expected 'fn' to return a boolean, got a %s", flamingo_val_kind_str(keep));
 		}
 
 		if (!keep->boolean.boolean) {

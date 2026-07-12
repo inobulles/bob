@@ -82,7 +82,7 @@ static int access_find_var(flamingo_t* flamingo, TSNode node, flamingo_var_t** v
 	}
 
 	if (*var == NULL) {
-		return error(flamingo, "primitive type member '%.*s' doesn't exist on expression of type %s", (int) size, accessor, val_type_str(*accessed_val));
+		return error(flamingo, "primitive type member '%.*s' doesn't exist on expression of type %s", (int) size, accessor, flamingo_val_kind_str(*accessed_val));
 	}
 
 	return 0;
