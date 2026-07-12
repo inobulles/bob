@@ -30,8 +30,8 @@ char* gen_cookie(char* path, size_t path_size, char const* ext) {
 }
 
 static pthread_mutex_t built_cookies_mutex = PTHREAD_MUTEX_INITIALIZER;
-size_t built_cookie_count = 0;
-char** built_cookies = NULL; // XXX Shouldn't really worry about freeing all of this, there's no real chance of a leak.
+static size_t built_cookie_count = 0;
+static char** built_cookies = NULL; // XXX Shouldn't really worry about freeing all of this, there's no real chance of a leak.
 
 void add_built_cookie(char* cookie) {
 	pthread_mutex_lock(&built_cookies_mutex);
