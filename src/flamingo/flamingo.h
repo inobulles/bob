@@ -1,5 +1,5 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #pragma once
 
@@ -473,6 +473,14 @@ flamingo_val_t* flamingo_val_make_cstr(char* str);
  * @return A new boolean value.
  */
 flamingo_val_t* flamingo_val_make_bool(bool boolean);
+
+/**
+ * Get the string representation of a value's type.
+ *
+ * @param val The value to get the type string of.
+ * @return The string representation of the value's type (e.g. "integer", "string", "vector"). This string is in .rodata.
+ */
+char const* flamingo_val_kind_str(flamingo_val_t const* val);
 
 /**
  * Compare two strings.

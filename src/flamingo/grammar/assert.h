@@ -43,7 +43,7 @@ static int parse_assert(flamingo_t* flamingo, TSNode node) {
 	}
 
 	if (val->kind != FLAMINGO_VAL_KIND_BOOL) {
-		return error(flamingo, "expected boolean value for test, got %s", val_type_str(val));
+		return error(flamingo, "expected boolean value for test, got %s", flamingo_val_kind_str(val));
 	}
 
 	// If the test succeeded, exit now.

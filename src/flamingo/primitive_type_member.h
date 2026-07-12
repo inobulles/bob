@@ -54,7 +54,7 @@ static int primitive_type_member_add(flamingo_t* flamingo, flamingo_val_kind_t t
 		flamingo_var_t* const var = &vars[i];
 
 		if (flamingo_strcmp(var->key, key, var->key_size, key_size) == 0) {
-			// XXX A little hacky and I needn't forget to update this if 'val_type_str' gets more stuff but eh.
+			// XXX A little hacky and I needn't forget to update this if 'flamingo_val_kind_str' gets more stuff but eh.
 
 			flamingo_val_t const dummy = {
 				.kind = type,
@@ -63,7 +63,7 @@ static int primitive_type_member_add(flamingo_t* flamingo, flamingo_val_kind_t t
 						 },
 			};
 
-			return error(flamingo, "primitive type member '%.*s' already exists on type %s", (int) key_size, key, val_type_str(&dummy));
+			return error(flamingo, "primitive type member '%.*s' already exists on type %s", (int) key_size, key, flamingo_val_kind_str(&dummy));
 		}
 	}
 

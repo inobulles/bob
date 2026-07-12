@@ -66,7 +66,7 @@ static int parse_for_loop(flamingo_t* flamingo, TSNode node) {
 		elems = iterator->map.keys;
 		break;
 	default:
-		return error(flamingo, "expected vector or map for iterable, got %s", val_type_str(iterator));
+		return error(flamingo, "expected vector or map for iterable, got %s", flamingo_val_kind_str(iterator));
 	}
 
 	assert(elems != NULL);

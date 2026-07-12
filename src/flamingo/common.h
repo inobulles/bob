@@ -240,14 +240,6 @@ static inline flamingo_val_t* val_incref(flamingo_val_t* val);
 static inline flamingo_val_t* val_init(flamingo_val_t* val);
 
 /**
- * Get the string representation of a value's type.
- *
- * @param val The value to get the type string of.
- * @return The string representation of the value's type (e.g. "integer", "string", "vector").
- */
-static inline char const* val_type_str(flamingo_val_t const* val);
-
-/**
  * Get the string representation of a value's role.
  *
  * @param val The value to get the role string of.

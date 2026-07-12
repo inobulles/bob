@@ -45,7 +45,7 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 	bool const is_map = indexed_val->kind == FLAMINGO_VAL_KIND_MAP;
 
 	if (!is_vec && !is_map) {
-		rv = error(flamingo, "can only index vectors and maps, got %s", val_type_str(indexed_val));
+		rv = error(flamingo, "can only index vectors and maps, got %s", flamingo_val_kind_str(indexed_val));
 		goto cleanup;
 	}
 
@@ -58,7 +58,7 @@ static int parse_index(flamingo_t* flamingo, TSNode node, flamingo_val_t** val, 
 	}
 
 	if (is_vec && index_val->kind != FLAMINGO_VAL_KIND_INT) {
-		rv = error(flamingo, "can only use integers as indices, got %s", val_type_str(index_val));
+		rv = error(flamingo, "can only use integers as indices, got %s", flamingo_val_kind_str(index_val));
 		goto cleanup;
 	}
 

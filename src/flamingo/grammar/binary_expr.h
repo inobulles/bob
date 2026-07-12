@@ -84,7 +84,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 	bool const none_comparison = left_val->kind == FLAMINGO_VAL_KIND_NONE || right_val->kind == FLAMINGO_VAL_KIND_NONE;
 
 	if (!same_types && !none_comparison) {
-		return error(flamingo, "operands have incompatible types: %s and %s", val_type_str(left_val), val_type_str(right_val));
+		return error(flamingo, "operands have incompatible types: %s and %s", flamingo_val_kind_str(left_val), flamingo_val_kind_str(right_val));
 	}
 
 	flamingo_val_kind_t const kind = left_val->kind; // Same as 'right_val->kind' by this point.
@@ -314,7 +314,7 @@ static int parse_binary_expr(flamingo_t* flamingo, TSNode node, flamingo_val_t**
 	// XXX We don't actually need to decref if there's an error, as the flamingo engine will anyway be entirely freed.
 	//     This is robust w.r.t. failures in imported flamingo engines, since we fail if the imported program fails (so the scope is freed instantly).
 
-	return error(flamingo, "unknown operator '%.*s' for type %s", (int) op_size, op, val_type_str(left_val));
+	return error(flamingo, "unknown operator '%.*s' for type %s", (int) op_size, op, flamingo_val_kind_str(left_val));
 
 done:
 

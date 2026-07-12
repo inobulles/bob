@@ -36,7 +36,7 @@ static int parse_if_chain(flamingo_t* flamingo, TSNode node) {
 	}
 
 	if (val->kind != FLAMINGO_VAL_KIND_BOOL) {
-		return error(flamingo, "expected boolean value for if condition, got %s", val_type_str(val));
+		return error(flamingo, "expected boolean value for if condition, got %s", flamingo_val_kind_str(val));
 	}
 
 	bool const pass = val->boolean.boolean;
@@ -102,7 +102,7 @@ static int parse_if_chain(flamingo_t* flamingo, TSNode node) {
 		}
 
 		if (val->kind != FLAMINGO_VAL_KIND_BOOL) {
-			return error(flamingo, "expected boolean value for elif condition, got %s", val_type_str(val));
+			return error(flamingo, "expected boolean value for elif condition, got %s", flamingo_val_kind_str(val));
 		}
 
 		bool const pass = val->boolean.boolean;

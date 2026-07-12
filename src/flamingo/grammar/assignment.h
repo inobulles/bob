@@ -81,7 +81,7 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 	// - TODO This is also where the const qualifier will be checked too (but this feature is to be defined).
 
 	flamingo_val_kind_t const prev_type = val->kind;
-	char const* const prev_type_str = val_type_str(val);
+	char const* const prev_type_str = flamingo_val_kind_str(val);
 
 	if (prev_type == FLAMINGO_VAL_KIND_FN && var != NULL) {
 		return error(flamingo, "cannot assign to %s '%.*s'", val_role_str(val), (int) lhs_size, lhs);
@@ -100,7 +100,7 @@ static int parse_assignment(flamingo_t* flamingo, TSNode node) {
 			val_decref(val);
 		}
 
-		return error(flamingo, "cannot assign %s to '%.*s' (%s)", val_type_str(rhs), (int) lhs_size, lhs, prev_type_str);
+		return error(flamingo, "cannot assign %s to '%.*s' (%s)", flamingo_val_kind_str(rhs), (int) lhs_size, lhs, prev_type_str);
 	}
 
 	if (var != NULL) {

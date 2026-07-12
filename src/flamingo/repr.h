@@ -103,7 +103,7 @@ static int repr_inner(flamingo_t* flamingo, flamingo_val_t* val, char** res, boo
 			break;
 		}
 
-		asprintf(res, "<%s %.*s>", val_type_str(val), (int) val->name_size, val->name);
+		asprintf(res, "<%s %.*s>", flamingo_val_kind_str(val), (int) val->name_size, val->name);
 		break;
 	case FLAMINGO_VAL_KIND_INST:;
 		flamingo_val_t* const class = val->inst.class;
@@ -112,7 +112,7 @@ static int repr_inner(flamingo_t* flamingo, flamingo_val_t* val, char** res, boo
 		asprintf(res, "<instance of %.*s>", (int) class->name_size, class->name);
 		break;
 	default:
-		return error(flamingo, "can't print expression kind: %s (%d)", val_type_str(val), val->kind);
+		return error(flamingo, "can't print expression kind: %s (%d)", flamingo_val_kind_str(val), val->kind);
 	}
 
 	assert(*res != NULL);
