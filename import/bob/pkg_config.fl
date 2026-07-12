@@ -1,7 +1,23 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2025 Aymeric Wibo
+# Copyright (c) 2025-2026 Aymeric Wibo
+
+# Returned as a placeholder until the pkg-config evaluation build step is run.
+# This should be evaluated by the 'Cc' class.
+class PkgConfigCookie {}
 
 class PkgConfig {
-	static proto cflags(module: str) -> vec<str>
-	static proto libs(module: str) -> vec<str>
+	static proto _cflags(module: str, cookie: PkgConfigCookie) -> void
+	static proto _libs(module: str, cookie: PkgConfigCookie) -> void
+
+	static fn cflags(module: str) -> PkgConfigCookie {
+		let cookie = PkgConfigCookie()
+		_cflags(module, cookie)
+		return cookie
+	}
+
+	static fn libs(module: str) -> PkgConfigCookie {
+		let cookie = PkgConfigCookie()
+		_libs(module, cookie)
+		return cookie
+	}
 }
