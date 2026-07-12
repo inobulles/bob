@@ -51,7 +51,7 @@ static int common(
 	cmd_t CMD_CLEANUP cmd = {0};
 	cmd_create(&cmd, "pkg-config", flag, module, NULL);
 	cmd_addf(&cmd, "--with-path=%s/libdata/pkgconfig", default_tmp_install_prefix);
-	cmd_set_redirect(&cmd, true, true);
+	cmd_set_redirect(&cmd, CMD_REDIRECT, CMD_FORCE_REDIRECT);
 
 	int const cmd_rv = cmd_exec(&cmd);
 	char* orig_out = cmd_read_out(&cmd);
