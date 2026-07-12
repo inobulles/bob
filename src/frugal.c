@@ -16,6 +16,17 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <class/pkg_config.h>
+
+static void frugal_flags_add(size_t* size, char** flag_str, flamingo_val_t* flag) {
+	size_t const extra = flag->str.size + 1;
+
+	*flag_str = realloc(*flag_str, *size + extra + 1);
+	assert(*flag_str != NULL);
+	snprintf(*flag_str + *size, extra + 1, "%.*s\n", (int) flag->str.size, flag->str.str);
+	size += extra;
+}
+
 bool frugal_flags(flamingo_val_t* flags, char* out) {
 	char path[strlen(out) + 7];
 	snprintf(path, sizeof path, "%s.flags", out);
@@ -31,14 +42,23 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 
 	for (size_t i = 0; i < flags->vec.count; i++) {
 		flamingo_val_t* const flag = flags->vec.elems[i];
-		assert(flag->kind == FLAMINGO_VAL_KIND_STR);
 
-		size_t const extra = flag->str.size + 1;
+		switch (flag->kind) {
+		case FLAMINGO_VAL_KIND_STR:
+			frugal_flags_add(&size, &flag_str, flag);
+			break;
+		case FLAMINGO_VAL_KIND_INST:;
+			pkg_config_cookie_t* const cookie = flag->inst.data;
 
-		flag_str = realloc(flag_str, size + extra + 1);
-		assert(flag_str != NULL);
-		snprintf(flag_str + size, extra + 1, "%.*s\n", (int) flag->str.size, flag->str.str);
-		size += extra;
+			for (size_t i = 0; i < cookie->out_vec->vec.count; i++) {
+				flamingo_val_t* const flag = cookie->out_vec->vec.elems[i];
+				frugal_flags_add(&size, &flag_str, flag);
+			}
+
+			break;
+		default:
+			assert(false); // This should've been checked in 'src/class/cc.c:instantiate()'.
+		}
 	}
 
 	// Read previous flags file.
