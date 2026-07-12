@@ -14,6 +14,23 @@
  * - Now we've finished parsing 'build.fl', we run the build steps.
  * - The compile build step actually creates the cookie file.
  * - The link build step can then just use that cookie file directly.
+ *
+ *               .---. .---.
+ *              :     : o   :    me want cookie!
+ *          _..-:   o :     :-.._    /
+ *      .-''  '  `---' `---' "   ``-.
+ *    .'   "   '  "  .    "  . '  "  `.
+ *   :   '.---.,,.,...,.,.,.,..---.  ' ;
+ *   `. " `.                     .' " .'
+ *    `.  '`.                   .' ' .'
+ *     `.    `-._           _.-' "  .'  .----.
+ *       `. "    '"--...--"'  . ' .'  .'  o   `.
+ *       .'`-._'    " .     " _.-'`. :       o  :
+ * jgs .'      ```--.....--'''    ' `:_ o       :
+ *   .'    "     '         "     "   ; `.;";";";'
+ *  ;         '       "       '     . ; .' ; ; ;
+ * ;     '         '       '   "    .'      .-'
+ * '  "     "   '      "           "    _.-'
  */
 
 #pragma once
