@@ -75,6 +75,19 @@ if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
 	exit 1
 fi
 
+# Test that config entries are serialized into the dependency tree.
+
+cp tests/deps/build.config.fl tests/deps/build.fl
+rm -rf tests/deps/.bob
+try "Failed to create dependency tree with config"
+
+printf "1:dep2:$DEP2::1:MOMS:spaghetti\n" > $DEPS_TREE_PATH.expected
+
+if ! diff $DEPS_TREE_PATH $DEPS_TREE_PATH.expected; then
+	echo "Dependency tree differed to the one expected with config." >&2
+	exit 1
+fi
+
 # Test that circular dependencies fail as they should.
 
 cp tests/deps/build.circular.fl tests/deps/build.fl
