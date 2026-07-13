@@ -78,6 +78,13 @@ struct dep_node_t {
 	size_t child_count;
 
 	/**
+	 * Config map passed to this dependency.
+	 */
+	size_t config_key_count;
+	char** config_keys;
+	char** config_vals;
+
+	/**
 	 * If all the dependencies of this node have already been built, this is set.
 	 *
 	 * This field is only used during the dependency build process.

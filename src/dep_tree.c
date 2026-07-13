@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024-2025 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -36,6 +36,10 @@ typedef struct {
 	char* path;
 	char* human;
 	char* build_path;
+
+	size_t config_key_count;
+	char** config_keys;
+	char** config_vals;
 } dep_t;
 
 static int gen_local_path(char* path, char** abs_path, char** human, char** dep_path) {
@@ -73,6 +77,34 @@ static int gen_local_path(char* path, char** abs_path, char** human, char** dep_
 }
 
 /**
+ * Simply hash config map.
+ *
+ * XOR is commutative, which is good because it means when we do 'hash ^=' we don't care about the order of K-V pairs.
+ * However, it's not great that we also XOR the key and val, because it means we would get the same hash if we reversed the key and value.
+ * I think this is fine in practice, but I'll leave a big fat XXX here just in case.
+ *
+ * @param config The config map to hash.
+ * @return The hash.
+ */
+static uint64_t config_hash(flamingo_val_t* config) {
+	assert(config->kind == FLAMINGO_VAL_KIND_MAP);
+	uint64_t hash = 0;
+
+	for (size_t i = 0; i < config->map.count; i++) {
+		flamingo_val_t* const key = config->map.keys[i];
+		flamingo_val_t* const val = config->map.vals[i];
+
+		assert(key->kind == FLAMINGO_VAL_KIND_STR);
+		assert(val->kind == FLAMINGO_VAL_KIND_STR);
+
+		hash ^= strnhash(key->str.str, key->str.size) ^
+			strnhash(val->str.str, val->str.size);
+	}
+
+	return hash;
+}
+
+/**
  * Ensure all dependencies are in Bob's dependency cache.
  *
  * Concretely, do the following:
@@ -104,6 +136,7 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 		flamingo_val_t* git_branch = NULL;
 
 		flamingo_val_t* build_path = NULL;
+		flamingo_val_t* config = NULL;
 
 		for (size_t j = 0; j < val->inst.scope->vars_size; j++) {
 			flamingo_var_t* const inner = &val->inst.scope->vars[j];
@@ -127,9 +160,14 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 			else if (flamingo_cstrcmp(inner->key, "build_path", inner->key_size) == 0) {
 				build_path = inner->val;
 			}
+
+			else if (flamingo_cstrcmp(inner->key, "config", inner->key_size) == 0) {
+				config = inner->val;
+			}
 		}
 
 		assert(build_path != NULL); // Can only happen if someone touched bob.fl...
+		assert(config != NULL);     // Can only happen if someone touched bob.fl...
 
 		// Make sure everything checks out and take action.
 
@@ -270,7 +308,8 @@ downloaded:
 		deps[i].kind = dep_kind;
 
 		deps[i].hash = strnhash(dep_path, strlen(dep_path)) ^
-			strnhash(build_path->str.str, build_path->str.size);
+			strnhash(build_path->str.str, build_path->str.size) ^
+			config_hash(config);
 		*hash ^= deps[i].hash;
 
 		deps[i].path = strdup(dep_path);
@@ -281,6 +320,30 @@ downloaded:
 
 		deps[i].build_path = strndup(build_path->str.str, build_path->str.size);
 		assert(deps[i].build_path != NULL);
+
+		// Don't bother checking for any of the Flamingo kinds here; they should've been checked by 'config_hash()' already.
+
+		deps[i].config_key_count = config->map.count;
+
+		if (config->map.count == 0) {
+			// We don't have to set arrays to NULL, because deps is already zeroed.
+			continue;
+		}
+
+		deps[i].config_keys = malloc(config->map.count * sizeof *deps[i].config_keys);
+		deps[i].config_vals = malloc(config->map.count * sizeof *deps[i].config_vals);
+
+		assert(deps[i].config_keys != NULL && deps[i].config_vals != NULL);
+
+		for (size_t j = 0; j < config->map.count; j++) {
+			flamingo_val_t* const key = config->map.keys[j];
+			flamingo_val_t* const val = config->map.vals[j];
+
+			deps[i].config_keys[j] = strndup(key->str.str, key->str.size);
+			deps[i].config_vals[j] = strndup(val->str.str, val->str.size);
+
+			assert(deps[i].config_keys[j] != NULL && deps[i].config_vals[j] != NULL);
+		}
 	}
 
 	return 0;
@@ -294,6 +357,15 @@ void deps_node_free(dep_node_t* node) {
 	free(node->children);
 	free(node->path);
 	free(node->human);
+	free(node->build_path);
+
+	for (size_t i = 0; i < node->config_key_count; i++) {
+		free(node->config_keys[i]);
+		free(node->config_vals[i]);
+	}
+
+	free(node->config_keys);
+	free(node->config_vals);
 }
 
 void deps_tree_free(dep_node_t* tree) {
@@ -309,6 +381,15 @@ void deps_list_free(dep_t* deps, size_t count) {
 	for (size_t i = 0; i < count; i++) {
 		free(deps[i].path);
 		free(deps[i].human);
+		free(deps[i].build_path);
+
+		for (size_t j = 0; j < deps[i].config_key_count; j++) {
+			free(deps[i].config_keys[j]);
+			free(deps[i].config_vals[j]);
+		}
+
+		free(deps[i].config_keys);
+		free(deps[i].config_vals);
 	}
 }
 
@@ -521,6 +602,25 @@ build_tree:;
 
 		node.build_path = strdup(dep->build_path);
 		assert(node.build_path != NULL);
+
+		node.config_key_count = dep->config_key_count;
+
+		if (dep->config_key_count == 0) {
+			node.config_keys = NULL;
+			node.config_vals = NULL;
+		} else {
+			node.config_keys = malloc(dep->config_key_count * sizeof *node.config_keys);
+			node.config_vals = malloc(dep->config_key_count * sizeof *node.config_vals);
+
+			assert(node.config_keys != NULL && node.config_vals != NULL);
+
+			for (size_t j = 0; j < dep->config_key_count; j++) {
+				node.config_keys[j] = strdup(dep->config_keys[j]);
+				node.config_vals[j] = strdup(dep->config_vals[j]);
+
+				assert(node.config_keys[j] != NULL && node.config_vals[j] != NULL);
+			}
+		}
 
 		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		assert(tree->children != NULL);
