@@ -45,6 +45,11 @@ static bool build_task(void* data) {
 	cmd_create(&cmd, init_name, "-N", "-p", install_prefix, "-C", NULL);
 	cmd_addf(&cmd, "%s/%s", dep->path, dep->build_path);
 
+	for (size_t i = 0; i < dep->config_key_count; i++) {
+		cmd_add(&cmd, "-D");
+		cmd_addf(&cmd, "%s=%s", dep->config_keys[i], dep->config_vals[i]);
+	}
+
 	bool dep_own_prefix;
 	assert(would_set_owner(install_prefix, &dep_own_prefix) == 0);
 
