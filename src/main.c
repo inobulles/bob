@@ -426,6 +426,10 @@ int main(int argc, char* argv[]) {
 		assert(bsys_out_path != NULL);
 	}
 
+	if (dep_config_count > 0 && !bsys->supports_config) {
+		LOG_WARN("%s build system does not support config options; -D flags will be ignored.", bsys->name);
+	}
+
 	if (bsys->setup && bsys->setup() < 0) {
 		return EXIT_FAILURE;
 	}

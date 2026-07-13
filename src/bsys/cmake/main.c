@@ -87,6 +87,7 @@ static int install(void) {
 bsys_t const BSYS_CMAKE = {
 	.name = "CMake",
 	.key = "cmake",
+	.supports_config = true,
 	.identify = identify,
 	.setup = setup,
 	.build = build,
