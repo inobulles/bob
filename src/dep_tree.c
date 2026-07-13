@@ -64,7 +64,7 @@ static int gen_local_path(char* path, char** abs_path, char** human, char** dep_
 	*human = strdup(*human);
 	assert(*human != NULL);
 
-	uint64_t const hash = str_hash(*abs_path, strlen(*abs_path));
+	uint64_t const hash = strnhash(*abs_path, strlen(*abs_path));
 
 	asprintf(dep_path, "%s/%s.%" PRIx64 ".local", deps_path, *human, hash);
 	assert(*dep_path != NULL);
@@ -217,8 +217,8 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 			assert(human != NULL);
 
 			uint64_t const hash =
-				str_hash(git_url->str.str, git_url->str.size) ^
-				str_hash(git_branch->str.str, git_branch->str.size);
+				strnhash(git_url->str.str, git_url->str.size) ^
+				strnhash(git_branch->str.str, git_branch->str.size);
 
 			asprintf(&dep_path, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
 			assert(dep_path != NULL);
@@ -269,8 +269,8 @@ downloaded:
 
 		deps[i].kind = dep_kind;
 
-		deps[i].hash = str_hash(dep_path, strlen(dep_path)) ^
-			str_hash(build_path->str.str, build_path->str.size);
+		deps[i].hash = strnhash(dep_path, strlen(dep_path)) ^
+			strnhash(build_path->str.str, build_path->str.size);
 		*hash ^= deps[i].hash;
 
 		deps[i].path = strdup(dep_path);
@@ -345,7 +345,7 @@ dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* p
 		return NULL;
 	}
 
-	uint64_t const would_be_hash = str_hash(tree->path, strlen(tree->path));
+	uint64_t const would_be_hash = strnhash(tree->path, strlen(tree->path));
 
 	// If there are no more dependencies, stop here with just a root node.
 

@@ -205,7 +205,7 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 
 		// XOR'ing makes sure order doesn't matter.
 
-		total_hash ^= str_hash(src->str.str, src->str.size);
+		total_hash ^= strnhash(src->str.str, src->str.size);
 	}
 
 	char* STR_CLEANUP cookie = NULL;
