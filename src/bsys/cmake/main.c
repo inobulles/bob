@@ -31,6 +31,10 @@ static int configure(void) {
 
 	cmd_addf(&cmd, "-DCMAKE_INSTALL_PREFIX=%s", install_prefix);
 
+	for (size_t i = 0; i < dep_config_count; i++) {
+		cmd_addf(&cmd, "-D%s=%s", dep_config_keys[i], dep_config_vals[i]);
+	}
+
 	if (cmd_exists("ninja")) {
 		cmd_add(&cmd, "-GNinja");
 	}
