@@ -1,6 +1,27 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024-2025 Aymeric Wibo
 
+/*
+ * Behold: The Dependency Tree
+ *
+ *         &&
+ *       &&&&&
+ *     &&&\/& &&&
+ *    &&|,/  |/& &&
+ *     &&/   /  /_&  &&
+ *       \  {  |_____/_&
+ *       {  / /          &&&
+ *       `, \{___________/_&&
+ *        } }{       \
+ *        }{{         \____&
+ *       {}{           `&\&&
+ *       {{}             &&
+ * , -=-~{ .-^- _   ejm
+ *       `}
+ *        {
+ *
+ */
+
 #pragma once
 
 #include <flamingo/flamingo.h>
