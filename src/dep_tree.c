@@ -339,6 +339,16 @@ downloaded:
 			flamingo_val_t* const key = config->map.keys[j];
 			flamingo_val_t* const val = config->map.vals[j];
 
+			if (memchr(key->str.str, ':', key->str.size) != NULL || memchr(key->str.str, '\n', key->str.size) != NULL) {
+				LOG_FATAL("Config key '%.*s' must not contain ':' or newline.", (int) key->str.size, key->str.str);
+				return -1;
+			}
+
+			if (memchr(val->str.str, ':', val->str.size) != NULL || memchr(val->str.str, '\n', val->str.size) != NULL) {
+				LOG_FATAL("Config value '%.*s' must not contain ':' or newline.", (int) val->str.size, val->str.str);
+				return -1;
+			}
+
 			deps[i].config_keys[j] = strndup(key->str.str, key->str.size);
 			deps[i].config_vals[j] = strndup(val->str.str, val->str.size);
 
