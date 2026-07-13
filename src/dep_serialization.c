@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024-2025 Aymeric Wibo
 
+/*
+ * Sereal and a coffee.
+ *
+ *   ;)( ;
+ *  :----:     o8Oo./
+ * C|====| ._o8o8o8Oo_.
+ *  |    |  \========/
+ *  `----'   `------'
+ *
+ * Hayley Jane Wakenshaw (Flump)
+ */
+
 #include <common.h>
 #include <deps.h>
 #include <logging.h>
@@ -45,8 +57,22 @@ static char* serialize_inner(dep_node_t* node, size_t depth) {
 	memset(depth_chars, DEPTH_CHAR, depth);
 
 	char* serialized = NULL;
-	asprintf(&serialized, "%s%d:%s:%s:%s\n", depth_chars, node->kind, node->human, node->path, node->build_path);
+	asprintf(&serialized, "%s%d:%s:%s:%s:%zu", depth_chars, node->kind, node->human, node->path, node->build_path, node->config_key_count);
 	assert(serialized != NULL);
+
+	for (size_t i = 0; i < node->config_key_count; i++) {
+		char* tmp;
+		asprintf(&tmp, "%s:%s:%s", serialized, node->config_keys[i], node->config_vals[i]);
+		assert(tmp != NULL);
+		free(serialized);
+		serialized = tmp;
+	}
+
+	char* tmp;
+	asprintf(&tmp, "%s\n", serialized);
+	assert(tmp != NULL);
+	free(serialized);
+	serialized = tmp;
 
 	return add_children(serialized, node, depth + 1);
 }
@@ -175,6 +201,27 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 			return -1;
 		}
 
+		// Read config map.
+
+		char* const config_count_str = strsep(&tuple, ":");
+		size_t const config_key_count = config_count_str == NULL ? 0 : (size_t) strtoul(config_count_str, NULL, 10);
+
+		char* config_keys[config_key_count + 1]; // +1 to avoid zero-length VLA.
+		char* config_vals[config_key_count + 1];
+
+		for (size_t k = 0; k < config_key_count; k++) {
+			char* const key = strsep(&tuple, ":");
+			char* const val = strsep(&tuple, ":");
+
+			if (key == NULL || val == NULL) {
+				LOG_FATAL("Could not read dependency tuple (config entry %zu).", k);
+				return -1;
+			}
+
+			config_keys[k] = key;
+			config_vals[k] = val;
+		}
+
 		// Actually create the node object.
 
 		cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
@@ -192,6 +239,25 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		node->build_path = strdup(build_path);
 		assert(node->build_path != NULL);
+
+		node->config_key_count = config_key_count;
+
+		if (config_key_count == 0) {
+			node->config_keys = NULL;
+			node->config_vals = NULL;
+		} else {
+			node->config_keys = malloc(config_key_count * sizeof *node->config_keys);
+			node->config_vals = malloc(config_key_count * sizeof *node->config_vals);
+
+			assert(node->config_keys != NULL && node->config_vals != NULL);
+
+			for (size_t k = 0; k < config_key_count; k++) {
+				node->config_keys[k] = strdup(config_keys[k]);
+				node->config_vals[k] = strdup(config_vals[k]);
+
+				assert(node->config_keys[k] != NULL && node->config_vals[k] != NULL);
+			}
+		}
 
 		node->child_count = 0;
 		node->children = NULL;
