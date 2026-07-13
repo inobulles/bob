@@ -22,6 +22,7 @@ class Dep(_kind: str) {
 	# Config.
 
 	let build_path = ""
+	let config: map<str, str> = {}
 
 	# Constructors.
 
@@ -42,6 +43,11 @@ class Dep(_kind: str) {
 
 	fn cd(path: str) -> Dep {
 		build_path = path
+		return self
+	}
+
+	fn conf(key: str, val: str) -> Dep {
+		config[key] = val
 		return self
 	}
 }
