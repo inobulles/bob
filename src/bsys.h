@@ -13,6 +13,11 @@ struct bsys_t {
 	char const* name;
 	char const* key;
 
+	/**
+	 * Whether this build system supports config options passed via -D KEY=VAL.
+	 */
+	bool supports_config;
+
 	bool (*identify)(void);
 	int (*setup)(void);
 	dep_node_t* (*dep_tree)(size_t path_len, uint64_t* path_hashes, bool* circular);
