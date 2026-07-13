@@ -14,6 +14,8 @@
 # define _GNU_SOURCE
 #endif
 
+#include <sys/types.h>
+
 #define COMMON_INCLUDED
 
 /**
@@ -119,3 +121,12 @@ extern char const* install_prefix;
  * Used to propagate dependency tree rebuild through all children processes.
  */
 extern _Bool force_dep_tree_rebuild;
+
+/**
+ * Config map passed by the parent to this dependency via -c KEY=VAL flags.
+ *
+ * Each build system backend that supports configuration (e.g. CMake via -D) reads these.
+ */
+extern size_t dep_config_count;
+extern char** dep_config_keys;
+extern char** dep_config_vals;

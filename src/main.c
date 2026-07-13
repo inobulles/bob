@@ -46,6 +46,10 @@ char* default_tmp_install_prefix = NULL;
 
 bool force_dep_tree_rebuild = false;
 
+size_t dep_config_count = 0;
+char** dep_config_keys = NULL;
+char** dep_config_vals = NULL;
+
 bool running_as_root = false;
 uid_t owner = 0;
 
@@ -66,11 +70,11 @@ void usage(void) {
 	fprintf(
 		stderr,
 		// clang-format off
-		"usage: %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] build\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] install\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] clean\n",
+		"usage: %1$s [-j jobs] [-p install_prefix] [-D KEY=VAL] [-N] [-O] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D KEY=VAL] [-N] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D KEY=VAL] [-N] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D KEY=VAL] [-N] [-O] [-C project_directory] [-o out_directory] install\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-D KEY=VAL] [-N] [-O] [-C project_directory] [-o out_directory] clean\n",
 		// clang-format on
 		progname
 	);
@@ -175,11 +179,30 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:fj:NOo:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:D:fj:NOo:p:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
 			break;
+		case 'D': {
+			char* const eq = strchr(optarg, '=');
+
+			if (eq == NULL) {
+				LOG_FATAL("'-D' argument must be in KEY=VAL format (got '%s').", optarg);
+				usage();
+			}
+
+			dep_config_keys = realloc(dep_config_keys, (dep_config_count + 1) * sizeof *dep_config_keys);
+			dep_config_vals = realloc(dep_config_vals, (dep_config_count + 1) * sizeof *dep_config_vals);
+			assert(dep_config_keys != NULL && dep_config_vals != NULL);
+
+			dep_config_keys[dep_config_count] = strndup(optarg, (size_t) (eq - optarg));
+			dep_config_vals[dep_config_count] = strdup(eq + 1);
+			assert(dep_config_keys[dep_config_count] != NULL && dep_config_vals[dep_config_count] != NULL);
+
+			dep_config_count++;
+			break;
+		}
 		case 'N':
 			build_deps = false;
 			break;
