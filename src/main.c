@@ -66,11 +66,11 @@ void usage(void) {
 	fprintf(
 		stderr,
 		// clang-format off
-		"usage: %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] build\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] install\n"
-		"       %1$s [-j jobs] [-p install_prefix] [-D] [-O] [-C project_directory] [-o out_directory] clean\n",
+		"usage: %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] build\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] run [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] sh [args ...]\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] install\n"
+		"       %1$s [-j jobs] [-p install_prefix] [-N] [-O] [-C project_directory] [-o out_directory] clean\n",
 		// clang-format on
 		progname
 	);
@@ -175,12 +175,12 @@ int main(int argc, char* argv[]) {
 
 	int c;
 
-	while ((c = getopt(argc, argv, "C:Dfj:Oo:p:")) != -1) {
+	while ((c = getopt(argc, argv, "C:fj:NOo:p:")) != -1) {
 		switch (c) {
 		case 'C':
 			project_path = optarg;
 			break;
-		case 'D':
+		case 'N':
 			build_deps = false;
 			break;
 		case 'j':
