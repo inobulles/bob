@@ -21,7 +21,7 @@
  *
  * Should always be one higher than the latest tag, unless we are the commit of that tag itself.
  */
-#define VERSION "v0.2.25"
+#define VERSION "v0.2.26"
 
 /**
  * Bob build ID.
