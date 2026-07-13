@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <str.h>
 
-uint64_t str_hash(char const* str, size_t len) { // djb2 algorithm.
+uint64_t strnhash(char const* str, size_t len) { // djb2 algorithm.
 	uint64_t hash = 5381;
 
 	for (size_t i = 0; i < len; i++) {
