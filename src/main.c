@@ -192,12 +192,25 @@ int main(int argc, char* argv[]) {
 				usage();
 			}
 
+			size_t const key_len = (size_t) (eq - optarg);
+			char* const val = eq + 1;
+
+			if (memchr(optarg, ':', key_len) != NULL || memchr(optarg, '\n', key_len) != NULL) {
+				LOG_FATAL("Config key '%.*s' must not contain ':' or newline.", (int) key_len, optarg);
+				usage();
+			}
+
+			if (strchr(val, ':') != NULL || strchr(val, '\n') != NULL) {
+				LOG_FATAL("Config value '%s' must not contain ':' or newline.", val);
+				usage();
+			}
+
 			dep_config_keys = realloc(dep_config_keys, (dep_config_count + 1) * sizeof *dep_config_keys);
 			dep_config_vals = realloc(dep_config_vals, (dep_config_count + 1) * sizeof *dep_config_vals);
 			assert(dep_config_keys != NULL && dep_config_vals != NULL);
 
-			dep_config_keys[dep_config_count] = strndup(optarg, (size_t) (eq - optarg));
-			dep_config_vals[dep_config_count] = strdup(eq + 1);
+			dep_config_keys[dep_config_count] = strndup(optarg, key_len);
+			dep_config_vals[dep_config_count] = strdup(val);
 			assert(dep_config_keys[dep_config_count] != NULL && dep_config_vals[dep_config_count] != NULL);
 
 			dep_config_count++;
