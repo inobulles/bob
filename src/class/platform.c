@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <class/class.h>
 #include <logging.h>
 #include <str.h>
@@ -34,9 +35,7 @@ static int bob_getenv(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
 
-	char* const STR_CLEANUP key = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(key != NULL);
-
+	char* const STR_CLEANUP key = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
 	char* val = getenv(key);
 
 	if (val == NULL) {

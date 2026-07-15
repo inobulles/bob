@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <bsys.h>
 #include <build_step.h>
 #include <cmd.h>
@@ -143,8 +144,7 @@ static int setup(void) {
 	}
 
 	src_size = sb.st_size;
-	src = malloc(src_size);
-	assert(src != NULL);
+	src = malloc_c(src_size);
 
 	if (fread(src, 1, src_size, f) != src_size) {
 		LOG_FATAL("Failed to read build file: %s", BUILD_PATH);
@@ -167,8 +167,7 @@ static int setup(void) {
 	}
 
 	char* import_path = NULL;
-	asprintf(&import_path, "%s/share/flamingo/import", default_final_install_prefix);
-	assert(import_path != NULL);
+	asprintf_c(&import_path, "%s/share/flamingo/import", default_final_install_prefix);
 
 	flamingo_add_import_path(&flamingo, import_path);
 	free(import_path);

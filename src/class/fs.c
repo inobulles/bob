@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <class/class.h>
 #include <logging.h>
 #include <str.h>
@@ -26,8 +27,7 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
 
-	char* const STR_CLEANUP path = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(path != NULL);
+	char* const STR_CLEANUP path = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
 
 	// Create a list to store the paths.
 
@@ -84,8 +84,7 @@ static int list(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 
 			flamingo_val_t* const path_val = flamingo_val_make_cstr(path);
 
-			out_list->vec.elems = realloc(out_list->vec.elems, (out_list->vec.count + 1) * sizeof(flamingo_val_t*));
-			assert(out_list->vec.elems != NULL);
+			out_list->vec.elems = realloc_c(out_list->vec.elems, (out_list->vec.count + 1) * sizeof(flamingo_val_t*));
 			out_list->vec.elems[out_list->vec.count++] = path_val;
 		}
 	}
@@ -100,10 +99,9 @@ static int exists(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 1);
 	assert(args->args[0]->kind == FLAMINGO_VAL_KIND_STR);
 
-	char* const STR_CLEANUP path = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(path != NULL);
-
+	char* const STR_CLEANUP path = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
 	*rv = flamingo_val_make_bool(access(path, F_OK) == 0);
+
 	return 0;
 }
 

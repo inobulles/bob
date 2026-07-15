@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <alloc.h>
 #include <pool.h>
 
-#include <assert.h>
 #include <stdlib.h>
 
 static void* businessman(void* data) {
@@ -62,8 +62,7 @@ void pool_init(pool_t* pool, size_t businessman_count) {
 	pool->started = false;
 
 	pool->businessman_count = businessman_count;
-	pool->businessmen = malloc(businessman_count * sizeof(pthread_t));
-	assert(pool->businessmen != NULL);
+	pool->businessmen = malloc_c(businessman_count * sizeof(pthread_t));
 
 	pool->task_count = 0;
 	pool->tasks = NULL;
@@ -85,9 +84,7 @@ void pool_free(pool_t* pool) {
 void pool_add_task(pool_t* pool, task_fn_t cb, void* data) {
 	pthread_mutex_lock(&pool->lock);
 
-	pool->tasks = realloc(pool->tasks, (pool->task_count + 1) * sizeof *pool->tasks);
-	assert(pool->tasks != NULL);
-
+	pool->tasks = realloc_c(pool->tasks, (pool->task_count + 1) * sizeof *pool->tasks);
 	task_t* const task = &pool->tasks[pool->task_count++];
 
 	task->started = false;

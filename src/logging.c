@@ -8,13 +8,13 @@
 # define _GNU_SOURCE
 #endif
 
-#include <assert.h>
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include <alloc.h>
 #include <logging.h>
 #include <str.h>
 
@@ -69,8 +69,7 @@ void vlog(FILE* stream, char const* colour, char const* const fmt, ...) {
 	va_start(args, fmt);
 
 	char* msg = NULL;
-	vasprintf(&msg, fmt, args);
-	assert(msg != NULL);
+	vasprintf_c(&msg, fmt, args);
 
 	va_end(args);
 
@@ -90,8 +89,7 @@ void log_already_done(char const* cookie, char const* prefix, char const* past) 
 
 	if (cookie != NULL) {
 		char* STR_CLEANUP path;
-		asprintf(&path, "%s.log", cookie);
-		assert(path != NULL);
+		asprintf_c(&path, "%s.log", cookie);
 
 		FILE* const f = fopen(path, "r");
 
@@ -99,8 +97,7 @@ void log_already_done(char const* cookie, char const* prefix, char const* past) 
 			fseek(f, 0, SEEK_END);
 			size_t const size = ftell(f);
 
-			out = malloc(size + 1);
-			assert(out != NULL);
+			out = malloc_c(size + 1);
 
 			rewind(f);
 			fread(out, 1, size, f);

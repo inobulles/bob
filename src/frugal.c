@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <cookie.h>
 #include <frugal.h>
 #include <fsutil.h>
@@ -21,8 +22,7 @@
 static void frugal_flags_add(size_t* size, char** flag_str, flamingo_val_t* flag) {
 	size_t const extra = flag->str.size + 1;
 
-	*flag_str = realloc(*flag_str, *size + extra + 1);
-	assert(*flag_str != NULL);
+	*flag_str = realloc_c(*flag_str, *size + extra + 1);
 	snprintf(*flag_str + *size, extra + 1, "%.*s\n", (int) flag->str.size, flag->str.str);
 	size += extra;
 }
@@ -35,9 +35,7 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 
 	assert(flags->kind == FLAMINGO_VAL_KIND_VEC);
 
-	char* STR_CLEANUP flag_str = calloc(1, 1);
-	assert(flag_str != NULL);
-
+	char* STR_CLEANUP flag_str = calloc_c(1, 1);
 	size_t size = 0;
 
 	for (size_t i = 0; i < flags->vec.count; i++) {
@@ -76,8 +74,7 @@ bool frugal_flags(flamingo_val_t* flags, char* out) {
 	size_t const prev_size = ftell(f);
 	rewind(f);
 
-	prev_flag_str = malloc(prev_size + 1);
-	assert(prev_flag_str != NULL);
+	prev_flag_str = malloc_c(prev_size + 1);
 	fread(prev_flag_str, 1, prev_size, f);
 	prev_flag_str[prev_size] = '\0';
 
@@ -193,13 +190,11 @@ int frugal_link(
 	// Collect lib search paths.
 
 	size_t search_path_count = 1;
-	char** search_paths = malloc(search_path_count + sizeof *search_paths);
-	assert(search_paths != NULL);
+	char** search_paths = malloc_c(search_path_count + sizeof *search_paths);
 
 	// First lib search path is just /lib in the install prefix.
 
-	asprintf(&search_paths[0], "%s/lib", install_prefix);
-	assert(search_paths[0] != NULL);
+	asprintf_c(&search_paths[0], "%s/lib", install_prefix);
 
 	// Next lib search paths are all the -L flags.
 
@@ -212,9 +207,7 @@ int frugal_link(
 			continue;
 		}
 
-		search_paths = realloc(search_paths, (search_path_count + 1) * sizeof *search_paths);
-		assert(search_paths != NULL);
-
+		search_paths = realloc_c(search_paths, (search_path_count + 1) * sizeof *search_paths);
 		char* search_path;
 
 		if (flen == 2) { // If we only have -L, then go to next element in vector.
@@ -224,11 +217,10 @@ int frugal_link(
 			}
 
 			flag = flags->vec.elems[i + 1];
-			search_path = strndup(flag->str.str, flag->str.size);
+			search_path = strndup_c(flag->str.str, flag->str.size);
 		} else {
 			assert(flen > 2);
-			search_path = strndup(fstr + 2, flen - 2);
-			assert(search_path != NULL);
+			search_path = strndup_c(fstr + 2, flen - 2);
 		}
 
 		if (access(search_path, F_OK) != 0) {
@@ -263,16 +255,13 @@ int frugal_link(
 			char* path = NULL;
 
 			if (exact) {
-				asprintf(&path, "%s/%.*s", search_paths[j], (int) nlen, name);
+				asprintf_c(&path, "%s/%.*s", search_paths[j], (int) nlen, name);
 			} else {
-				asprintf(&path, "%s/lib%.*s.a", search_paths[j], (int) nlen, name);
+				asprintf_c(&path, "%s/lib%.*s.a", search_paths[j], (int) nlen, name);
 			}
 
-			assert(path != NULL);
-
 			if (access(path, F_OK) == 0) {
-				extra = realloc(extra, (extra_count + 1) * sizeof *extra);
-				assert(extra != NULL);
+				extra = realloc_c(extra, (extra_count + 1) * sizeof *extra);
 				extra[extra_count++] = path;
 				break;
 			}
@@ -292,8 +281,7 @@ int frugal_link(
 	// Run mtime check with combined deps.
 
 	size_t const total = obj_count + extra_count;
-	char** deps = malloc(total * sizeof *deps);
-	assert(deps != NULL);
+	char** deps = malloc_c(total * sizeof *deps);
 
 	memcpy(deps, objs, obj_count * sizeof *objs);
 	memcpy(deps + obj_count, extra, extra_count * sizeof *extra);

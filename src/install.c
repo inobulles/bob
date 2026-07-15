@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <apple.h>
 #include <cookie.h>
 #include <frugal.h>
@@ -84,7 +85,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 
 	// Get absolute path of source.
 
-	char* const STR_CLEANUP key = strndup(key_val->str.str, key_val->str.size);
+	char* const STR_CLEANUP key = strndup_c(key_val->str.str, key_val->str.size);
 	char* const STR_CLEANUP path = realerpath(key);
 
 	if (path == NULL) {
@@ -107,13 +108,11 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 	// Make sure destination directory exists.
 	// XXX 'dirname' uses internal storage on some platforms, but it seems that with glibc it uses its argument as backing instead.
 
-	char* STR_CLEANUP parent_backing = strdup(val);
-	assert(parent_backing != NULL);
+	char* STR_CLEANUP parent_backing = strdup_c(val);
 	char* parent = dirname(parent_backing);
 
 	char* bit;
-	char* STR_CLEANUP accum = strdup(install_prefix);
-	assert(accum != NULL);
+	char* STR_CLEANUP accum = strdup_c(install_prefix);
 
 	while ((bit = strsep(&parent, "/"))) {
 		if (bit[0] == '\0') {
@@ -121,8 +120,7 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 		}
 
 		char* STR_CLEANUP path = NULL;
-		asprintf(&path, "%s/%s", accum, bit);
-		assert(path != NULL);
+		asprintf_c(&path, "%s/%s", accum, bit);
 
 		if (mkdir_wrapped(path, 0755) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
@@ -130,16 +128,14 @@ static int install_single(flamingo_val_t* key_val, char* val, bool installing_co
 		}
 
 		free(accum);
-		accum = strdup(path);
-		assert(accum != NULL);
+		accum = strdup_c(path);
 	}
 
 	// Check modification times.
 	// TODO When 'key' is a directory, we should recursively check all files in it.
 
 	char* STR_CLEANUP install_path = NULL;
-	asprintf(&install_path, "%s/%s", install_prefix, val);
-	assert(install_path != NULL);
+	asprintf_c(&install_path, "%s/%s", install_prefix, val);
 
 	bool do_install = false;
 
@@ -196,7 +192,7 @@ int install_all(void) {
 
 	for (size_t i = 0; i < install_map->map.count; i++) {
 		flamingo_val_t* const val_val = install_map->map.vals[i];
-		char* const val = strndup(val_val->str.str, val_val->str.size);
+		char* const val = strndup_c(val_val->str.str, val_val->str.size);
 
 		if (install_single(install_map->map.keys[i], val, false) < 0) {
 			return -1;
@@ -227,9 +223,8 @@ char* cookie_to_output(char* cookie, flamingo_val_t** key_val_ref) {
 		}
 
 		flamingo_val_t* const val_val = install_map->map.vals[i];
-		char* const val = strndup(val_val->str.str, val_val->str.size);
+		char* const val = strndup_c(val_val->str.str, val_val->str.size);
 
-		assert(val != NULL);
 		return val;
 	}
 

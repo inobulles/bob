@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <apple.h>
 #include <build_step.h>
 #include <class/class.h>
@@ -50,8 +51,7 @@ static int link_step(size_t data_count, void** data) {
 
 	// Make everything C strings.
 
-	char* const STR_CLEANUP out = strndup(bss->out_str->str.str, bss->out_str->str.size);
-	assert(out != NULL);
+	char* const STR_CLEANUP out = strndup_c(bss->out_str->str.str, bss->out_str->str.size);
 
 	size_t const src_count = bss->src_vec->vec.count;
 	char* srcs[src_count];
@@ -59,8 +59,7 @@ static int link_step(size_t data_count, void** data) {
 
 	for (size_t i = 0; i < src_count; i++) {
 		flamingo_val_t* const src_val = bss->src_vec->vec.elems[i];
-		srcs[i] = strndup(src_val->str.str, src_val->str.size);
-		assert(srcs[i] != NULL);
+		srcs[i] = strndup_c(src_val->str.str, src_val->str.size);
 	}
 
 	char* const STR_CLEANUP pretty = cookie_to_output(out, NULL);
@@ -209,14 +208,12 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	}
 
 	char* STR_CLEANUP cookie = NULL;
-	asprintf(&cookie, "%s/linker.%s.cookie.%" PRIx64 ".%s", bsys_out_path, infinitive, total_hash, archive ? "a" : "l");
-	assert(cookie != NULL);
+	asprintf_c(&cookie, "%s/linker.%s.cookie.%" PRIx64 ".%s", bsys_out_path, infinitive, total_hash, archive ? "a" : "l");
 	*rv = flamingo_val_make_cstr(cookie);
 
 	// Add build step.
 
-	build_step_state_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
+	build_step_state_t* const bss = malloc_c(sizeof *bss);
 
 	bss->state = state;
 	bss->archive = archive;
@@ -298,9 +295,7 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	// Create state object.
 
-	state_t* const state = malloc(sizeof *state);
-	assert(state != NULL);
-
+	state_t* const state = malloc_c(sizeof *state);
 	state->flags = flags;
 
 	inst->inst.data = state;

@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <bsys.h>
 #include <cmd.h>
 #include <deps.h>
@@ -37,8 +38,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 
 	// Parse the arguments as a list of hashes.
 
-	uint64_t* const hashes = malloc(argc * sizeof *hashes);
-	assert(hashes != NULL);
+	uint64_t* const hashes = malloc_c(argc * sizeof *hashes);
 
 	for (int i = 0; i < argc; i++) {
 		hashes[i] = strtoull(argv[i], NULL, 16);
@@ -65,7 +65,7 @@ int bsys_dep_tree(bsys_t const* bsys, int argc, char* argv[]) {
 
 no_tree:;
 
-	char* const STR_CLEANUP serialized = tree == NULL ? strdup("") : dep_node_serialize(tree);
+	char* const STR_CLEANUP serialized = tree == NULL ? strdup_c("") : dep_node_serialize(tree);
 	printf(DEP_TAG_START "%s" DEP_TAG_END, serialized);
 
 	deps_tree_free(tree);
@@ -144,8 +144,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 	va_start(args, fmt);
 
 	char* STR_CLEANUP val;
-	vasprintf(&val, fmt, args);
-	assert(val != NULL);
+	vasprintf_c(&val, fmt, args);
 
 	va_end(args);
 
@@ -160,8 +159,7 @@ static void prepend_env(char const* name, char const* fmt, ...) {
 		// We prepend because earlier entries searched first.
 
 		char* STR_CLEANUP new;
-		asprintf(&new, "%s:%s", val, prev);
-		assert(new != NULL);
+		asprintf_c(&new, "%s:%s", val, prev);
 
 		rv = setenv(name, new, 1);
 	}

@@ -3,13 +3,13 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
 #include <logging.h>
 #include <str.h>
 
-#include <assert.h>
 #include <string.h>
 
 #include <class/pkg_config.h>
@@ -65,8 +65,7 @@ static int eval(char const* fn, char const* flag, char* module, pkg_config_cooki
 
 		// Add token to vector.
 
-		vec->vec.elems = realloc(vec->vec.elems, (vec->vec.count + 1) * sizeof(flamingo_val_t*));
-		assert(vec->vec.elems != NULL);
+		vec->vec.elems = realloc_c(vec->vec.elems, (vec->vec.count + 1) * sizeof(flamingo_val_t*));
 		vec->vec.elems[vec->vec.count++] = flamingo_val_make_cstr(tok);
 	}
 
@@ -136,9 +135,7 @@ static int common(
 
 	// Add our data to the cookie.
 
-	pkg_config_cookie_t* const cookie = malloc(sizeof *cookie);
-	assert(cookie_val != NULL);
-
+	pkg_config_cookie_t* const cookie = malloc_c(sizeof *cookie);
 	cookie->out_vec = NULL;
 
 	cookie_val->inst.data = cookie;
@@ -146,15 +143,11 @@ static int common(
 
 	// Add build step.
 	// It is safe to merge multiple pkg-config evaluation build steps.
-	// XXX Technically, don't need to strdup() 'fn' and 'flag' cuz will be in .rodata.
+	// XXX Technically, don't need to strdup_c() 'fn' and 'flag' cuz will be in .rodata.
 
-	bss_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
+	bss_t* const bss = malloc_c(sizeof *bss);
 
-	bss->module = strndup(module->str.str, module->str.size);
-	;
-	assert(bss->module != NULL);
-
+	bss->module = strndup_c(module->str.str, module->str.size);
 	bss->cookie = cookie;
 	bss->fn = fn;
 	bss->flag = flag;

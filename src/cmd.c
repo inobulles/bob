@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <cmd.h>
 #include <fsutil.h>
 #include <logging.h>
@@ -23,8 +24,7 @@ void cmd_create(cmd_t* cmd, ...) {
 	va_start(va, cmd);
 
 	cmd->len = 1;
-	cmd->args = calloc(1, sizeof *cmd->args);
-	assert(cmd->args != NULL);
+	cmd->args = calloc_c(1, sizeof *cmd->args);
 
 	for (;;) {
 		char* const next = va_arg(va, char*);
@@ -33,12 +33,9 @@ void cmd_create(cmd_t* cmd, ...) {
 			break;
 		}
 
-		cmd->args = realloc(cmd->args, ++cmd->len * sizeof *cmd->args);
-		assert(cmd->args != NULL);
+		cmd->args = realloc_c(cmd->args, ++cmd->len * sizeof *cmd->args);
 
-		cmd->args[cmd->len - 2] = strdup(next);
-		assert(cmd->args[cmd->len - 2] != NULL);
-
+		cmd->args[cmd->len - 2] = strdup_c(next);
 		cmd->args[cmd->len - 1] = NULL;
 	}
 
@@ -56,11 +53,9 @@ void cmd_create(cmd_t* cmd, ...) {
 }
 
 void cmd_add(cmd_t* cmd, char const* arg) {
-	cmd->args = realloc(cmd->args, ++cmd->len * sizeof *cmd->args);
-	assert(cmd->args != NULL);
+	cmd->args = realloc_c(cmd->args, ++cmd->len * sizeof *cmd->args);
 
-	cmd->args[cmd->len - 2] = strdup(arg);
-	assert(cmd->args[cmd->len - 2] != NULL);
+	cmd->args[cmd->len - 2] = strdup_c(arg);
 	cmd->args[cmd->len - 1] = NULL;
 }
 
@@ -68,11 +63,9 @@ __attribute__((__format__(__printf__, 2, 3))) void cmd_addf(cmd_t* cmd, char con
 	va_list va;
 	va_start(va, fmt);
 
-	cmd->args = realloc(cmd->args, ++cmd->len * sizeof *cmd->args);
-	assert(cmd->args != NULL);
+	cmd->args = realloc_c(cmd->args, ++cmd->len * sizeof *cmd->args);
 
-	vasprintf(&cmd->args[cmd->len - 2], fmt, va);
-	assert(cmd->args[cmd->len - 2] != NULL);
+	vasprintf_c(&cmd->args[cmd->len - 2], fmt, va);
 	cmd->args[cmd->len - 1] = NULL;
 
 	va_end(va);
@@ -103,8 +96,7 @@ void cmd_set_redirect(cmd_t* cmd, cmd_redirect_t redirect, cmd_force_redirect_t 
 }
 
 void cmd_prepare_stdin(cmd_t* cmd, char* data) {
-	cmd->pending_stdin = strdup(data);
-	assert(cmd->pending_stdin != NULL);
+	cmd->pending_stdin = strdup_c(data);
 }
 
 static bool is_executable(char const* path) {
@@ -123,7 +115,7 @@ static bool is_executable(char const* path) {
 
 static char* find_bin(char const* cmd) {
 	if (is_executable(cmd)) {
-		return strdup(cmd);
+		return strdup_c(cmd);
 	}
 
 	// Look for binary in $PATH.
@@ -136,16 +128,14 @@ static char* find_bin(char const* cmd) {
 		_exit(EXIT_FAILURE);
 	}
 
-	char* const STR_CLEANUP orig_search = strdup(path);
-	assert(orig_search != NULL);
+	char* const STR_CLEANUP orig_search = strdup_c(path);
 	char* search = orig_search;
 
 	char* tok;
 
 	while ((tok = strsep(&search, ":"))) {
 		char* full_path = NULL;
-		asprintf(&full_path, "%s/%s", tok, cmd);
-		assert(full_path != NULL);
+		asprintf_c(&full_path, "%s/%s", tok, cmd);
 
 		if (is_executable(full_path)) {
 			return full_path;
@@ -298,8 +288,7 @@ int cmd_exec(cmd_t* cmd) {
 	cmd->sig = 0;
 
 	free(cmd->out_buf);
-	cmd->out_buf = strdup("");
-	assert(cmd->out_buf != NULL);
+	cmd->out_buf = strdup_c("");
 
 	if (!cmd->redirect) {
 		goto just_wait;
@@ -322,8 +311,7 @@ int cmd_exec(cmd_t* cmd) {
 	while ((bytes = read(pipe, chunk, sizeof chunk)) > 0) {
 		total += bytes;
 
-		cmd->out_buf = realloc(cmd->out_buf, total + 1);
-		assert(cmd->out_buf != NULL);
+		cmd->out_buf = realloc_c(cmd->out_buf, total + 1);
 		memcpy(cmd->out_buf + total - bytes, chunk, bytes);
 	}
 
@@ -347,14 +335,12 @@ char* cmd_read_out(cmd_t* cmd) {
 	// If we terminated due to a signal, append that to the output.
 
 	char* STR_CLEANUP sig_str = NULL;
-	asprintf(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
-	assert(sig_str != NULL);
+	asprintf_c(&sig_str, BOLD RED "Terminated by signal: %s\n", strsignal(cmd->sig));
 	size_t const sig_len = strlen(sig_str);
 
 	size_t total = strlen(cmd->out_buf);
 
-	cmd->out_buf = realloc(cmd->out_buf, total + sig_len + 1);
-	assert(cmd->out_buf != NULL);
+	cmd->out_buf = realloc_c(cmd->out_buf, total + sig_len + 1);
 	memcpy(cmd->out_buf + total, sig_str, sig_len);
 	total += sig_len;
 
@@ -392,8 +378,7 @@ void cmd_log(cmd_t* cmd, char const* cookie, char const* prefix, char const* inf
 	}
 
 	char* STR_CLEANUP path;
-	asprintf(&path, "%s.log", cookie);
-	assert(path != NULL);
+	asprintf_c(&path, "%s.log", cookie);
 
 	if (!is_out) {
 		remove(path);

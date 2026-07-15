@@ -3,20 +3,19 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <cookie.h>
 #include <str.h>
 
 #include <flamingo/flamingo.h>
 
-#include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
 char* gen_cookie(char* path, size_t path_size, char const* ext) {
 	char* cookie = NULL;
-	asprintf(&cookie, "%s/%.*s.cookie.%" PRIx64 ".%s", bsys_out_path, (int) path_size, path, strnhash(path, path_size), ext);
-	assert(cookie != NULL);
+	asprintf_c(&cookie, "%s/%.*s.cookie.%" PRIx64 ".%s", bsys_out_path, (int) path_size, path, strnhash(path, path_size), ext);
 
 	size_t const prefix_len = strlen(bsys_out_path) + strlen("/");
 
@@ -36,9 +35,8 @@ static char** built_cookies = NULL; // XXX Shouldn't really worry about freeing 
 void add_built_cookie(char* cookie) {
 	pthread_mutex_lock(&built_cookies_mutex);
 
-	built_cookies = realloc(built_cookies, ++built_cookie_count * sizeof *built_cookies);
-	assert(built_cookies != NULL);
-	built_cookies[built_cookie_count - 1] = strdup(cookie);
+	built_cookies = realloc_c(built_cookies, ++built_cookie_count * sizeof *built_cookies);
+	built_cookies[built_cookie_count - 1] = strdup_c(cookie);
 
 	pthread_mutex_unlock(&built_cookies_mutex);
 }

@@ -3,9 +3,9 @@
 
 #include <common.h>
 
-#include <deps.h>
-
+#include <alloc.h>
 #include <cmd.h>
+#include <deps.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <str.h>
@@ -65,13 +65,10 @@ static int gen_local_path(char* path, char** abs_path, char** human, char** dep_
 
 	*human = strrchr(*abs_path, '/');
 	assert((*human)++ != NULL);
-	*human = strdup(*human);
-	assert(*human != NULL);
+	*human = strdup_c(*human);
 
 	uint64_t const hash = strnhash(*abs_path, strlen(*abs_path));
-
-	asprintf(dep_path, "%s/%s.%" PRIx64 ".local", deps_path, *human, hash);
-	assert(*dep_path != NULL);
+	asprintf_c(dep_path, "%s/%s.%" PRIx64 ".local", deps_path, *human, hash);
 
 	return 0;
 }
@@ -200,8 +197,7 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 
 			// Generate path for dependency in deps directory.
 
-			char* const STR_CLEANUP path = strndup(local_path->str.str, local_path->str.size);
-			assert(path != NULL);
+			char* const STR_CLEANUP path = strndup_c(local_path->str.str, local_path->str.size);
 			char* STR_CLEANUP abs_path = NULL;
 
 			if (gen_local_path(path, &abs_path, &human, &dep_path) < 0) {
@@ -243,23 +239,20 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 
 			// Get dependency path of git repo.
 
-			char* const STR_CLEANUP tmp = strndup(git_url->str.str, git_url->str.size);
-			assert(tmp != NULL);
+			char* const STR_CLEANUP tmp = strndup_c(git_url->str.str, git_url->str.size);
 
 			while (tmp[strlen(tmp) - 1] == '/') {
 				tmp[strlen(tmp) - 1] = '\0';
 			}
 
 			human = strrchr(tmp, '/');
-			human = strdup(human == NULL ? tmp : human + 1);
-			assert(human != NULL);
+			human = strdup_c(human == NULL ? tmp : human + 1);
 
 			uint64_t const hash =
 				strnhash(git_url->str.str, git_url->str.size) ^
 				strnhash(git_branch->str.str, git_branch->str.size);
 
-			asprintf(&dep_path, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
-			assert(dep_path != NULL);
+			asprintf_c(&dep_path, "%s/%s.%" PRIx64 ".git", deps_path, human, hash);
 
 			if (access(dep_path, F_OK) == 0) {
 				goto downloaded;
@@ -312,14 +305,9 @@ downloaded:
 			config_hash(config);
 		*hash ^= deps[i].hash;
 
-		deps[i].path = strdup(dep_path);
-		assert(deps[i].path != NULL);
-
-		deps[i].human = strdup(human);
-		assert(deps[i].human != NULL);
-
-		deps[i].build_path = strndup(build_path->str.str, build_path->str.size);
-		assert(deps[i].build_path != NULL);
+		deps[i].path = strdup_c(dep_path);
+		deps[i].human = strdup_c(human);
+		deps[i].build_path = strndup_c(build_path->str.str, build_path->str.size);
 
 		// Don't bother checking for any of the Flamingo kinds here; they should've been checked by 'config_hash()' already.
 
@@ -330,10 +318,8 @@ downloaded:
 			continue;
 		}
 
-		deps[i].config_keys = malloc(config->map.count * sizeof *deps[i].config_keys);
-		deps[i].config_vals = malloc(config->map.count * sizeof *deps[i].config_vals);
-
-		assert(deps[i].config_keys != NULL && deps[i].config_vals != NULL);
+		deps[i].config_keys = malloc_c(config->map.count * sizeof *deps[i].config_keys);
+		deps[i].config_vals = malloc_c(config->map.count * sizeof *deps[i].config_vals);
 
 		for (size_t j = 0; j < config->map.count; j++) {
 			flamingo_val_t* const key = config->map.keys[j];
@@ -349,10 +335,8 @@ downloaded:
 				return -1;
 			}
 
-			deps[i].config_keys[j] = strndup(key->str.str, key->str.size);
-			deps[i].config_vals[j] = strndup(val->str.str, val->str.size);
-
-			assert(deps[i].config_keys[j] != NULL && deps[i].config_vals[j] != NULL);
+			deps[i].config_keys[j] = strndup_c(key->str.str, key->str.size);
+			deps[i].config_vals[j] = strndup_c(val->str.str, val->str.size);
 		}
 	}
 
@@ -421,10 +405,9 @@ dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* p
 	// Create the root node of the dependency tree.
 	// Set the path to what it would be were it a dependency.
 
-	dep_node_t* const tree = calloc(1, sizeof *tree);
-	assert(tree != NULL);
-
+	dep_node_t* const tree = calloc_c(1, sizeof *tree);
 	tree->is_root = true;
+
 	char* STR_CLEANUP human = NULL;
 
 	if (gen_local_path(".", NULL, &human, &tree->path) < 0) {
@@ -464,12 +447,10 @@ dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* p
 	char* STR_CLEANUP serialized = NULL;
 
 	char* STR_CLEANUP hash_path;
-	asprintf(&hash_path, "%s/deps.hash", abs_out_path);
-	assert(hash_path != NULL);
+	asprintf_c(&hash_path, "%s/deps.hash", abs_out_path);
 
 	char* STR_CLEANUP tree_path;
-	asprintf(&tree_path, "%s/deps.tree", abs_out_path);
-	assert(tree_path != NULL);
+	asprintf_c(&tree_path, "%s/deps.tree", abs_out_path);
 
 	if (force_dep_tree_rebuild) {
 		LOG_INFO("Forcing dependency tree to be rebuilt.");
@@ -505,8 +486,7 @@ dep_node_t* get_deps_tree(flamingo_val_t* deps_vec, size_t path_len, uint64_t* p
 	size_t const tree_size = ftell(tree_f);
 	rewind(tree_f);
 
-	serialized = calloc(1, tree_size + 1);
-	assert(serialized != NULL);
+	serialized = calloc_c(1, tree_size + 1);
 	fread(serialized, 1, tree_size, tree_f);
 
 	fclose(tree_f);
@@ -601,39 +581,26 @@ build_tree:;
 		}
 
 		node.is_root = false;
-
 		node.kind = dep->kind;
-
-		node.path = strdup(dep->path);
-		assert(node.path != NULL);
-
-		node.human = strdup(dep->human);
-		assert(node.human != NULL);
-
-		node.build_path = strdup(dep->build_path);
-		assert(node.build_path != NULL);
-
+		node.path = strdup_c(dep->path);
+		node.human = strdup_c(dep->human);
+		node.build_path = strdup_c(dep->build_path);
 		node.config_key_count = dep->config_key_count;
 
 		if (dep->config_key_count == 0) {
 			node.config_keys = NULL;
 			node.config_vals = NULL;
 		} else {
-			node.config_keys = malloc(dep->config_key_count * sizeof *node.config_keys);
-			node.config_vals = malloc(dep->config_key_count * sizeof *node.config_vals);
-
-			assert(node.config_keys != NULL && node.config_vals != NULL);
+			node.config_keys = malloc_c(dep->config_key_count * sizeof *node.config_keys);
+			node.config_vals = malloc_c(dep->config_key_count * sizeof *node.config_vals);
 
 			for (size_t j = 0; j < dep->config_key_count; j++) {
-				node.config_keys[j] = strdup(dep->config_keys[j]);
-				node.config_vals[j] = strdup(dep->config_vals[j]);
-
-				assert(node.config_keys[j] != NULL && node.config_vals[j] != NULL);
+				node.config_keys[j] = strdup_c(dep->config_keys[j]);
+				node.config_vals[j] = strdup_c(dep->config_vals[j]);
 			}
 		}
 
-		tree->children = realloc(tree->children, (tree->child_count + 1) * sizeof *tree->children);
-		assert(tree->children != NULL);
+		tree->children = realloc_c(tree->children, (tree->child_count + 1) * sizeof *tree->children);
 		tree->children[tree->child_count++] = node;
 	}
 
