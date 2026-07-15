@@ -282,6 +282,10 @@ static int compile_step(size_t data_count, void** data) {
 				data->src = src;
 				data->out = out;
 
+				// TODO In theory, we can't do this as 'compile_task()' is not threadsafe.
+				// I have seen ASAN complain e.g. when we're compiling the same file in two tasks, and so two threads are trying to open and write to the same deps file at the same time.
+				// We should ensure the tasks are unique.
+
 				pool_add_task(&pool, compile_task, data);
 				continue;
 			}
