@@ -1,0 +1,5 @@
+# Please always include commit messages above the hash to be ignored.
+# This file is sorted in git log order (newest commits first).
+
+# src: Use checked versions of memory allocating functions
+88ba61744bfe7986ca177757ec60c3e21c1be59a
