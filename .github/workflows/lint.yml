@@ -32,6 +32,32 @@ jobs:
             echo "Error: 'realpath' is used in multiple places. Use 'realerpath' instead."
             exit 1
           fi
+      - name: Make sure 'malloc_c'/'calloc_c'/'realloc_c' are used everywhere (except for once in 'alloc.h')
+        run: |
+          for fn in malloc calloc realloc; do
+            if [ $(cat $SRC | grep "[^\"]${fn}(" | wc -l) -gt 1 ]; then
+              echo "Error: '${fn}' is used outside of 'alloc.h'. Use '${fn}_c' instead."
+              exit 1
+            fi
+          done
+      - name: Make sure 'strdup_c'/'strndup_c' are used everywhere (except for once in 'alloc.h')
+        run: |
+          for fn in strdup strndup; do
+            if [ $(cat $SRC | grep "[^\"]${fn}(" | wc -l) -gt 1 ]; then
+              echo "Error: '${fn}' is used outside of 'alloc.h'. Use '${fn}_c' instead."
+              exit 1
+            fi
+          done
+      - name: Make sure 'asprintf_c'/'vasprintf_c' are used everywhere (except for once in 'alloc.h')
+        run: |
+          if [ $(cat $SRC | grep "[^v]asprintf(" | wc -l) -gt 0 ]; then
+            echo "Error: 'asprintf' is used outside of 'alloc.h'. Use 'asprintf_c' instead."
+            exit 1
+          fi
+          if [ $(cat $SRC | grep "[^\"]vasprintf(" | wc -l) -gt 1 ]; then
+            echo "Error: 'vasprintf' is used outside of 'alloc.h'. Use 'vasprintf_c' instead."
+            exit 1
+          fi
       - name: Make sure raw booleans aren't used as arguments to 'cmd_set_redirect()'
         run: |
           if [ "$(cat $SRC | grep -E "cmd_set_redirect.*\b(true|false\b)")" != "" ]; then
