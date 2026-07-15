@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <cmd.h>
 #include <fsutil.h>
 #include <logging.h>
@@ -24,7 +25,7 @@ int rm(char const* path, char** err) {
 	int const rv = cmd_exec(&cmd);
 
 	if (rv < 0 && *err != NULL) {
-		*err = strdup(cmd_read_out(&cmd));
+		*err = strdup_c(cmd_read_out(&cmd));
 		size_t const len = strlen(*err);
 
 		if (len >= 1) {
@@ -53,8 +54,7 @@ int copy(char const* src, char const* dst, char** err) {
 	char* STR_CLEANUP dir_src = NULL;
 
 	if (is_dir) {
-		asprintf(&dir_src, "%s/", src);
-		assert(dir_src != NULL);
+		asprintf_c(&dir_src, "%s/", src);
 		src = dir_src;
 	}
 
@@ -73,7 +73,7 @@ int copy(char const* src, char const* dst, char** err) {
 	int const rv = cmd_exec(&cmd);
 
 	if (rv < 0 && err != NULL) {
-		*err = strdup(cmd_read_out(&cmd));
+		*err = strdup_c(cmd_read_out(&cmd));
 		size_t const len = strlen(*err);
 
 		if (len >= 1) {
@@ -170,11 +170,8 @@ int mkdir_recursive(char const* path, mode_t mode) {
 		return -1;
 	}
 
-	char* STR_CLEANUP copy = strdup(path);
-	assert(copy != NULL);
-
-	char* STR_CLEANUP accum = strdup("");
-	assert(accum != NULL);
+	char* STR_CLEANUP copy = strdup_c(path);
+	char* STR_CLEANUP accum = strdup_c("");
 
 	char* bit;
 
@@ -184,8 +181,7 @@ int mkdir_recursive(char const* path, mode_t mode) {
 		}
 
 		char* STR_CLEANUP path = NULL;
-		asprintf(&path, "%s/%s", accum, bit);
-		assert(path != NULL);
+		asprintf_c(&path, "%s/%s", accum, bit);
 
 		if (mkdir_wrapped(path, mode) < 0 && errno != EEXIST) {
 			LOG_FATAL("mkdir(\"%s\"): %s", path, strerror(errno));
@@ -193,8 +189,7 @@ int mkdir_recursive(char const* path, mode_t mode) {
 		}
 
 		free(accum);
-		accum = strdup(path);
-		assert(accum != NULL);
+		accum = strdup_c(path);
 	}
 
 	return 0;
@@ -218,7 +213,7 @@ char* realerpath(char const* path) {
 
 	if (home != NULL) {
 		char* STR_CLEANUP intermediary = NULL;
-		asprintf(&intermediary, "%s/%s", home, path + 1);
+		asprintf_c(&intermediary, "%s/%s", home, path + 1);
 		final = R(intermediary, NULL);
 	}
 

@@ -14,6 +14,8 @@
  */
 
 #include <common.h>
+
+#include <alloc.h>
 #include <deps.h>
 #include <logging.h>
 #include <str.h>
@@ -31,8 +33,7 @@ static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
 	// We wanna explicitly duplicate an empty string if no serialized string is passed instead of just relying on the 'realloc' call, because the node could very well not have any children.
 
 	if (serialized == NULL) {
-		serialized = strdup("");
-		assert(serialized != NULL);
+		serialized = strdup_c("");
 	}
 
 	for (size_t i = 0; i < node->child_count; i++) {
@@ -42,9 +43,7 @@ static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
 		size_t const prev_len = strlen(serialized);
 		size_t const len = strlen(serialized_child);
 
-		serialized = realloc(serialized, prev_len + len + 1);
-		assert(serialized != NULL);
-
+		serialized = realloc_c(serialized, prev_len + len + 1);
 		memcpy(serialized + prev_len, serialized_child, len + 1);
 	}
 
@@ -52,25 +51,21 @@ static char* add_children(char* serialized, dep_node_t* node, size_t depth) {
 }
 
 static char* serialize_inner(dep_node_t* node, size_t depth) {
-	char* const STR_CLEANUP depth_chars = calloc(1, depth + 1);
-	assert(depth_chars != NULL);
+	char* const STR_CLEANUP depth_chars = calloc_c(1, depth + 1);
 	memset(depth_chars, DEPTH_CHAR, depth);
 
 	char* serialized = NULL;
-	asprintf(&serialized, "%s%d:%s:%s:%s:%zu", depth_chars, node->kind, node->human, node->path, node->build_path, node->config_key_count);
-	assert(serialized != NULL);
+	asprintf_c(&serialized, "%s%d:%s:%s:%s:%zu", depth_chars, node->kind, node->human, node->path, node->build_path, node->config_key_count);
 
 	for (size_t i = 0; i < node->config_key_count; i++) {
 		char* tmp;
-		asprintf(&tmp, "%s:%s:%s", serialized, node->config_keys[i], node->config_vals[i]);
-		assert(tmp != NULL);
+		asprintf_c(&tmp, "%s:%s:%s", serialized, node->config_keys[i], node->config_vals[i]);
 		free(serialized);
 		serialized = tmp;
 	}
 
 	char* tmp;
-	asprintf(&tmp, "%s\n", serialized);
-	assert(tmp != NULL);
+	asprintf_c(&tmp, "%s\n", serialized);
 	free(serialized);
 	serialized = tmp;
 
@@ -97,8 +92,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	root->children = NULL;
 
 	size_t stack_size = 1;
-	dep_node_t** __attribute__((cleanup(free_stack))) stack = malloc(stack_size * sizeof *stack);
-	assert(stack != NULL);
+	dep_node_t** __attribute__((cleanup(free_stack))) stack = malloc_c(stack_size * sizeof *stack);
 	stack[0] = root;
 
 	// Figure out if we're using dependency tree tags or not.
@@ -115,8 +109,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 	// We need to keep a copy of the original backing string to free it later.
 	// If using tags, remove all that is after the closing tag.
 
-	char* const STR_CLEANUP orig_backing = strdup(serialized);
-	assert(orig_backing != NULL);
+	char* const STR_CLEANUP orig_backing = strdup_c(serialized);
 
 	if (use_tags) {
 		char* const dep_tag_end = strstr(orig_backing, DEP_TAG_END);
@@ -224,38 +217,27 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		// Actually create the node object.
 
-		cur->children = realloc(cur->children, (cur->child_count + 1) * sizeof *cur->children);
-		assert(cur->children != NULL);
+		cur->children = realloc_c(cur->children, (cur->child_count + 1) * sizeof *cur->children);
 		dep_node_t* const node = &cur->children[cur->child_count++];
 
 		node->is_root = false;
 		node->kind = kind;
 
-		node->human = strdup(human);
-		assert(node->human != NULL);
-
-		node->path = strdup(path);
-		assert(node->path != NULL);
-
-		node->build_path = strdup(build_path);
-		assert(node->build_path != NULL);
-
+		node->human = strdup_c(human);
+		node->path = strdup_c(path);
+		node->build_path = strdup_c(build_path);
 		node->config_key_count = config_key_count;
 
 		if (config_key_count == 0) {
 			node->config_keys = NULL;
 			node->config_vals = NULL;
 		} else {
-			node->config_keys = malloc(config_key_count * sizeof *node->config_keys);
-			node->config_vals = malloc(config_key_count * sizeof *node->config_vals);
-
-			assert(node->config_keys != NULL && node->config_vals != NULL);
+			node->config_keys = malloc_c(config_key_count * sizeof *node->config_keys);
+			node->config_vals = malloc_c(config_key_count * sizeof *node->config_vals);
 
 			for (size_t k = 0; k < config_key_count; k++) {
-				node->config_keys[k] = strdup(config_keys[k]);
-				node->config_vals[k] = strdup(config_vals[k]);
-
-				assert(node->config_keys[k] != NULL && node->config_vals[k] != NULL);
+				node->config_keys[k] = strdup_c(config_keys[k]);
+				node->config_vals[k] = strdup_c(config_vals[k]);
 			}
 		}
 
@@ -264,8 +246,7 @@ int dep_node_deserialize(dep_node_t* root, char* serialized) {
 
 		// Add a reference to this node to our stack.
 
-		stack = realloc(stack, (stack_size + 1) * sizeof *stack);
-		assert(stack != NULL);
+		stack = realloc_c(stack, (stack_size + 1) * sizeof *stack);
 		stack[stack_size++] = node;
 
 		prev_depth = depth;

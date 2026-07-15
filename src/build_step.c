@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2024 Aymeric Wibo
 
+#include <alloc.h>
 #include <build_step.h>
 
 #include <assert.h>
@@ -12,10 +13,9 @@ build_step_t* build_steps = NULL;
 static int merge(void* data) {
 	build_step_t* const last = &build_steps[build_step_count - 1];
 
-	last->data = realloc(last->data, (last->data_count + 1) * sizeof *last->data);
-	assert(last->data != NULL);
-
+	last->data = realloc_c(last->data, (last->data_count + 1) * sizeof *last->data);
 	last->data[last->data_count++] = data;
+
 	return 0;
 }
 
@@ -40,8 +40,7 @@ no_last:
 
 	// Actually add new build step.
 
-	build_steps = realloc(build_steps, ++build_step_count * sizeof *build_steps);
-	assert(build_steps != NULL);
+	build_steps = realloc_c(build_steps, ++build_step_count * sizeof *build_steps);
 	build_step_t* const step = &build_steps[build_step_count - 1];
 
 	step->unique = unique;
@@ -49,9 +48,7 @@ no_last:
 	step->cb = cb;
 	step->data_count = 1;
 
-	step->data = malloc(sizeof *build_steps->data);
-	assert(step->data != NULL);
-
+	step->data = malloc_c(sizeof *build_steps->data);
 	step->data[0] = data;
 
 	return 0;

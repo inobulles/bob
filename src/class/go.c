@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
@@ -10,7 +11,6 @@
 #include <logging.h>
 #include <str.h>
 
-#include <assert.h>
 #include <inttypes.h>
 
 #define GO "Go"
@@ -23,8 +23,7 @@ static flamingo_val_t* build_val = NULL;
 
 static void set_env(char const* key, char const* flag, char const* subdir, char const* extra) {
 	char* STR_CLEANUP val = getenv(key);
-	asprintf(&val, "%s %s%s/%s %s", val ? val : "", flag, install_prefix, subdir, extra);
-	assert(val != NULL);
+	asprintf_c(&val, "%s %s%s/%s %s", val ? val : "", flag, install_prefix, subdir, extra);
 	setenv(key, val, true);
 }
 
@@ -106,15 +105,12 @@ static int build(flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	// Return output directory.
 
 	char* STR_CLEANUP cookie = NULL;
-	asprintf(&cookie, "%s/go.build.cookie.exe", bsys_out_path);
-	assert(cookie != NULL);
+	asprintf_c(&cookie, "%s/go.build.cookie.exe", bsys_out_path);
 	*rv = flamingo_val_make_cstr(cookie);
 
 	// Add build step.
 
-	build_step_state_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
-
+	build_step_state_t* const bss = malloc_c(sizeof *bss);
 	bss->flags = flamingo_val_incref(flags);
 
 	return add_build_step(strhash(GO), "Go build", build_step, bss);

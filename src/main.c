@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <bsys.h>
 #include <build_step.h>
 #include <fsutil.h>
@@ -11,7 +12,6 @@
 #include <ncpu.h>
 #include <str.h>
 
-#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,15 +91,13 @@ static int get_and_ensure_deps_path(void) {
 		// XXX Don't worry about freeing these.
 
 		if (home != NULL) {
-			asprintf(&deps_path, "%s/%s", home, ".cache/bob/deps");
+			asprintf_c(&deps_path, "%s/%s", home, ".cache/bob/deps");
 		}
 
 		else {
-			asprintf(&deps_path, "%s/%s", abs_out_path, "deps");
+			asprintf_c(&deps_path, "%s/%s", abs_out_path, "deps");
 			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
 		}
-
-		assert(deps_path != NULL);
 	}
 
 	// Ensure it exists.
@@ -116,8 +114,7 @@ static int clear_out_path_if_bob_update(void) {
 	char* STR_CLEANUP err = NULL;
 
 	char* STR_CLEANUP version_path = NULL;
-	asprintf(&version_path, "%s/version", abs_out_path);
-	assert(version_path != NULL);
+	asprintf_c(&version_path, "%s/version", abs_out_path);
 
 	FILE* const f = fopen(version_path, "r");
 
@@ -205,13 +202,11 @@ int main(int argc, char* argv[]) {
 				usage();
 			}
 
-			dep_config_keys = realloc(dep_config_keys, (dep_config_count + 1) * sizeof *dep_config_keys);
-			dep_config_vals = realloc(dep_config_vals, (dep_config_count + 1) * sizeof *dep_config_vals);
-			assert(dep_config_keys != NULL && dep_config_vals != NULL);
+			dep_config_keys = realloc_c(dep_config_keys, (dep_config_count + 1) * sizeof *dep_config_keys);
+			dep_config_vals = realloc_c(dep_config_vals, (dep_config_count + 1) * sizeof *dep_config_vals);
 
-			dep_config_keys[dep_config_count] = strndup(optarg, key_len);
-			dep_config_vals[dep_config_count] = strdup(val);
-			assert(dep_config_keys[dep_config_count] != NULL && dep_config_vals[dep_config_count] != NULL);
+			dep_config_keys[dep_config_count] = strndup_c(optarg, key_len);
+			dep_config_vals[dep_config_count] = strdup_c(val);
 
 			dep_config_count++;
 			break;
@@ -356,15 +351,12 @@ int main(int argc, char* argv[]) {
 		}
 
 		else {
-			asprintf(&target, "%s-%s", u.machine, u.sysname);
-			assert(target != NULL);
+			asprintf_c(&target, "%s-%s", u.machine, u.sysname);
 		}
 	}
 
 	char* STR_CLEANUP out_path = NULL;
-
-	asprintf(&out_path, "%s/%s", targetless_out_path, target);
-	assert(out_path != NULL);
+	asprintf_c(&out_path, "%s/%s", targetless_out_path, target);
 
 	// Ensure the target path exists too.
 
@@ -392,9 +384,7 @@ int main(int argc, char* argv[]) {
 	// Get default final and temporary install prefixes.
 
 	default_final_install_prefix = "/usr/local";
-
-	asprintf(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
-	assert(default_tmp_install_prefix != NULL);
+	asprintf_c(&default_tmp_install_prefix, "%s/prefix", abs_out_path);
 
 	// Ensure all installation prefixes (explicitly set, final, and temporary) exist.
 
@@ -434,9 +424,7 @@ int main(int argc, char* argv[]) {
 
 	if (bsys->key != NULL) {
 		// XXX We don't use the absolute path here, because this would mean that some hashes for cookies generated for paths containing 'bsys_out_path' would break when we move the current directory (and makes testing for different platforms annoying).
-
-		asprintf(&bsys_out_path, "%s/%s", out_path, bsys->key);
-		assert(bsys_out_path != NULL);
+		asprintf_c(&bsys_out_path, "%s/%s", out_path, bsys->key);
 	}
 
 	if (dep_config_count > 0 && !bsys->supports_config) {

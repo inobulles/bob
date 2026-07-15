@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
@@ -205,8 +206,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	// Make sure this one is first so it short-circuits 'frugal_mtime'.
 
 	size_t dep_count = 1;
-	char** deps = malloc(sizeof *deps);
-	assert(deps != NULL);
+	char** deps = malloc_c(sizeof *deps);
 	deps[0] = src;
 
 	// Look for include dependencies and add them as dependencies.
@@ -224,8 +224,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 	fseek(f, 0, SEEK_END);
 	long const deps_size = ftell(f);
 
-	char* STR_CLEANUP headers = malloc(deps_size + 1);
-	assert(headers != NULL);
+	char* STR_CLEANUP headers = malloc_c(deps_size + 1);
 
 	rewind(f);
 	fread(headers, 1, deps_size, f);
@@ -240,9 +239,7 @@ static validation_res_t validate_requirements(flamingo_val_t* flags, char* src, 
 			continue;
 		}
 
-		deps = realloc(deps, (dep_count + 1) * sizeof *deps);
-		assert(deps != NULL);
-
+		deps = realloc_c(deps, (dep_count + 1) * sizeof *deps);
 		deps[dep_count++] = header;
 	}
 
@@ -272,17 +269,13 @@ static int compile_step(size_t data_count, void** data) {
 			flamingo_val_t* const src_val = bss->src_vec->vec.elems[j];
 			flamingo_val_t* const out_val = bss->out_vec->vec.elems[j];
 
-			char* const src = strndup(src_val->str.str, src_val->str.size);
-			char* const out = strndup(out_val->str.str, out_val->str.size);
-
-			assert(src != NULL);
-			assert(out != NULL);
+			char* const src = strndup_c(src_val->str.str, src_val->str.size);
+			char* const out = strndup_c(out_val->str.str, out_val->str.size);
 
 			validation_res_t vres = validate_requirements(bss->state->flags, src, out);
 
 			if (vres == VALIDATION_RES_COMPILE) {
-				compile_task_t* const data = malloc(sizeof *data);
-				assert(data != NULL);
+				compile_task_t* const data = malloc_c(sizeof *data);
 
 				data->bss = bss;
 
@@ -339,8 +332,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	(*rv)->kind = FLAMINGO_VAL_KIND_VEC;
 
 	(*rv)->vec.count = srcs->vec.count;
-	(*rv)->vec.elems = malloc((*rv)->vec.count * sizeof *(*rv)->vec.elems);
-	assert((*rv)->vec.elems != NULL);
+	(*rv)->vec.elems = malloc_c((*rv)->vec.count * sizeof *(*rv)->vec.elems);
 
 	// Generate each output cookie and validate members of source vector.
 
@@ -361,8 +353,7 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 
 	// Add build step.
 
-	build_step_state_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
+	build_step_state_t* const bss = malloc_c(sizeof *bss);
 
 	bss->state = state;
 	pthread_mutex_init(&bss->logging_lock, NULL);
@@ -433,9 +424,7 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	// Create state object.
 
-	state_t* const state = malloc(sizeof *state);
-	assert(state != NULL);
-
+	state_t* const state = malloc_c(sizeof *state);
 	state->flags = flags;
 
 	inst->inst.data = state;
