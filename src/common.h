@@ -63,6 +63,13 @@ extern char const* bootstrap_import_path;
 extern char const* targetless_out_path;
 
 /**
+ * The build target triple (e.g. "amd64-FreeBSD").
+ *
+ * Set from the BOB_TARGET envvar if present, otherwise derived from uname(3) as "$machine-$sysname".
+ */
+extern char* target;
+
+/**
  * The absolute ".bob/$TARGET/" output path.
  */
 extern char const* abs_out_path;
