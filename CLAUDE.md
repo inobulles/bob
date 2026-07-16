@@ -51,7 +51,7 @@ Async command execution via a worker pool.
 
 ### Global state (`src/common.h`)
 
-Key globals: `instr` (current instruction), `abs_out_path` (.bob/$TARGET/), `install_prefix`, `deps_path`, `debugging`.
+Key globals: `instr` (current instruction), `target` (e.g. `amd64-FreeBSD`, from `BOB_TARGET` or `uname`), `abs_out_path` (`.bob/$TARGET/`), `install_prefix`, `deps_path`, `debugging`.
 
 `BOB_BUILD_DEBUGGING=1` sets `debugging=true`: forces `-j1` (no parallelism) and disables output pipe buffering so command output streams in real-time. Use when diagnosing hangs or other unobvious build failures.
 
