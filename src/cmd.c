@@ -164,7 +164,7 @@ int cmd_exec_inplace(cmd_t* cmd) {
 	return execv(path, cmd->args);
 }
 
-pid_t cmd_exec_async(cmd_t* cmd) {
+static pid_t cmd_exec_async(cmd_t* cmd) {
 	// Find binary.
 
 	char* const STR_CLEANUP path = find_bin(cmd->args[0]);
