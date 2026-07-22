@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2024-2025 Aymeric Wibo
+# Copyright (c) 2024-2026 Aymeric Wibo
 
 import bob
 
@@ -11,7 +11,7 @@ if Platform.getenv("DEBUG") != none {
 }
 
 let obj = Cc([
-	"-std=c11", "-g",
+	"-std=c11",
 	"-Wall", "-Wextra", "-Werror",
 	"-Wno-unused-parameter",
 	"-Isrc", "-Isrc/flamingo/runtime",
