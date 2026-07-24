@@ -1,0 +1,5 @@
+import bob
+
+artifacts = {
+	"rosetta-stone": "soy-un-artifact",
+}
