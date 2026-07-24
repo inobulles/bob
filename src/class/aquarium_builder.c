@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
@@ -43,14 +44,12 @@ static int create_step(size_t data_count, void** data) {
 		// Generate the cookie.
 
 		uint64_t const hash = strhash(state->template) ^ strhash(state->overlays) ^ strhash(state->project_path);
-		asprintf(&state->cookie, "%s/aquarium_builder.cookie.%" PRIx64 ".aquarium", bsys_out_path, hash);
-		assert(state->cookie != NULL);
+		asprintf_c(&state->cookie, "%s/aquarium_builder.cookie.%" PRIx64 ".aquarium", bsys_out_path, hash);
 
 		// If it doesn't yet exist, create the aquarium.
 
 		char* STR_CLEANUP pretty = NULL;
-		asprintf(&pretty, "Project '%s' with template '%s'", state->project_path, state->template);
-		assert(pretty != NULL);
+		asprintf_c(&pretty, "Project '%s' with template '%s'", state->project_path, state->template);
 
 		cmd_t CMD_CLEANUP cmd = {0};
 
@@ -224,8 +223,7 @@ static int add_overlay(state_t* state, flamingo_arg_list_t* args) {
 	size_t const prev_len = strlen(state->overlays);
 	size_t const next_len = args->args[0]->str.size;
 
-	state->overlays = realloc(state->overlays, prev_len + next_len + 1 + comma);
-	assert(state->overlays != NULL);
+	state->overlays = realloc_c(state->overlays, prev_len + next_len + 1 + comma);
 
 	state->overlays[prev_len] = ',';
 	state->overlays[prev_len + comma + next_len] = '\0';
@@ -252,8 +250,7 @@ static int prep_install_to(state_t* state, flamingo_arg_list_t* args) {
 
 	// Add build step to install to target aquarium.
 
-	install_to_bss_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
+	install_to_bss_t* const bss = malloc_c(sizeof *bss);
 
 	bss->state = state;
 	bss->target = target;
@@ -303,17 +300,11 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	// Create state object.
 
-	state_t* const state = malloc(sizeof *state);
-	assert(state != NULL);
+	state_t* const state = malloc_c(sizeof *state);
 
-	state->template = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(state->template != NULL);
-
-	state->project_path = strndup(args->args[1]->str.str, args->args[1]->str.size);
-	assert(state->project_path != NULL);
-
-	state->overlays = strdup("");
-	assert(state->overlays != NULL);
+	state->template = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
+	state->project_path = strndup_c(args->args[1]->str.str, args->args[1]->str.size);
+	state->overlays = strdup_c("");
 
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;

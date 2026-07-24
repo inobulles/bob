@@ -3,6 +3,7 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <build_step.h>
 #include <class/class.h>
 #include <cmd.h>
@@ -39,8 +40,7 @@ static int create_step(size_t data_count, void** data) {
 
 		// Generate the cookie.
 
-		asprintf(&state->cookie, "%s/aquarium.cookie.%zu.aquarium", bsys_out_path, id);
-		assert(state->cookie != NULL);
+		asprintf_c(&state->cookie, "%s/aquarium.cookie.%zu.aquarium", bsys_out_path, id);
 
 		// If the cookie already exists, remove it.
 
@@ -89,8 +89,7 @@ static int exec_step(size_t data_count, void** data) {
 		cmd_t CMD_CLEANUP cmd = {0};
 		cmd_create(&cmd, "aquarium", "enter", bss->state->cookie, NULL);
 
-		asprintf(&cmd.pending_stdin, "export HOME=/root\n%s\n", bss->cmd);
-		assert(cmd.pending_stdin != NULL);
+		asprintf_c(&cmd.pending_stdin, "export HOME=/root\n%s\n", bss->cmd);
 
 		cmd_set_redirect(&cmd, false, true); // It's nice to see these logs.
 		cmd_exec(&cmd);                      // XXX Return values don't matter to us here, commands can fail.
@@ -134,9 +133,7 @@ static int add_kernel(aquarium_state_t* state, flamingo_arg_list_t* args) {
 		return -1;
 	}
 
-	state->kernel = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(state->kernel != NULL);
-
+	state->kernel = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
 	return 0;
 }
 
@@ -151,13 +148,12 @@ static int prep_exec(aquarium_state_t* state, flamingo_arg_list_t* args) {
 		return -1;
 	}
 
-	char* const cmd = strndup(arg->str.str, arg->str.size);
+	char* const cmd = strndup_c(arg->str.str, arg->str.size);
 
 	// Add build step to execute on the aquarium.
 	// Order absolutely does matter here.
 
-	exec_bss_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
+	exec_bss_t* const bss = malloc_c(sizeof *bss);
 
 	bss->state = state;
 	bss->cmd = cmd;
@@ -168,14 +164,10 @@ static int prep_exec(aquarium_state_t* state, flamingo_arg_list_t* args) {
 static int prep_image(aquarium_state_t* state, flamingo_arg_list_t* args, flamingo_val_t** rv) {
 	assert(args->count == 0);
 
-	image_bss_t* const bss = malloc(sizeof *bss);
-	assert(bss != NULL);
-
+	image_bss_t* const bss = malloc_c(sizeof *bss);
 	bss->state = state;
 
-	asprintf(&bss->cookie, "%s/aquarium.cookie.%zu.img", bsys_out_path, image_id++);
-	assert(bss->cookie != NULL);
-
+	asprintf_c(&bss->cookie, "%s/aquarium.cookie.%zu.img", bsys_out_path, image_id++);
 	*rv = flamingo_val_make_cstr(bss->cookie);
 
 	return add_build_step(MAGIC ^ strhash(__func__), "Imaging aquarium", image_step, bss);
@@ -221,11 +213,8 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	// Create state object.
 
-	aquarium_state_t* const state = malloc(sizeof *state);
-	assert(state != NULL);
-
-	state->template = strndup(args->args[0]->str.str, args->args[0]->str.size);
-	assert(state->template != NULL);
+	aquarium_state_t* const state = malloc_c(sizeof *state);
+	state->template = strndup_c(args->args[0]->str.str, args->args[0]->str.size);
 
 	state->kernel = NULL;
 
