@@ -158,6 +158,14 @@ int frugal_mtime(
 	return 0;
 }
 
+static void free_search_paths(size_t count, char** paths) {
+	for (size_t i = 0; i < count; i++) {
+		free(paths[i]);
+	}
+
+	free(paths);
+}
+
 int frugal_link(
 	bool* do_link,
 	char const log_prefix[static 1],
@@ -213,6 +221,7 @@ int frugal_link(
 		if (flen == 2) { // If we only have -L, then go to next element in vector.
 			if (i >= flags->vec.count - 1) {
 				LOG_FATAL("%s: No search path provided after -L", log_prefix);
+				free_search_paths(search_path_count, search_paths);
 				return -1;
 			}
 
@@ -225,6 +234,7 @@ int frugal_link(
 
 		if (access(search_path, F_OK) != 0) {
 			LOG_FATAL("%s: Failed to access library search path '%s': %s", log_prefix, search_path, strerror(errno));
+			free_search_paths(search_path_count, search_paths);
 			return -1;
 		}
 
@@ -270,13 +280,7 @@ int frugal_link(
 		}
 	}
 
-	// Free all our search paths as we don't need em no more.
-
-	for (size_t i = 0; i < search_path_count; i++) {
-		free(search_paths[i]);
-	}
-
-	free(search_paths);
+	free_search_paths(search_path_count, search_paths);
 
 	// Run mtime check with combined deps.
 
