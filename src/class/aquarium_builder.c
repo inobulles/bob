@@ -70,7 +70,7 @@ static int create_step(size_t data_count, void** data) {
 			cmd_add(&cmd, "create");
 			cmd_add(&cmd, state->cookie);
 
-			cmd_set_redirect(&cmd, false, false); // So we can get progress if a template needs to be downloaded e.g.
+			cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT); // So we can get progress if a template needs to be downloaded e.g.
 			int rv = cmd_exec(&cmd);
 
 			if (rv == 0) {
@@ -103,7 +103,7 @@ static int create_step(size_t data_count, void** data) {
 			);
 			// clang-format on
 
-			cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
+			cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT); // It's nice to see these logs.
 
 			if (cmd_exec(&cmd) < 0) {
 				LOG_FATAL("%s" CLEAR ": Failed to install Bob to the builder aquarium.", pretty);
@@ -145,7 +145,7 @@ static int create_step(size_t data_count, void** data) {
 		);
 		// clang-format on
 
-		cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT); // It's nice to see these logs.
 
 		if (cmd_exec(&cmd) < 0) {
 			LOG_FATAL("%s" CLEAR ": Failed to build project in the builder aquarium.", pretty);
@@ -195,7 +195,7 @@ static int install_to_step(size_t data_count, void** data) {
 		);
 		// clang-format on
 
-		cmd_set_redirect(&cmd, false, false); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT); // It's nice to see these logs.
 
 		if (cmd_exec(&cmd) < 0) {
 			LOG_FATAL("%s" CLEAR ": Failed to install built project to target aquarium.", bss->state->template);

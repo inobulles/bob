@@ -63,7 +63,7 @@ static int create_step(size_t data_count, void** data) {
 		cmd_add(&cmd, "create");
 		cmd_add(&cmd, state->cookie);
 
-		cmd_set_redirect(&cmd, false, true); // So we can get progress if a template needs to be downloaded e.g.
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_FORCE_REDIRECT); // So we can get progress if a template needs to be downloaded e.g.
 		int const rv = cmd_exec(&cmd);
 
 		if (rv == 0) {
@@ -91,8 +91,8 @@ static int exec_step(size_t data_count, void** data) {
 
 		asprintf_c(&cmd.pending_stdin, "export HOME=/root\n%s\n", bss->cmd);
 
-		cmd_set_redirect(&cmd, false, true); // It's nice to see these logs.
-		cmd_exec(&cmd);                      // XXX Return values don't matter to us here, commands can fail.
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_FORCE_REDIRECT); // It's nice to see these logs.
+		cmd_exec(&cmd);                                              // XXX Return values don't matter to us here, commands can fail.
 
 		cmd_log(&cmd, NULL, bss->state->template, "execute command on aquarium", "executed command on aquarium", true);
 	}
@@ -108,7 +108,7 @@ static int image_step(size_t data_count, void** data) {
 
 		cmd_t CMD_CLEANUP cmd = {0};
 		cmd_create(&cmd, "aquarium", "image", bss->state->cookie, bss->cookie, NULL);
-		cmd_set_redirect(&cmd, false, true); // It's nice to see these logs.
+		cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_FORCE_REDIRECT); // It's nice to see these logs.
 		int rv = cmd_exec(&cmd);
 
 		if (rv == 0) {
