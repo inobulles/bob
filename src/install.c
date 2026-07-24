@@ -55,7 +55,7 @@ int setup_install_map(flamingo_t* flamingo) {
 found:
 
 	if (map->val->map.count == 0) {
-		LOG_WARN("Install map is empty; nothing to install!");
+		LOG_WARN("Install map is empty; nothing to install! You may remove it.");
 		return 0;
 	}
 
