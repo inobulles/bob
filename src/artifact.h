@@ -33,3 +33,4 @@
 #include <flamingo/flamingo.h>
 
 int setup_artifact_map(flamingo_t* flamingo);
+int create_artifacts(void);

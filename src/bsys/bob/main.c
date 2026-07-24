@@ -4,6 +4,7 @@
 #include <common.h>
 
 #include <alloc.h>
+#include <artifact.h>
 #include <bsys.h>
 #include <build_step.h>
 #include <cmd.h>
@@ -276,7 +277,15 @@ static int build(void) {
 		return -1;
 	}
 
-	return run_build_steps();
+	if (setup_artifact_map(&flamingo) < 0) {
+		return -1;
+	}
+
+	if (run_build_steps() < 0) {
+		return -1;
+	}
+
+	return create_artifacts();
 }
 
 static int clean(void) {
