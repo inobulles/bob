@@ -24,7 +24,7 @@ static void frugal_flags_add(size_t* size, char** flag_str, flamingo_val_t* flag
 
 	*flag_str = realloc_c(*flag_str, *size + extra + 1);
 	snprintf(*flag_str + *size, extra + 1, "%.*s\n", (int) flag->str.size, flag->str.str);
-	size += extra;
+	*size += extra;
 }
 
 bool frugal_flags(flamingo_val_t* flags, char* out) {
