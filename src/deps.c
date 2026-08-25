@@ -3,22 +3,23 @@
 
 #include <common.h>
 
+#include <alloc.h>
 #include <cmd.h>
 #include <deps.h>
 #include <fsutil.h>
 #include <logging.h>
 #include <ncpu.h>
 #include <pool.h>
+#include <str.h>
 
 #include <assert.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 static pthread_mutex_t logging_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool build_task(void* data) {
 	dep_node_t* const dep = data;
-
-	// TODO If dep->kind == DEP_KIND_GIT, we should not be rebuilding this at all so long as a relative $out_path (I think?) directory exists (though what happens if we need to reinstall?).
 
 	// Log that we're building.
 
@@ -29,6 +30,26 @@ static bool build_task(void* data) {
 
 		if (human++ == NULL) {
 			human = dep->path;
+		}
+	}
+
+	// For git dependencies, check if we've already built this dependency by seeing if the output directory exists.
+	// Git dependencies are immutable (modulo updates, which aren't yet implemented) and separated by tag/branch, so no need to rebuild.
+
+	if (dep->kind == DEP_KIND_GIT) {
+		char* STR_CLEANUP check_path = NULL;
+
+		if (dep->build_path[0] != '\0') {
+			asprintf_c(&check_path, "%s/%s/.bob/%s", dep->path, dep->build_path, target);
+		} else {
+			asprintf_c(&check_path, "%s/.bob/%s", dep->path, target);
+		}
+
+		if (access(check_path, F_OK) == 0) {
+			pthread_mutex_lock(&logging_lock);
+			LOG_INFO("%s" CLEAR ": Git dependency already built, skipping.", human);
+			pthread_mutex_unlock(&logging_lock);
+			return false;
 		}
 	}
 

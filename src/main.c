@@ -33,6 +33,7 @@ char const* init_name = "bob";
 char const* bootstrap_import_path = "import";
 
 char const* targetless_out_path = NULL;
+char* target = NULL;
 char const* abs_out_path = NULL;
 char* bsys_out_path = NULL;
 
@@ -340,7 +341,7 @@ int main(int argc, char* argv[]) {
 
 	// Get target and append to out path.
 
-	char* target = getenv("BOB_TARGET");
+	target = getenv("BOB_TARGET");
 
 	if (target == NULL) {
 		struct utsname u;
