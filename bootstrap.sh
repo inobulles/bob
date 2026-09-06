@@ -26,10 +26,15 @@ for src in $srcs; do
 	mkdir -p .bootstrap/$(dirname $src)
 
 	obj=.bootstrap/$src.o
-	$CC $cc_flags -c $src -o $obj &
+	( $CC $cc_flags -c $src -o $obj || touch .bootstrap/FAILED ) &
 done
 
 wait
+
+if [ -e .bootstrap/FAILED ]; then
+	echo "Compilation failed." >&2
+	exit 1
+fi
 
 # Link everything together.
 
