@@ -152,7 +152,7 @@ static int common(
 	bss->fn = fn;
 	bss->flag = flag;
 
-	return add_build_step(((uint64_t) 'pkg-' << 32) | 'conf', "pkg-config evaluation", eval_step, bss);
+	return add_build_step(strhash(PKG_CONFIG), "pkg-config evaluation", eval_step, bss);
 }
 
 static int get_cflags(flamingo_arg_list_t* args, flamingo_val_t** rv) {
