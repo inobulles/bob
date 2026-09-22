@@ -36,6 +36,7 @@ char const* targetless_out_path = NULL;
 char const* abs_out_path = NULL;
 char* bsys_out_path = NULL;
 
+char* cache_path = NULL;
 char* deps_path = NULL;
 bool build_deps = true;
 
@@ -82,25 +83,32 @@ void usage(void) {
 	exit(EXIT_FAILURE);
 }
 
-static int get_and_ensure_deps_path(void) {
+static int get_and_ensure_cache_path(void) {
+	char const* const home = getenv("HOME");
+
+	// XXX Don't worry about freeing these.
+
+	if (home != NULL) {
+		asprintf_c(&cache_path, "%s/%s", home, ".cache/bob");
+	}
+
+	else {
+		asprintf_c(&cache_path, "%s/%s", abs_out_path, "cache");
+		LOG_WARN("$HOME is not set, using '%s' as the cache path as a last resort.", cache_path);
+	}
+
+	if (mkdir_recursive(cache_path, 0755) < 0) {
+		LOG_FATAL("mkdir_recursive(\"%s\"): %s", cache_path, strerror(errno));
+		return -1;
+	}
+
+	// Deps path.
+
 	deps_path = getenv("BOB_DEPS_PATH");
 
 	if (deps_path == NULL) {
-		char const* const home = getenv("HOME");
-
-		// XXX Don't worry about freeing these.
-
-		if (home != NULL) {
-			asprintf_c(&deps_path, "%s/%s", home, ".cache/bob/deps");
-		}
-
-		else {
-			asprintf_c(&deps_path, "%s/%s", abs_out_path, "deps");
-			LOG_WARN("$HOME is not set, using '%s' as the dependencies path as a last resort.", deps_path);
-		}
+		asprintf_c(&deps_path, "%s/deps", cache_path);
 	}
-
-	// Ensure it exists.
 
 	if (mkdir_recursive(deps_path, 0755) < 0) {
 		LOG_FATAL("mkdir_recursive(\"%s\"): %s", deps_path, strerror(errno));
@@ -407,9 +415,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	// Get the dependencies path and ensure it exists.
+	// Get the cache and dependencies paths and ensure they exist.
 
-	if (get_and_ensure_deps_path() < 0) {
+	if (get_and_ensure_cache_path() < 0) {
 		return EXIT_FAILURE;
 	}
 
