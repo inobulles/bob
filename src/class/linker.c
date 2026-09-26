@@ -22,12 +22,14 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include <class/instance.h>
 #include <class/pkg_config.h>
 
 #define LINKER "Linker"
 
 typedef struct {
 	flamingo_val_t* flags;
+	flamingo_val_t* toolchain;
 } state_t;
 
 typedef struct {
@@ -89,17 +91,41 @@ link:;
 
 	cmd_t cmd;
 
+	flamingo_val_t* const tc = bss->state->toolchain;
+
 	if (bss->archive) {
-		char* ar = getenv("AR");
-		ar = ar == NULL ? "ar" : ar;
-		cmd_create(&cmd, ar, "-rcs", out, NULL);
+		char* STR_CLEANUP ar_str = NULL;
+		flamingo_val_t* tc_ar = tc != NULL ? inst_getf(tc, "ar") : NULL;
+
+		if (tc_ar != NULL && tc_ar->kind == FLAMINGO_VAL_KIND_STR) {
+			ar_str = strndup_c(tc_ar->str.str, tc_ar->str.size);
+		} else {
+			char* env_ar = getenv("AR");
+			ar_str = strdup_c(env_ar == NULL ? "ar" : env_ar);
+		}
+
+		cmd_create(&cmd, ar_str, "-rcs", out, NULL);
 	}
 
 	else {
-		char* cc = getenv("CC");
-		cc = cc == NULL ? "cc" : cc;
-		cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-o", out, NULL);
+		char* STR_CLEANUP cc_str = NULL;
+		flamingo_val_t* tc_cc = tc != NULL ? inst_getf(tc, "cc") : NULL;
+
+		if (tc_cc != NULL && tc_cc->kind == FLAMINGO_VAL_KIND_STR) {
+			cc_str = strndup_c(tc_cc->str.str, tc_cc->str.size);
+		} else {
+			char* env_cc = getenv("CC");
+			cc_str = strdup_c(env_cc == NULL ? "cc" : env_cc);
+		}
+
+		cmd_create(&cmd, cc_str, "-fdiagnostics-color=always", "-o", out, NULL);
 		cmd_addf(&cmd, "-L%s/lib", install_prefix);
+
+		flamingo_val_t* tc_sysroot = tc != NULL ? inst_getf(tc, "sysroot") : NULL;
+
+		if (tc_sysroot != NULL && tc_sysroot->kind == FLAMINGO_VAL_KIND_STR) {
+			cmd_addf(&cmd, "--sysroot=%.*s", (int) tc_sysroot->str.size, tc_sysroot->str.str);
+		}
 
 #if defined(__APPLE__)
 		cmd_add(&cmd, "-rpath");
@@ -231,17 +257,39 @@ static int prep_link(state_t* state, flamingo_arg_list_t* args, flamingo_val_t**
 	return add_build_step((uint64_t) bss, present, link_step, bss);
 }
 
+static int set_toolchain(state_t* state, flamingo_val_t* inst, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	if (args->count != 1) {
+		LOG_FATAL(LINKER ".set_toolchain: Expected 1 argument, got %zu.", args->count);
+		return -1;
+	}
+
+	if (args->args[0]->kind != FLAMINGO_VAL_KIND_INST) {
+		LOG_FATAL(LINKER ".set_toolchain: Expected argument to be a Toolchain instance.");
+		return -1;
+	}
+
+	state->toolchain = flamingo_val_incref(args->args[0]);
+	*rv = flamingo_val_incref(inst);
+
+	return 0;
+}
+
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
 	*consumed = true;
 
-	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
+	flamingo_val_t* const inst = callable->owner->owner;
+	state_t* const state = inst->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "link", callable->name_size) == 0) {
 		return prep_link(state, args, rv, false);
 	}
 
-	else if (flamingo_cstrcmp(callable->name, "archive", callable->name_size) == 0) {
+	if (flamingo_cstrcmp(callable->name, "archive", callable->name_size) == 0) {
 		return prep_link(state, args, rv, true);
+	}
+
+	if (flamingo_cstrcmp(callable->name, "set_toolchain", callable->name_size) == 0) {
+		return set_toolchain(state, inst, args, rv);
 	}
 
 	*consumed = false;
@@ -297,6 +345,7 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	state_t* const state = malloc_c(sizeof *state);
 	state->flags = flags;
+	state->toolchain = NULL;
 
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;
