@@ -1,10 +1,18 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2024-2025 Aymeric Wibo
+# Copyright (c) 2024-2026 Aymeric Wibo
 
 let __bob_has_been_imported__
 
+class Toolchain {
+	let cc: str
+	let cxx: str
+	let ar: str
+	let sysroot: str
+}
+
 class Cc(flags: vec<str>) {
 	proto compile(src: vec<str>) -> vec<str>
+	proto set_toolchain(toolchain: Toolchain) -> none
 }
 
 class Dep(_kind: str) {
@@ -60,6 +68,7 @@ class Fs {
 class Linker(flags: vec<str>) {
 	proto link(obj: vec<str>) -> str
 	proto archive(obj: vec<str>) -> str
+	proto set_toolchain(toolchain: Toolchain) -> none
 }
 
 # This class provides platform-specific information.
