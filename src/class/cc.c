@@ -22,12 +22,14 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include <class/instance.h>
 #include <class/pkg_config.h>
 
 #define CC "Cc"
 
 typedef struct {
 	flamingo_val_t* flags;
+	flamingo_val_t* toolchain;
 } state_t;
 
 typedef struct {
@@ -148,19 +150,33 @@ static bool compile_task(void* data) {
 
 	// Get compiler command to use.
 
-	char* cc = getenv("CC");
-	cc = cc == NULL ? "cc" : cc;
+	flamingo_val_t* const tc = task->bss->state->toolchain;
+	flamingo_val_t* tc_cc = tc != NULL ? inst_getf(tc, "cc") : NULL;
+	flamingo_val_t* tc_sysroot = tc != NULL ? inst_getf(tc, "sysroot") : NULL;
+
+	char* STR_CLEANUP cc_str = NULL;
+
+	if (tc_cc != NULL && tc_cc->kind == FLAMINGO_VAL_KIND_STR) {
+		cc_str = strndup_c(tc_cc->str.str, tc_cc->str.size);
+	} else {
+		char* env_cc = getenv("CC");
+		cc_str = strdup_c(env_cc == NULL ? "cc" : env_cc);
+	}
 
 	// Get the include dependencies.
 
-	get_include_deps(task, cc);
+	get_include_deps(task, cc_str);
 
 	// Run compilation command.
 
 	cmd_t CMD_CLEANUP cmd = {0};
-	cmd_create(&cmd, cc, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
+	cmd_create(&cmd, cc_str, "-fdiagnostics-color=always", "-c", task->src, "-o", task->out, NULL);
 	add_flags(&cmd, task);
 	add_common(&cmd);
+
+	if (tc_sysroot != NULL && tc_sysroot->kind == FLAMINGO_VAL_KIND_STR) {
+		cmd_addf(&cmd, "--sysroot=%.*s", (int) tc_sysroot->str.size, tc_sysroot->str.str);
+	}
 
 	if (cmd_exec(&cmd) < 0) {
 		stop = true;
@@ -368,13 +384,35 @@ static int prep_compile(state_t* state, flamingo_arg_list_t* args, flamingo_val_
 	return add_build_step((uint64_t) state, "C source file compilation", compile_step, bss);
 }
 
+static int set_toolchain(state_t* state, flamingo_val_t* inst, flamingo_arg_list_t* args, flamingo_val_t** rv) {
+	if (args->count != 1) {
+		LOG_FATAL(CC ".set_toolchain: Expected 1 argument, got %zu.", args->count);
+		return -1;
+	}
+
+	if (args->args[0]->kind != FLAMINGO_VAL_KIND_INST) {
+		LOG_FATAL(CC ".set_toolchain: Expected argument to be a Toolchain instance.");
+		return -1;
+	}
+
+	state->toolchain = flamingo_val_incref(args->args[0]);
+	*rv = flamingo_val_incref(inst);
+
+	return 0;
+}
+
 static int call(flamingo_val_t* callable, flamingo_arg_list_t* args, flamingo_val_t** rv, bool* consumed) {
 	*consumed = true;
 
-	state_t* const state = callable->owner->owner->inst.data; // TODO Should this be passed to the call function of a class?
+	flamingo_val_t* const inst = callable->owner->owner;
+	state_t* const state = inst->inst.data; // TODO Should this be passed to the call function of a class?
 
 	if (flamingo_cstrcmp(callable->name, "compile", callable->name_size) == 0) {
 		return prep_compile(state, args, rv);
+	}
+
+	if (flamingo_cstrcmp(callable->name, "set_toolchain", callable->name_size) == 0) {
+		return set_toolchain(state, inst, args, rv);
 	}
 
 	*consumed = false;
@@ -430,6 +468,7 @@ static int instantiate(flamingo_val_t* inst, flamingo_arg_list_t* args) {
 
 	state_t* const state = malloc_c(sizeof *state);
 	state->flags = flags;
+	state->toolchain = NULL;
 
 	inst->inst.data = state;
 	inst->inst.free_data = free_state;
