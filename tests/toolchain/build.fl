@@ -1,0 +1,7 @@
+import bob
+
+let tc = Toolchain()
+tc.cc = "./fake_cc.sh"
+
+let cc = Cc([]).set_toolchain(tc)
+cc.compile(["dummy.c"])
