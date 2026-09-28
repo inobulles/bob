@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#include <class/instance.h>
 #include <class/pkg_config.h>
 
 #define CC "Cc"
@@ -151,8 +150,8 @@ static bool compile_task(void* data) {
 	// Get compiler command to use.
 
 	flamingo_val_t* const tc = task->bss->state->toolchain;
-	flamingo_val_t* tc_cc = tc != NULL ? inst_getf(tc, "cc") : NULL;
-	flamingo_val_t* tc_sysroot = tc != NULL ? inst_getf(tc, "sysroot") : NULL;
+	flamingo_val_t* tc_cc = tc != NULL ? flamingo_inst_get(tc, "cc") : NULL;
+	flamingo_val_t* tc_sysroot = tc != NULL ? flamingo_inst_get(tc, "sysroot") : NULL;
 
 	char* STR_CLEANUP cc_str = NULL;
 
