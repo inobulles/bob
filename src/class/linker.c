@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#include <class/instance.h>
 #include <class/pkg_config.h>
 
 #define LINKER "Linker"
@@ -95,7 +94,7 @@ link:;
 
 	if (bss->archive) {
 		char* STR_CLEANUP ar_str = NULL;
-		flamingo_val_t* tc_ar = tc != NULL ? inst_getf(tc, "ar") : NULL;
+		flamingo_val_t* tc_ar = tc != NULL ? flamingo_inst_get(tc, "ar") : NULL;
 
 		if (tc_ar != NULL && tc_ar->kind == FLAMINGO_VAL_KIND_STR) {
 			ar_str = strndup_c(tc_ar->str.str, tc_ar->str.size);
@@ -109,7 +108,7 @@ link:;
 
 	else {
 		char* STR_CLEANUP cc_str = NULL;
-		flamingo_val_t* tc_cc = tc != NULL ? inst_getf(tc, "cc") : NULL;
+		flamingo_val_t* tc_cc = tc != NULL ? flamingo_inst_get(tc, "cc") : NULL;
 
 		if (tc_cc != NULL && tc_cc->kind == FLAMINGO_VAL_KIND_STR) {
 			cc_str = strndup_c(tc_cc->str.str, tc_cc->str.size);
@@ -121,7 +120,7 @@ link:;
 		cmd_create(&cmd, cc_str, "-fdiagnostics-color=always", "-o", out, NULL);
 		cmd_addf(&cmd, "-L%s/lib", install_prefix);
 
-		flamingo_val_t* tc_sysroot = tc != NULL ? inst_getf(tc, "sysroot") : NULL;
+		flamingo_val_t* tc_sysroot = tc != NULL ? flamingo_inst_get(tc, "sysroot") : NULL;
 
 		if (tc_sysroot != NULL && tc_sysroot->kind == FLAMINGO_VAL_KIND_STR) {
 			cmd_addf(&cmd, "--sysroot=%.*s", (int) tc_sysroot->str.size, tc_sysroot->str.str);
