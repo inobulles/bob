@@ -64,8 +64,6 @@ static int install(void) {
 	cmd_add(&cmd, "install");
 	cmd_set_redirect(&cmd, CMD_NO_REDIRECT, CMD_NO_FORCE_REDIRECT);
 
-	cmd_print(&cmd);
-
 	if (cmd_exec(&cmd) < 0) {
 		LOG_FATAL("GNU Make install failed.");
 		return -1;
