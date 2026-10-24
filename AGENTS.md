@@ -55,6 +55,19 @@ Key globals: `instr` (current instruction), `abs_out_path` (.bob/$TARGET/), `ins
 
 `BOB_BUILD_DEBUGGING=1` sets `debugging=true`: forces `-j1` (no parallelism) and disables output pipe buffering so command output streams in real-time. Use when diagnosing hangs or other unobvious build failures.
 
+## Code conventions
+
+These are enforced by CI (`.github/workflows/lint.yml`) over all of `src/` except `src/flamingo/`:
+
+- **clang-tidy** must pass (run on a compilation database generated with `intercept-build sh bootstrap.sh`).
+- **Allocations**: use the checked wrappers from `src/alloc.h`, which assert the result is non-NULL. Never call the raw libc functions directly.
+  - `malloc_c`, `calloc_c`, `realloc_c` instead of `malloc`, `calloc`, `realloc`.
+  - `strdup_c`, `strndup_c` instead of `strdup`, `strndup`.
+  - `asprintf_c`, `vasprintf_c` instead of `asprintf`, `vasprintf` (these return `void`, so there's no return value to check).
+- **Paths**: use `realerpath()` (`src/fsutil.h`) instead of `realpath(3)`. It also expands a leading `~` to `$HOME`. The result is heap-allocated and may be NULL.
+- **Directories**: use `mkdir_wrapped()` (`src/fsutil.h`) instead of `mkdir(2)`. It treats `EEXIST` as success and fixes ownership of newly-created directories via `set_owner()`.
+- **`cmd_set_redirect()`**: never pass raw `true`/`false`; use the `CMD_REDIRECT`/`CMD_NO_REDIRECT` and `CMD_FORCE_REDIRECT`/`CMD_NO_FORCE_REDIRECT` enum values from `src/cmd.h`.
+
 ## CLI
 
 ```
