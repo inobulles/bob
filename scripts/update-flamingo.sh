@@ -2,6 +2,7 @@
 set -xe
 
 URL=https://github.com/inobulles/flamingo
+VERSION=v0.1.9
 
 if [ $# -gt 1 ]; then
 	echo "Usage: scripts/update-flamingo.sh [flamingo URL]"
@@ -15,7 +16,7 @@ fi
 # Update flamingo.
 
 rm -rf src/flamingo 2>/dev/null || true
-git clone $URL --depth 1 --branch v0.1.8
+git clone $URL --depth 1 --branch $VERSION
 
 mv flamingo/flamingo src/flamingo
 rm -rf flamingo

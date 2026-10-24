@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Aymeric Wibo
+
+class Android {
+	static proto require(component: str) -> none
+	static proto _get_ndk(toolchain: Toolchain, version: str, api_level: int) -> none
+
+	static fn get_ndk(version: str, api_level: int) -> Toolchain {
+		let toolchain = Toolchain()
+		Android._get_ndk(toolchain, version, api_level)
+		return toolchain
+	}
+
+	static proto glue() -> str
+}
+
+# TODO For pkg, maybe we have a pattern like:
+# let apk = Android.pkg("AndroidManifest.xml", android_version)
+#       .dex(dex)
+#       .lib(libmain, "arm64-v8a")
+#       .sign(".out/debug.keystore", "123456")
+#       .package()

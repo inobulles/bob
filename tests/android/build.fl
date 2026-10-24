@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Aymeric Wibo
+
+import bob
+import bob.android
+
+let NDK_VERS = "30.0.16248370"
+let API_LEVEL = 24
+
+Android.require("ndk/" + NDK_VERS)
+let ndk = Android.get_ndk(NDK_VERS, API_LEVEL)
+
+# Build native app glue from NDK.
+
+let glue_cc = Cc(["-Wall"]).set_toolchain(ndk)
+let glue_obj = glue_cc.compile([ndk.native_app_glue_path + "/android_native_app_glue.c"])
+
+# Build our app.
+
+let cc = Cc([
+	"-Wall",
+	"-I" + ndk.native_app_glue_path,
+	"-fPIC",
+]).set_toolchain(ndk)
+
+let obj = cc.compile(["main.c"])
+
+let linker = Linker(["-shared", "-llog", "-landroid"]).set_toolchain(ndk)
+let lib = linker.link(obj + glue_obj)
