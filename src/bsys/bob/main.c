@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024-2025 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -31,6 +31,7 @@ static bool consistent = false;
 
 static char* src;
 static size_t src_size;
+static char* abs_build_path; // This has to live until destroy() because flamingo_create() does not copy this into progname.
 
 static flamingo_t flamingo;
 
@@ -154,7 +155,14 @@ static int setup(void) {
 
 	// Create Flamingo engine.
 
-	if (flamingo_create(&flamingo, "Bob the Builder", src, src_size) < 0) {
+	abs_build_path = realerpath(BUILD_PATH);
+
+	if (abs_build_path == NULL) {
+		LOG_FATAL("Failed to get absolute path of build file: %s", BUILD_PATH);
+		goto err_flamingo_create;
+	}
+
+	if (flamingo_create(&flamingo, abs_build_path, src, src_size) < 0) {
 		LOG_FATAL("Failed to create Flamingo engine: %s", flamingo_err(&flamingo));
 		goto err_flamingo_create;
 	}
@@ -213,6 +221,7 @@ err_flamingo_create:
 
 	if (rv != 0) {
 		free(src);
+		free(abs_build_path);
 	}
 
 err_fread:
@@ -378,6 +387,7 @@ static void destroy(void) {
 
 	free(src);
 	flamingo_destroy(&flamingo);
+	free(abs_build_path);
 }
 
 bsys_t const BSYS_BOB = {
