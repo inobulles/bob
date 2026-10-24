@@ -35,6 +35,15 @@ typedef struct {
 
 	char* path;
 	char* human;
+
+	/**
+	 * Where the dependency comes from, for error messages.
+	 *
+	 * This is the absolute path for local dependencies and the URL and branch (as 'url@branch') for git dependencies.
+	 * Unlike {@link human}, this isn't serialized into the dependency tree, so it can contain any character.
+	 */
+	char* source;
+
 	char* build_path;
 
 	size_t config_key_count;
@@ -181,6 +190,7 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 		dep_kind_t dep_kind = DEP_KIND_INVALID;
 		char* STR_CLEANUP dep_path = NULL;
 		char* STR_CLEANUP human = NULL;
+		char* STR_CLEANUP source = NULL;
 
 		if (flamingo_cstrcmp(kind->str.str, "local", kind->str.size) == 0) {
 			dep_kind = DEP_KIND_LOCAL;
@@ -204,6 +214,8 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 				LOG_FATAL("Could not find local dependency at '%s'.", path);
 				return -1;
 			}
+
+			source = strdup_c(abs_path);
 
 			// Create symlink from dependency to deps directory.
 			// We're creating a symlink and not a hard one because, since we're depending the unique name of the dependency on it's original path, we want to break thing if it's ever moved.
@@ -247,6 +259,7 @@ static int ensure_deps_cache(flamingo_val_t* deps_vec, dep_t* deps, uint64_t* ha
 
 			human = strrchr(tmp, '/');
 			human = strdup_c(human == NULL ? tmp : human + 1);
+			asprintf_c(&source, "%s@%.*s", tmp, (int) git_branch->str.size, git_branch->str.str);
 
 			uint64_t const hash =
 				strnhash(git_url->str.str, git_url->str.size) ^
@@ -295,6 +308,7 @@ downloaded:
 
 		assert(dep_path != NULL);
 		assert(human != NULL);
+		assert(source != NULL);
 
 		// Create the dependency object.
 
@@ -307,6 +321,7 @@ downloaded:
 
 		deps[i].path = strdup_c(dep_path);
 		deps[i].human = strdup_c(human);
+		deps[i].source = strdup_c(source);
 		deps[i].build_path = strndup_c(build_path->str.str, build_path->str.size);
 
 		// Don't bother checking for any of the Flamingo kinds here; they should've been checked by 'config_hash()' already.
@@ -375,6 +390,7 @@ void deps_list_free(dep_t* deps, size_t count) {
 	for (size_t i = 0; i < count; i++) {
 		free(deps[i].path);
 		free(deps[i].human);
+		free(deps[i].source);
 		free(deps[i].build_path);
 
 		for (size_t j = 0; j < deps[i].config_key_count; j++) {
@@ -550,7 +566,7 @@ build_tree:;
 		char* const out = cmd_read_out(&cmd);
 
 		if (rv < 0) {
-			LOG_FATAL("Failed to get dependency tree of '%s'%s", dep->human, out ? ":" : ".");
+			LOG_FATAL("Failed to get dependency tree of '%s' (%s)%s", dep->human, dep->source, out ? ":" : ".");
 			printf("%s", out);
 
 			deps_list_free(deps, deps_vec->vec.count);
@@ -560,7 +576,7 @@ build_tree:;
 		}
 
 		if (strstr(out, BOB_DEPS_CIRCULAR) != NULL) {
-			LOG_WARN("Dependency tree is circular after adding '%s'.", dep->human);
+			LOG_WARN("Dependency tree is circular after adding '%s' (%s).", dep->human, dep->source);
 			*circular = true;
 
 			deps_list_free(deps, deps_vec->vec.count);
@@ -572,7 +588,7 @@ build_tree:;
 		dep_node_t node;
 
 		if (dep_node_deserialize(&node, out) < 0) {
-			LOG_FATAL("Failed to deserialize dependency tree of '%s'.", dep->human);
+			LOG_FATAL("Failed to deserialize dependency tree of '%s' (%s).", dep->human, dep->source);
 
 			deps_list_free(deps, deps_vec->vec.count);
 			deps_tree_free(tree);
