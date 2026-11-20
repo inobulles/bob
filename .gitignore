@@ -11,4 +11,5 @@ tests/deps/build.fl
 tests/static_link/custom_l/custom-libs/
 tests/static_link/shared/fake-libs/
 tests/artifact/soy-un-artifact
+tests/atomic_install/file
 .deps
