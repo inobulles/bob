@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2024 Aymeric Wibo
+// Copyright (c) 2024-2026 Aymeric Wibo
 
 #include <common.h>
 
@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 int rm(char const* path, char** err) {
 	// Same comment as for 'copy'.
@@ -65,12 +66,35 @@ int copy(char const* src, char const* dst, char** err) {
 		return -1;
 	}
 
+	// If 'src' is a file, copying it straight over 'dst' would rewrite 'dst' in place (same inode).
+	// Anything which has 'dst' mapped would then see its contents change from under it.
+	// So copy to a temporary file next to 'dst' instead, and atomically rename it over 'dst', which leaves the original file intact for anyone still using it.
+	// This allows e.g. programs using shared libaries to continue using opened ones even though they've been replaced on disk.
+
+	char* STR_CLEANUP tmp = NULL;
+
+	if (!is_dir) {
+		// If 'dst' is an existing directory, cp(1) would copy 'src' into it, which is not a desirable side-effect.
+
+		struct stat dst_sb;
+
+		if (stat(dst, &dst_sb) == 0 && S_ISDIR(dst_sb.st_mode)) {
+			if (err != NULL) {
+				*err = strdup_c("Destination is an existing directory");
+			}
+
+			return -1;
+		}
+
+		asprintf_c(&tmp, "%s.bob-tmp.%d", dst, (int) getpid());
+	}
+
 	// Finally, actually run the copy command.
 
 	cmd_t cmd;
-	cmd_create(&cmd, "cp", "-RP", src, dst, NULL);
+	cmd_create(&cmd, "cp", "-RP", src, tmp != NULL ? tmp : dst, NULL);
 
-	int const rv = cmd_exec(&cmd);
+	int rv = cmd_exec(&cmd);
 
 	if (rv < 0 && err != NULL) {
 		*err = strdup_c(cmd_read_out(&cmd));
@@ -82,6 +106,19 @@ int copy(char const* src, char const* dst, char** err) {
 	}
 
 	cmd_free(&cmd);
+
+	if (tmp != NULL && rv == 0 && rename(tmp, dst) < 0) {
+		if (err != NULL) {
+			asprintf_c(err, "rename(\"%s\", \"%s\"): %s", tmp, dst, strerror(errno));
+		}
+
+		rv = -1;
+	}
+
+	if (tmp != NULL && rv < 0) {
+		unlink(tmp);
+	}
+
 	return rv;
 }
 
