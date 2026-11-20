@@ -25,7 +25,7 @@ int rm(char const* path, char** err) {
 
 	int const rv = cmd_exec(&cmd);
 
-	if (rv < 0 && *err != NULL) {
+	if (rv < 0 && err != NULL) {
 		*err = strdup_c(cmd_read_out(&cmd));
 		size_t const len = strlen(*err);
 
