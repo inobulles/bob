@@ -33,8 +33,8 @@ static int eval(char const* fn, char const* flag, char* module, pkg_config_cooki
 	cmd_create(&cmd, "pkg-config", flag, module, NULL);
 	cmd_set_redirect(&cmd, CMD_REDIRECT, CMD_FORCE_REDIRECT);
 
-	cmd_addf(&cmd, "--with-path=%s/libdata/pkgconfig", default_tmp_install_prefix);
-	cmd_addf(&cmd, "--with-path=%s/lib/pkgconfig", default_tmp_install_prefix);
+	cmd_addf(&cmd, "--with-path=%s/libdata/pkgconfig", install_prefix);
+	cmd_addf(&cmd, "--with-path=%s/lib/pkgconfig", install_prefix);
 
 	int const cmd_rv = cmd_exec(&cmd);
 	char* orig_out = cmd_read_out(&cmd);
