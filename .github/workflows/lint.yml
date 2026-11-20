@@ -13,11 +13,15 @@ jobs:
           version: latest
           platform: x64
       - name: Install intercept-build
-        run: sudo apt install clang-tools
+        run: sudo apt install -y clang-tools
       - name: Get all source files
         run: echo "SRC=$(find src -name "*.[ch]" -print0 -o -path src/flamingo -prune -type f | xargs -0 echo)" >> $GITHUB_ENV
       - name: Build (with LSP output)
-        run: intercept-build-18 sh bootstrap.sh
+        # Use latest LLVM available - version is not stable with ubuntu-latest as our runner image.
+        run: |
+          INTERCEPT_BUILD=$(command -v intercept-build || ls /usr/bin/intercept-build-* | sort -V | tail -n1)
+          echo "Using $INTERCEPT_BUILD"
+          "$INTERCEPT_BUILD" sh bootstrap.sh
       - name: Run clang-tidy
         run: clang-tidy $SRC
       - name: Make sure 'mkdir_wrapped' is used everywhere (except for once for 'fsutils.c')
