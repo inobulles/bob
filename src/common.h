@@ -75,6 +75,11 @@ extern char const* abs_out_path;
 extern char* bsys_out_path;
 
 /**
+ * The global Bob cache path (~/.cache/bob by default).
+ */
+extern char* cache_path;
+
+/**
  * The dependency cache path.
  *
  * Set to the BOB_DEPS_PATH envvar if set.

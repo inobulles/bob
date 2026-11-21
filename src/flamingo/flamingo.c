@@ -341,3 +341,33 @@ flamingo_val_t* flamingo_val_make_bool(bool boolean) {
 
 	return val;
 }
+
+flamingo_val_t* flamingo_inst_get(flamingo_val_t* inst, char const* name) {
+	flamingo_scope_t* const scope = inst->inst.scope;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		flamingo_var_t* const var = &scope->vars[i];
+
+		if (flamingo_cstrcmp(var->key, name, var->key_size) == 0) {
+			return var->val;
+		}
+	}
+
+	return NULL;
+}
+
+int flamingo_inst_set(flamingo_val_t* inst, char const* name, flamingo_val_t* val) {
+	flamingo_scope_t* const scope = inst->inst.scope;
+
+	for (size_t i = 0; i < scope->vars_size; i++) {
+		flamingo_var_t* const var = &scope->vars[i];
+
+		if (flamingo_cstrcmp(var->key, name, var->key_size) == 0) {
+			flamingo_val_decref(var->val);
+			var->val = val;
+			return 0;
+		}
+	}
+
+	return -1;
+}
